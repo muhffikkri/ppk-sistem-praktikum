@@ -40,28 +40,44 @@ spec/                   system spec
 
 `.github/workflows/ci.yml` menjalankan `npm ci`, typecheck, lint, dan format check pada setiap push ke `main` dan pull request.
 
-## Deploy otomatis (EAS Update)
+## Build dan deploy via tag
 
-Setiap push tag `v*` memicu `.eas/workflows/deploy-preview.yml`, yang mem-publish update OTA ke branch `preview` lewat EAS Workflows. Push commit biasa ke `main` tidak men-deploy.
+Semua build berjalan di EAS (cloud), jadi tidak perlu Android SDK/emulator di mesin lokal. Workflow dipicu oleh tag:
+
+| Tag | Workflow | Hasil |
+| --- | --- | --- |
+| `dev-*` | `.eas/workflows/build-development.yml` | APK development client (profil `development`, channel `development`) |
+| `v*` | `.eas/workflows/build-production.yml` | AAB production (profil `production`, channel `production`) |
+| `preview-*` | `.eas/workflows/deploy-preview.yml` | OTA update ke branch `preview` |
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+# development build (APK, bisa langsung di-install)
+git tag dev-1.1.0
+git push origin dev-1.1.0
+
+# production build (AAB untuk Play Store)
+git tag v1.2.0
+git push origin v1.2.0
+
+# OTA preview untuk build channel preview
+git tag preview-1.1.1
+git push origin preview-1.1.1
 ```
 
 Prasyarat sekali setup:
 
 1. Repo GitHub terhubung ke project EAS `@muhffikkris-team/ppk-mobile` (Expo dashboard → project settings → GitHub).
-2. Build dengan channel `preview` terpasang di perangkat. Build pertama: `npx eas-cli build --profile preview`.
+2. Untuk menerima OTA, build dengan channel yang sesuai harus terpasang. Contoh build preview: `npx eas-cli build --profile preview`.
 
-Menjalankan workflow secara manual:
+Menjalankan workflow secara manual dan memasang hasil build:
 
 ```bash
-npx eas-cli workflow:run .eas/workflows/deploy-preview.yml
+npx eas-cli workflow:run .eas/workflows/build-development.yml
+npx eas-cli build:run --platform android --profile development
 npx eas-cli update:list --branch preview
 ```
 
-Update hanya diterima build yang `runtimeVersion` dan channel-nya cocok (`preview`). Perubahan native butuh build baru; perubahan JavaScript/asset cukup OTA.
+Update hanya diterima build yang `runtimeVersion` dan channel-nya cocok. Perubahan native butuh build baru; perubahan JavaScript/asset cukup OTA. Build production tidak otomatis publish OTA production; jalankan `npx eas-cli update --branch production --environment production` bila perlu.
 
 ## Dokumentasi
 

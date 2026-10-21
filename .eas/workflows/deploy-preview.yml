@@ -2,7 +2,7 @@ name: Deploy preview update
 
 on:
   push:
-    tags: ['v*']
+    tags: ['preview-*']
 
 jobs:
   publish_preview_update:

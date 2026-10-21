@@ -2,6 +2,14 @@
 
 Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletakkan paling atas.
 
+## [Unreleased]
+
+### Development build dan build via tag
+
+- Menambahkan `expo-dev-client` dan profil `development` di `eas.json` (development client, APK internal, channel `development`, iOS simulator).
+- Menambahkan `android.package` `com.muhffikkris.ppkmobile` agar build Android bisa berjalan di EAS.
+- Menambahkan workflow `build-development.yml` (tag `dev-*`) dan `build-production.yml` (tag `v*`); OTA preview sekarang dipicu tag `preview-*`.
+
 ## [1.1.0] - 2026-10-21
 
 ### Alur asisten
