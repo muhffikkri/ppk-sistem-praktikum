@@ -15,13 +15,15 @@
   "devDependencies": {
     "@types/react": "~19.3.0",
     "expo-mcp": "~0.2.1",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "verify:contracts": "tsx scripts/verify-contracts.ts"
   },
   "private": true
 }
