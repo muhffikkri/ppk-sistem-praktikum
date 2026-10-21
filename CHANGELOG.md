@@ -4,6 +4,12 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+### Placeholder alur praktikum
+
+- Menghubungkan jadwal, detail, riwayat praktikan, dan rekap asisten melalui placeholder navigasi yang jelas.
+- Meneruskan `sessionId` dari detail ke rekap asisten dan menyediakan tombol kembali pada seluruh placeholder.
+- Menempatkan placeholder di `src/app/placeholders/` agar dapat diganti layar milik Orang 2/3 tanpa mengubah kontrak route.
+
 ### Navigasi mode demo
 
 - Menambahkan pemilihan mode Praktikan/Asisten dan native stack bertipe sesuai `RootStackParamList`.
