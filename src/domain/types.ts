@@ -12,7 +12,7 @@ export type Session = {
   courseName: string;
   groupName: string;
   startsAt: string; // ISO 8601 UTC
-  endsAt: string;   // ISO 8601 UTC
+  endsAt: string; // ISO 8601 UTC
   status: SessionStatus;
   openedAt: string | null; // ISO 8601 UTC
   closedAt: string | null; // ISO 8601 UTC
@@ -32,13 +32,10 @@ export type AttendanceRecord = {
 };
 
 export type SessionActionFailure =
-  | 'session_not_found'
-  | 'invalid_status'
-  | 'already_checked_in';
+  'session_not_found' | 'invalid_status' | 'already_checked_in';
 
 export type SessionActionResult =
-  | { ok: true }
-  | { ok: false; reason: SessionActionFailure };
+  { ok: true } | { ok: false; reason: SessionActionFailure };
 
 export type RootStackParamList = {
   RoleSelect: undefined;

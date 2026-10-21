@@ -7,7 +7,10 @@ import {
   SessionActionResult,
 } from '../domain/types';
 import { openSessionRule, closeSessionRule } from '../domain/sessionRules';
-import { assistantSessions, assistantAttendance } from '../data/fixtures/assistantFixtures';
+import {
+  assistantSessions,
+  assistantAttendance,
+} from '../data/fixtures/assistantFixtures';
 
 type AssistantAction =
   | { type: 'OPEN_SESSION'; sessionId: string; openedAt: string }
@@ -20,7 +23,7 @@ const initialAssistantState: AssistantDemoState = {
 
 function assistantReducer(
   state: AssistantDemoState,
-  action: AssistantAction
+  action: AssistantAction,
 ): AssistantDemoState {
   switch (action.type) {
     case 'OPEN_SESSION': {
@@ -29,7 +32,7 @@ function assistantReducer(
         sessions: state.sessions.map((s) =>
           s.id === action.sessionId
             ? { ...s, status: 'open', openedAt: action.openedAt }
-            : s
+            : s,
         ),
       };
     }
@@ -39,7 +42,7 @@ function assistantReducer(
         sessions: state.sessions.map((s) =>
           s.id === action.sessionId
             ? { ...s, status: 'closed', closedAt: action.closedAt }
-            : s
+            : s,
         ),
       };
     }
@@ -53,7 +56,9 @@ interface AssistantContextType {
   dispatch: React.Dispatch<AssistantAction>;
 }
 
-const AssistantDemoContext = createContext<AssistantContextType | undefined>(undefined);
+const AssistantDemoContext = createContext<AssistantContextType | undefined>(
+  undefined,
+);
 
 export interface AssistantDemoProviderProps {
   children: ReactNode;
@@ -82,7 +87,7 @@ export function useAssistantSessionsViewModel(): AssistantSessionsViewModel {
 
   if (!context) {
     throw new Error(
-      'useAssistantSessionsViewModel must be used within an AssistantDemoProvider'
+      'useAssistantSessionsViewModel must be used within an AssistantDemoProvider',
     );
   }
 

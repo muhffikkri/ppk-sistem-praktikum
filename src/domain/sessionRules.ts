@@ -11,7 +11,7 @@ export type SessionTransitionResult =
  */
 export function openSessionRule(
   session: Session | undefined,
-  nowIso: string = new Date().toISOString()
+  nowIso: string = new Date().toISOString(),
 ): SessionTransitionResult {
   if (!session) {
     return { ok: false, reason: 'session_not_found' };
@@ -37,7 +37,7 @@ export function openSessionRule(
  */
 export function closeSessionRule(
   session: Session | undefined,
-  nowIso: string = new Date().toISOString()
+  nowIso: string = new Date().toISOString(),
 ): SessionTransitionResult {
   if (!session) {
     return { ok: false, reason: 'session_not_found' };

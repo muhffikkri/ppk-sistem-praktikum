@@ -7,7 +7,12 @@ type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   variant?: 'primary' | 'secondary';
 };
 
-export function Button({ label, variant = 'primary', disabled, ...props }: ButtonProps) {
+export function Button({
+  label,
+  variant = 'primary',
+  disabled,
+  ...props
+}: ButtonProps) {
   return (
     <Pressable
       {...props}
@@ -17,15 +22,20 @@ export function Button({ label, variant = 'primary', disabled, ...props }: Butto
       style={({ pressed }) => [
         styles.button,
         variant === 'primary' ? styles.primary : styles.secondary,
-        pressed && (variant === 'primary' ? styles.primaryPressed : styles.secondaryPressed),
+        pressed &&
+          (variant === 'primary'
+            ? styles.primaryPressed
+            : styles.secondaryPressed),
         disabled && styles.disabled,
       ]}
     >
-      <Text style={[
-        styles.label,
-        variant === 'primary' ? styles.primaryLabel : styles.secondaryLabel,
-        disabled && styles.disabledLabel,
-      ]}>
+      <Text
+        style={[
+          styles.label,
+          variant === 'primary' ? styles.primaryLabel : styles.secondaryLabel,
+          disabled && styles.disabledLabel,
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -47,7 +57,12 @@ const styles = StyleSheet.create({
   primaryPressed: { backgroundColor: colors.primaryPressed },
   secondaryPressed: { backgroundColor: colors.primarySoft },
   disabled: { backgroundColor: colors.disabled, borderColor: colors.disabled },
-  label: { fontSize: 16, fontWeight: '600', textAlign: 'center', flexShrink: 1 },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    flexShrink: 1,
+  },
   primaryLabel: { color: colors.surface },
   secondaryLabel: { color: colors.primary },
   disabledLabel: { color: colors.muted },

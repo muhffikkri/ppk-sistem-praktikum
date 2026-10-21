@@ -1,4 +1,9 @@
-import { AttendanceRecord, DemoStudent, Session, SessionActionFailure } from './types';
+import {
+  AttendanceRecord,
+  DemoStudent,
+  Session,
+  SessionActionFailure,
+} from './types';
 
 export type AttendanceCheckInResult =
   | { ok: true; record: AttendanceRecord }
@@ -14,7 +19,7 @@ export function checkInRule(
   session: Session | undefined,
   student: DemoStudent,
   existingRecords: AttendanceRecord[],
-  nowIso: string = new Date().toISOString()
+  nowIso: string = new Date().toISOString(),
 ): AttendanceCheckInResult {
   if (!session) {
     return { ok: false, reason: 'session_not_found' };
@@ -25,7 +30,8 @@ export function checkInRule(
   }
 
   const alreadyCheckedIn = existingRecords.some(
-    (record) => record.sessionId === session.id && record.studentId === student.id
+    (record) =>
+      record.sessionId === session.id && record.studentId === student.id,
   );
 
   if (alreadyCheckedIn) {

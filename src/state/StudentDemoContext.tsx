@@ -24,7 +24,7 @@ const initialStudentState: StudentDemoState = {
 
 function studentReducer(
   state: StudentDemoState,
-  action: StudentAction
+  action: StudentAction,
 ): StudentDemoState {
   switch (action.type) {
     case 'CHECK_IN': {
@@ -43,7 +43,9 @@ interface StudentContextType {
   dispatch: React.Dispatch<StudentAction>;
 }
 
-const StudentDemoContext = createContext<StudentContextType | undefined>(undefined);
+const StudentDemoContext = createContext<StudentContextType | undefined>(
+  undefined,
+);
 
 export interface StudentDemoProviderProps {
   children: ReactNode;
@@ -72,7 +74,7 @@ export function useStudentAttendanceViewModel(): StudentAttendanceViewModel {
 
   if (!context) {
     throw new Error(
-      'useStudentAttendanceViewModel must be used within a StudentDemoProvider'
+      'useStudentAttendanceViewModel must be used within a StudentDemoProvider',
     );
   }
 
@@ -83,10 +85,11 @@ export function useStudentAttendanceViewModel(): StudentAttendanceViewModel {
   };
 
   const getAttendanceForSession = (
-    sessionId: string
+    sessionId: string,
   ): AttendanceRecord | undefined => {
     return state.attendanceHistory.find(
-      (a) => a.sessionId === sessionId && a.studentId === state.currentStudent.id
+      (a) =>
+        a.sessionId === sessionId && a.studentId === state.currentStudent.id,
     );
   };
 
@@ -95,7 +98,7 @@ export function useStudentAttendanceViewModel(): StudentAttendanceViewModel {
     const result = checkInRule(
       session,
       state.currentStudent,
-      state.attendanceHistory
+      state.attendanceHistory,
     );
 
     if (!result.ok) {
