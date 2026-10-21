@@ -4,6 +4,13 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+### Alur asisten
+
+- Menambahkan layar `AssistantSchedule`, `AssistantSessionDetail`, dan `AssistantAttendanceRoster` di `src/features/assistant/` memakai `useAssistantSessionsViewModel` dan komponen `src/shared/ui/`.
+- Jadwal dikelompokkan per status; detail sesi hanya menawarkan aksi yang valid (Buka untuk terjadwal, Tutup untuk terbuka, tanpa aksi untuk tertutup) beserta petunjuk status.
+- Menampilkan feedback “Sesi dibuka/ditutup pukul …” setelah aksi, serta rekap praktikan hadir terurut waktu dengan keadaan kosong.
+- Layar belum disambungkan ke navigator; penyambungan route dilakukan oleh Orang 1 melalui ekspor `src/features/assistant`.
+
 ### Fondasi UI bersama
 
 - Menambahkan layout scroll responsif dengan safe area, header, tombol, badge status berlabel, dan keadaan kosong di `src/shared/ui/`.
