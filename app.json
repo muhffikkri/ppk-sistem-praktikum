@@ -20,6 +20,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "736d7efd-ad41-4fa4-a147-57e6bf106ce6"
+      }
+    },
+    "owner": "muhffikkris-team"
   }
 }
