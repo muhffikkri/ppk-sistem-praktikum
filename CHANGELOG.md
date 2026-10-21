@@ -4,6 +4,12 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+### Navigasi mode demo
+
+- Menambahkan pemilihan mode Praktikan/Asisten dan native stack bertipe sesuai `RootStackParamList`.
+- Menampilkan role aktif sebagai mode demo pada header, menyediakan kembali/ganti mode, dan mereset riwayat navigasi role dengan kembali ke pemilihan mode.
+- Memindahkan kerangka aplikasi ke `src/app/` dengan placeholder sementara untuk layar fitur serta provider safe area.
+
 ### Fondasi UI bersama
 
 - Menambahkan layout scroll responsif dengan safe area, header, tombol, badge status berlabel, dan keadaan kosong di `src/shared/ui/`.
