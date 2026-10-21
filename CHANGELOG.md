@@ -10,6 +10,9 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 - Menambahkan React Navigation native stack sebagai kerangka navigasi; layar `RoleSelect` masih placeholder sampai Orang 1 memasang `RootStackParamList`.
 - Menambahkan `expo-mcp` (dev) dan koneksi MCP Expo remote di `opencode.json` untuk alur pengembangan dengan agent.
 - Menambahkan skill proyek di `.opencode/skills/`: `caveman`, `ponytail`, dan `rtk-tdd`.
+- Menambahkan ESLint (`eslint-config-expo`) + Prettier dengan script `lint`, `lint:fix`, `format`, `format:check`, dan `typecheck`.
+- Menambahkan CI GitHub Actions (`.github/workflows/ci.yml`) yang menjalankan typecheck, lint, dan format check pada push/PR.
+- Mengonfigurasi EAS Update (`expo-updates`, `updates.url`, `runtimeVersion` appVersion) dan workflow `.eas/workflows/deploy-preview.yml` untuk publish update otomatis ke branch `preview` setiap push ke `main`.
 
 ### Dokumentasi
 

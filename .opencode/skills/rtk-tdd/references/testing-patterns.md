@@ -6,30 +6,30 @@ Prioritized by testability (pure functions first, I/O-heavy last).
 
 ### High Priority (pure functions, trivial to test)
 
-| Module | Testable Functions | Notes |
-|--------|-------------------|-------|
-| `diff_cmd.rs` | `compute_diff`, `similarity`, `truncate`, `condense_unified_diff` | 4 pure functions, 0 tests |
-| `env_cmd.rs` | `mask_value`, `is_lang_var`, `is_cloud_var`, `is_tool_var`, `is_interesting_var` | 5 categorization functions |
+| Module        | Testable Functions                                                               | Notes                      |
+| ------------- | -------------------------------------------------------------------------------- | -------------------------- |
+| `diff_cmd.rs` | `compute_diff`, `similarity`, `truncate`, `condense_unified_diff`                | 4 pure functions, 0 tests  |
+| `env_cmd.rs`  | `mask_value`, `is_lang_var`, `is_cloud_var`, `is_tool_var`, `is_interesting_var` | 5 categorization functions |
 
 ### Medium Priority (need tempfile or parsed input)
 
-| Module | Testable Functions | Notes |
-|--------|-------------------|-------|
-| `tracking.rs` | `estimate_tokens`, `Tracker::new`, query methods | Use tempfile for SQLite |
-| `config.rs` | `Config::default`, config parsing | Test default values and TOML parsing |
-| `deps.rs` | Dependency file parsing | Test with sample Cargo.toml/package.json strings |
-| `summary.rs` | Output type detection heuristics | Pure string analysis |
+| Module        | Testable Functions                               | Notes                                            |
+| ------------- | ------------------------------------------------ | ------------------------------------------------ |
+| `tracking.rs` | `estimate_tokens`, `Tracker::new`, query methods | Use tempfile for SQLite                          |
+| `config.rs`   | `Config::default`, config parsing                | Test default values and TOML parsing             |
+| `deps.rs`     | Dependency file parsing                          | Test with sample Cargo.toml/package.json strings |
+| `summary.rs`  | Output type detection heuristics                 | Pure string analysis                             |
 
 ### Low Priority (heavy I/O, CLI wiring)
 
-| Module | Testable Functions | Notes |
-|--------|-------------------|-------|
-| `container.rs` | Docker/kubectl output filters | Requires mocking Command output |
-| `find_cmd.rs` | Directory grouping logic | Filesystem-dependent |
-| `wget_cmd.rs` | `compact_url`, `format_size`, `truncate_line`, `extract_filename_from_output` | Some pure helpers worth testing |
-| `gain.rs` | Display formatting | Depends on tracking DB |
-| `hooks/init/` | CLAUDE.md generation | File I/O |
-| `main.rs` | CLI routing | Covered by smoke tests |
+| Module         | Testable Functions                                                            | Notes                           |
+| -------------- | ----------------------------------------------------------------------------- | ------------------------------- |
+| `container.rs` | Docker/kubectl output filters                                                 | Requires mocking Command output |
+| `find_cmd.rs`  | Directory grouping logic                                                      | Filesystem-dependent            |
+| `wget_cmd.rs`  | `compact_url`, `format_size`, `truncate_line`, `extract_filename_from_output` | Some pure helpers worth testing |
+| `gain.rs`      | Display formatting                                                            | Depends on tracking DB          |
+| `hooks/init/`  | CLAUDE.md generation                                                          | File I/O                        |
+| `main.rs`      | CLI routing                                                                   | Covered by smoke tests          |
 
 ## RTK Test Patterns
 

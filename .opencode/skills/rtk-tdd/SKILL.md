@@ -32,24 +32,24 @@ Never skip step 2. If the test passes immediately, it tests nothing.
 
 ## Idiomatic Rust Test Patterns
 
-| Pattern | Usage | When |
-|---------|-------|------|
-| Arrange-Act-Assert | Base structure for every test | Always |
-| `assert_eq!` / `assert!` | Direct comparison / booleans | Deterministic values |
-| `assert!(result.is_err())` | Error path testing | Invalid inputs |
-| `Result<()>` return type | Tests with `?` operator | Fallible functions |
-| `#[should_panic]` | Expected panic | Invariants, preconditions |
-| `tempfile::NamedTempFile` | File/I/O tests | Filesystem-dependent code |
+| Pattern                    | Usage                         | When                      |
+| -------------------------- | ----------------------------- | ------------------------- |
+| Arrange-Act-Assert         | Base structure for every test | Always                    |
+| `assert_eq!` / `assert!`   | Direct comparison / booleans  | Deterministic values      |
+| `assert!(result.is_err())` | Error path testing            | Invalid inputs            |
+| `Result<()>` return type   | Tests with `?` operator       | Fallible functions        |
+| `#[should_panic]`          | Expected panic                | Invariants, preconditions |
+| `tempfile::NamedTempFile`  | File/I/O tests                | Filesystem-dependent code |
 
 ## Patterns by Code Type
 
-| Code Type | Test Pattern | Example |
-|-----------|-------------|---------|
-| Pure function (str -> str) | Input literal -> assert output | `assert_eq!(truncate("hello", 3), "...")` |
-| Parsing/filtering | Raw string -> filter -> contains/not-contains | `assert!(filter(raw).contains("expected"))` |
-| Validation/security | Boundary inputs -> assert bool | `assert!(!is_valid("../etc/passwd"))` |
-| Error handling | Bad input -> `is_err()` | `assert!(parse("garbage").is_err())` |
-| Struct/enum roundtrip | Construct -> serialize -> deserialize -> eq | `assert_eq!(from_str(to_str(x)), x)` |
+| Code Type                  | Test Pattern                                  | Example                                     |
+| -------------------------- | --------------------------------------------- | ------------------------------------------- |
+| Pure function (str -> str) | Input literal -> assert output                | `assert_eq!(truncate("hello", 3), "...")`   |
+| Parsing/filtering          | Raw string -> filter -> contains/not-contains | `assert!(filter(raw).contains("expected"))` |
+| Validation/security        | Boundary inputs -> assert bool                | `assert!(!is_valid("../etc/passwd"))`       |
+| Error handling             | Bad input -> `is_err()`                       | `assert!(parse("garbage").is_err())`        |
+| Struct/enum roundtrip      | Construct -> serialize -> deserialize -> eq   | `assert_eq!(from_str(to_str(x)), x)`        |
 
 ## Naming Convention
 
