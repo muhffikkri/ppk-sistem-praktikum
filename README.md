@@ -42,7 +42,12 @@ spec/                   system spec
 
 ## Deploy otomatis (EAS Update)
 
-Setiap push ke `main` memicu `.eas/workflows/deploy-preview.yml`, yang mem-publish update OTA ke branch `preview` lewat EAS Workflows.
+Setiap push tag `v*` memicu `.eas/workflows/deploy-preview.yml`, yang mem-publish update OTA ke branch `preview` lewat EAS Workflows. Push commit biasa ke `main` tidak men-deploy.
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
 
 Prasyarat sekali setup:
 

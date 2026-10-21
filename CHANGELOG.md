@@ -4,6 +4,18 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+### Placeholder alur praktikum
+
+- Menghubungkan jadwal, detail, riwayat praktikan, dan rekap asisten melalui placeholder navigasi yang jelas.
+- Meneruskan `sessionId` dari detail ke rekap asisten dan menyediakan tombol kembali pada seluruh placeholder.
+- Menempatkan placeholder di `src/app/placeholders/` agar dapat diganti layar milik Orang 2/3 tanpa mengubah kontrak route.
+
+### Navigasi mode demo
+
+- Menambahkan pemilihan mode Praktikan/Asisten dan native stack bertipe sesuai `RootStackParamList`.
+- Menampilkan role aktif sebagai mode demo pada header, menyediakan kembali/ganti mode, dan mereset riwayat navigasi role dengan kembali ke pemilihan mode.
+- Memindahkan kerangka aplikasi ke `src/app/` dengan placeholder sementara untuk layar fitur serta provider safe area.
+
 ### Domain dan state
 
 - Menambahkan tipe domain, aturan sesi/presensi, fixture terpisah per role, serta provider `AssistantDemoProvider` dan `StudentDemoProvider` berbasis Context + `useReducer`.
@@ -22,7 +34,7 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 - Menambahkan skill proyek di `.opencode/skills/`: `caveman`, `ponytail`, dan `rtk-tdd`.
 - Menambahkan ESLint (`eslint-config-expo`) + Prettier dengan script `lint`, `lint:fix`, `format`, `format:check`, dan `typecheck`.
 - Menambahkan CI GitHub Actions (`.github/workflows/ci.yml`) yang menjalankan typecheck, lint, dan format check pada push/PR.
-- Mengonfigurasi EAS Update (`expo-updates`, `updates.url`, `runtimeVersion` appVersion) dan workflow `.eas/workflows/deploy-preview.yml` untuk publish update otomatis ke branch `preview` setiap push ke `main`.
+- Mengonfigurasi EAS Update (`expo-updates`, `updates.url`, `runtimeVersion` appVersion) dan workflow `.eas/workflows/deploy-preview.yml` untuk publish update otomatis ke branch `preview` saat tag `v*` dipush, bukan pada setiap push.
 
 ### Dokumentasi
 
