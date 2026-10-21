@@ -4,6 +4,11 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+### Domain dan state
+
+- Menambahkan tipe domain, aturan sesi/presensi, fixture terpisah per role, serta provider `AssistantDemoProvider` dan `StudentDemoProvider` berbasis Context + `useReducer`.
+- Menambahkan `npm run verify:contracts` untuk memverifikasi aturan domain dan fixture terhadap kontrak bersama.
+
 ### Fondasi UI bersama
 
 - Menambahkan layout scroll responsif dengan safe area, header, tombol, badge status berlabel, dan keadaan kosong di `src/shared/ui/`.
