@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import type { RootStackParamList } from '../../domain/types';
+import type { RootStackParamList } from '../../app/navigation';
 import {
   Card,
   CardContent,

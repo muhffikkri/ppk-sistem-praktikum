@@ -37,18 +37,6 @@ export type SessionActionFailure =
 export type SessionActionResult =
   { ok: true } | { ok: false; reason: SessionActionFailure };
 
-export type RootStackParamList = {
-  RoleSelect: undefined;
-  StudentSchedule: undefined;
-  StudentSessionDetail: { sessionId: string };
-  StudentAttendanceHistory: undefined;
-  AssistantSchedule: undefined;
-  AssistantDashboard: undefined;
-  AssistantSessionDetail: { sessionId: string };
-  AssistantAttendanceRoster: { sessionId: string };
-  Profile: undefined;
-};
-
 export type AssistantDemoState = {
   sessions: Session[];
   attendanceBySession: Record<string, AttendanceRecord[]>;
