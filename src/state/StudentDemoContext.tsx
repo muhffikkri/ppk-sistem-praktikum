@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import {
   AttendanceRecord,
-  DemoStudent,
   Session,
   SessionActionResult,
   StudentAttendanceViewModel,

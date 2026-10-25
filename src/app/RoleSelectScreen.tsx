@@ -1,7 +1,15 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, colors, Header, Screen } from '../shared/ui';
+import {
+  Button,
+  Card,
+  CardOverline,
+  colors,
+  Header,
+  Screen,
+  typography,
+} from '../shared/ui';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RoleSelect'>;
@@ -16,34 +24,38 @@ export function RoleSelectScreen({ navigation }: Props) {
       />
 
       <View style={styles.cards}>
-        <View style={styles.card}>
-          <Text style={styles.number}>01 / PRAKTIKAN</Text>
-          <Text accessibilityRole="header" style={styles.cardTitle}>
-            Siap untuk praktikum
-          </Text>
-          <Text style={styles.description}>
-            Lihat jadwal, lakukan presensi, dan telusuri riwayat kehadiranmu.
-          </Text>
-          <Button
-            label="Masuk mode Praktikan"
-            onPress={() => navigation.navigate('StudentSchedule')}
-          />
-        </View>
+        <Card>
+          <View style={styles.cardInner}>
+            <CardOverline>01 / PRAKTIKAN</CardOverline>
+            <Text accessibilityRole="header" style={styles.cardTitle}>
+              Siap untuk praktikum
+            </Text>
+            <Text style={styles.description}>
+              Lihat jadwal, lakukan presensi, dan telusuri riwayat kehadiranmu.
+            </Text>
+            <Button
+              label="Masuk mode Praktikan"
+              onPress={() => navigation.navigate('StudentSchedule')}
+            />
+          </View>
+        </Card>
 
-        <View style={styles.card}>
-          <Text style={styles.number}>02 / ASISTEN</Text>
-          <Text accessibilityRole="header" style={styles.cardTitle}>
-            Kelola jalannya sesi
-          </Text>
-          <Text style={styles.description}>
-            Tinjau jadwal, buka atau tutup sesi, dan pantau rekap kehadiran.
-          </Text>
-          <Button
-            label="Masuk mode Asisten"
-            variant="secondary"
-            onPress={() => navigation.navigate('AssistantSchedule')}
-          />
-        </View>
+        <Card>
+          <View style={styles.cardInner}>
+            <CardOverline>02 / ASISTEN</CardOverline>
+            <Text accessibilityRole="header" style={styles.cardTitle}>
+              Kelola jalannya sesi
+            </Text>
+            <Text style={styles.description}>
+              Tinjau jadwal, buka atau tutup sesi, dan pantau rekap kehadiran.
+            </Text>
+            <Button
+              label="Masuk mode Asisten"
+              variant="soft"
+              onPress={() => navigation.navigate('AssistantSchedule')}
+            />
+          </View>
+        </Card>
       </View>
 
       <View style={styles.notice}>
@@ -59,38 +71,21 @@ export function RoleSelectScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   cards: { gap: 16 },
-  card: {
-    backgroundColor: colors.surface,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 22,
-    gap: 16,
-  },
-  number: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-  },
+  cardInner: { gap: 12 },
   cardTitle: {
+    ...typography.title,
     color: colors.ink,
-    fontSize: 23,
-    lineHeight: 30,
-    fontWeight: '600',
   },
-  description: { color: colors.muted, fontSize: 15, lineHeight: 24 },
+  description: { ...typography.body, color: colors.inkMuted },
   notice: {
     borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    borderLeftColor: colors.violet,
     paddingLeft: 16,
     gap: 8,
   },
   noticeTitle: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
+    ...typography.overline,
+    color: colors.violet,
   },
-  noticeText: { color: colors.muted, fontSize: 14, lineHeight: 22 },
+  noticeText: { ...typography.body, color: colors.inkMuted },
 });

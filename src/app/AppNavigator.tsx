@@ -1,7 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors } from '../shared/ui';
+import {
+  AssistantAttendanceRosterScreen,
+  AssistantScheduleScreen,
+  AssistantSessionDetailScreen,
+} from '../features/assistant';
+import { colors, typography } from '../shared/ui';
 import type { RootStackParamList } from './navigation';
 import { PlaceholderScreen } from './placeholders/PlaceholderScreen';
 import { RoleSelectScreen } from './RoleSelectScreen';
@@ -13,11 +18,11 @@ export function AppNavigator() {
     <Stack.Navigator
       initialRouteName="RoleSelect"
       screenOptions={({ navigation }) => ({
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.primary,
+        headerStyle: { backgroundColor: colors.panel },
+        headerTintColor: colors.violet,
         headerShadowVisible: false,
         headerBackButtonDisplayMode: 'minimal',
-        contentStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.surface },
         headerRight: () => (
           <Pressable
             accessibilityRole="button"
@@ -50,14 +55,17 @@ export function AppNavigator() {
         />
       </Stack.Group>
       <Stack.Group screenOptions={{ title: 'Asisten · Demo' }}>
-        <Stack.Screen name="AssistantSchedule" component={PlaceholderScreen} />
+        <Stack.Screen
+          name="AssistantSchedule"
+          component={AssistantScheduleScreen}
+        />
         <Stack.Screen
           name="AssistantSessionDetail"
-          component={PlaceholderScreen}
+          component={AssistantSessionDetailScreen}
         />
         <Stack.Screen
           name="AssistantAttendanceRoster"
-          component={PlaceholderScreen}
+          component={AssistantAttendanceRosterScreen}
         />
       </Stack.Group>
     </Stack.Navigator>
@@ -71,6 +79,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
   },
-  pressed: { backgroundColor: colors.primarySoft },
-  changeRoleLabel: { color: colors.primary, fontSize: 14, fontWeight: '600' },
+  pressed: { backgroundColor: colors.lavenderSubtle },
+  changeRoleLabel: {
+    ...typography.label,
+    color: colors.violet,
+  },
 });

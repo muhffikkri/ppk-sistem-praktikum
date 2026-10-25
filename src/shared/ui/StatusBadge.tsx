@@ -1,45 +1,122 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from './theme';
+import { colors, radius, typography } from '../../theme/tokens';
 
-const statuses = {
-  scheduled: {
-    label: 'Terjadwal',
-    backgroundColor: colors.warningSoft,
-    color: colors.warning,
+export type BadgeTone =
+  | 'lime' // hadir tepat waktu
+  | 'pink' // terlambat
+  | 'lavender' // izin
+  | 'ink' // ACC dosen / solid dark
+  | 'violet' // sesi aktif
+  | 'neutral' // alpa / outline
+  | 'success' // on site / valid
+  | 'danger'; // error
+
+const toneStyles: Record<
+  BadgeTone,
+  { bg: string; fg: string; border?: string }
+> = {
+  lime: { bg: colors.lime, fg: colors.ink },
+  pink: { bg: colors.pink, fg: '#8A0F41' },
+  lavender: { bg: colors.lavender, fg: colors.violet },
+  ink: { bg: colors.ink, fg: colors.panel },
+  violet: { bg: colors.violet, fg: colors.panel },
+  neutral: { bg: colors.surface, fg: colors.inkMuted, border: colors.border },
+  success: {
+    bg: colors.onSiteSoft,
+    fg: colors.onSite,
+    border: colors.onSiteBorder,
   },
-  open: {
-    label: 'Terbuka',
-    backgroundColor: colors.primarySoft,
-    color: colors.primary,
-  },
-  closed: {
-    label: 'Tertutup',
-    backgroundColor: colors.disabled,
-    color: colors.muted,
+  danger: {
+    bg: colors.dangerSoft,
+    fg: colors.dangerInk,
+    border: colors.dangerBorder,
   },
 };
 
-export function StatusBadge({ status }: { status: keyof typeof statuses }) {
-  const appearance = statuses[status];
+export type StatusBadgeProps = {
+  label: string;
+  tone?: BadgeTone;
+  /** Small dot prefix (sticker sheet chips). */
+  dot?: boolean;
+  /** Pulsing dot for "active" states. */
+  live?: boolean;
+};
+
+export function StatusBadge({
+  label,
+  tone = 'neutral',
+  dot = false,
+  live = false,
+}: StatusBadgeProps) {
+  const appearance = toneStyles[tone];
 
   return (
     <View
-      style={[styles.badge, { backgroundColor: appearance.backgroundColor }]}
+      style={[
+        styles.badge,
+        {
+          backgroundColor: appearance.bg,
+          borderColor: appearance.border ?? 'transparent',
+        },
+      ]}
+      accessibilityLabel={label}
     >
-      <Text style={[styles.label, { color: appearance.color }]}>
-        {appearance.label}
-      </Text>
+      {dot ? (
+        <View
+          accessibilityElementsHidden
+          style={[
+            styles.dot,
+            live ? styles.dotLive : { backgroundColor: appearance.fg },
+          ]}
+        />
+      ) : null}
+      <Text style={[styles.label, { color: appearance.fg }]}>{label}</Text>
     </View>
+  );
+}
+
+// Compat: pre-refactor screens use <StatusBadge status="open" />.
+const legacyStatusMap: Record<
+  string,
+  { label: string; tone: BadgeTone; live?: boolean }
+> = {
+  scheduled: { label: 'Terjadwal', tone: 'lavender' },
+  open: { label: 'Sesi Aktif', tone: 'violet', live: true },
+  closed: { label: 'Tertutup', tone: 'neutral' },
+};
+
+export function LegacyStatusBadge({ status }: { status: string }) {
+  const entry = legacyStatusMap[status] ?? legacyStatusMap.scheduled;
+  return (
+    <StatusBadge
+      label={entry.label}
+      tone={entry.tone}
+      live={entry.live}
+      dot={entry.tone === 'violet'}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    borderWidth: 1,
   },
-  label: { fontSize: 13, fontWeight: '600' },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotLive: { backgroundColor: colors.lime },
+  label: { ...typography.caption, fontSize: 12, fontWeight: '700' },
 });
+
+// Re-export the legacy name so old imports keep working.
+export { LegacyStatusBadge as StatusBadgeCompat };

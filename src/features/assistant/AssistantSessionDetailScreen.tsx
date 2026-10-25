@@ -4,11 +4,13 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { RootStackParamList } from '../../domain/types';
 import {
   Button,
+  Card,
   EmptyState,
   Header,
+  LegacyStatusBadge,
   Screen,
-  StatusBadge,
   colors,
+  typography,
 } from '../../shared/ui';
 import { FeedbackBanner } from './components/FeedbackBanner';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
@@ -51,7 +53,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
           action={
             <Button
               label="Kembali ke jadwal"
-              variant="secondary"
+              variant="outline"
               onPress={() => navigation.goBack()}
             />
           }
@@ -72,27 +74,38 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
         <FeedbackBanner feedback={feedback} onDismiss={dismissFeedback} />
       ) : null}
 
-      <View style={styles.card}>
-        <View style={styles.statusRow}>
-          <Text style={styles.infoLabel}>Status</Text>
-          <StatusBadge status={session.status} />
-        </View>
-        <InfoRow label="Tanggal" value={formatSessionDate(session.startsAt)} />
-        <InfoRow
-          label="Waktu"
-          value={formatTimeRange(session.startsAt, session.endsAt)}
-        />
-        {session.openedAt ? (
-          <InfoRow label="Dibuka pukul" value={formatClock(session.openedAt)} />
-        ) : null}
-        {session.closedAt ? (
+      <Card>
+        <View style={styles.cardInner}>
+          <View style={styles.statusRow}>
+            <Text style={styles.infoLabel}>Status</Text>
+            <LegacyStatusBadge status={session.status} />
+          </View>
           <InfoRow
-            label="Ditutup pukul"
-            value={formatClock(session.closedAt)}
+            label="Tanggal"
+            value={formatSessionDate(session.startsAt)}
           />
-        ) : null}
-        <InfoRow label="Jumlah hadir" value={`${attendees.length} praktikan`} />
-      </View>
+          <InfoRow
+            label="Waktu"
+            value={formatTimeRange(session.startsAt, session.endsAt)}
+          />
+          {session.openedAt ? (
+            <InfoRow
+              label="Dibuka pukul"
+              value={formatClock(session.openedAt)}
+            />
+          ) : null}
+          {session.closedAt ? (
+            <InfoRow
+              label="Ditutup pukul"
+              value={formatClock(session.closedAt)}
+            />
+          ) : null}
+          <InfoRow
+            label="Jumlah hadir"
+            value={`${attendees.length} praktikan`}
+          />
+        </View>
+      </Card>
 
       <View style={styles.actions}>
         <Text style={styles.hint}>{statusHint}</Text>
@@ -112,7 +125,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
         ) : null}
         <Button
           label={`Lihat rekap kehadiran (${attendees.length})`}
-          variant="secondary"
+          variant="outline"
           onPress={() =>
             navigation.navigate('AssistantAttendanceRoster', { sessionId })
           }
@@ -123,11 +136,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 18,
+  cardInner: {
     padding: 18,
     gap: 14,
   },
@@ -143,15 +152,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 16,
   },
-  infoLabel: { fontSize: 14, color: colors.muted },
+  infoLabel: { ...typography.label, color: colors.inkMuted },
   infoValue: {
     flex: 1,
     flexShrink: 1,
     textAlign: 'right',
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.bodyStrong,
     color: colors.ink,
   },
   actions: { gap: 12 },
-  hint: { fontSize: 15, lineHeight: 22, color: colors.muted },
+  hint: { ...typography.body, color: colors.inkMuted },
 });

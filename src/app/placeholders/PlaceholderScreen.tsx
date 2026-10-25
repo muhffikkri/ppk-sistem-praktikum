@@ -1,7 +1,14 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, colors, EmptyState, Header, Screen } from '../../shared/ui';
+import {
+  Button,
+  colors,
+  EmptyState,
+  Header,
+  Screen,
+  typography,
+} from '../../shared/ui';
 import type { RootStackParamList } from '../navigation';
 
 type PlaceholderRoute = Exclude<keyof RootStackParamList, 'RoleSelect'>;
@@ -75,7 +82,7 @@ export function PlaceholderScreen({ route, navigation }: Props) {
             />
             <Button
               label="Lihat riwayat kehadiran"
-              variant="secondary"
+              variant="outline"
               onPress={() => navigation.navigate('StudentAttendanceHistory')}
             />
           </>
@@ -102,7 +109,7 @@ export function PlaceholderScreen({ route, navigation }: Props) {
         ) : null}
         <Button
           label="Kembali"
-          variant="secondary"
+          variant="outline"
           onPress={() => navigation.goBack()}
         />
       </View>
@@ -117,5 +124,5 @@ export function PlaceholderScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   actions: { gap: 12 },
-  note: { color: colors.muted, fontSize: 13, lineHeight: 21 },
+  note: { ...typography.label, color: colors.inkMuted },
 });

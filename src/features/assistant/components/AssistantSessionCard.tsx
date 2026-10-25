@@ -1,7 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Session } from '../../../domain/types';
-import { StatusBadge, colors } from '../../../shared/ui';
+import {
+  colors,
+  LegacyStatusBadge,
+  radius,
+  shadow,
+  typography,
+} from '../../../shared/ui';
 import { formatSessionDate, formatTimeRange } from '../formatters';
 
 type AssistantSessionCardProps = {
@@ -33,8 +39,10 @@ export function AssistantSessionCard({
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.topRow}>
-        <Text style={styles.course}>{session.courseName}</Text>
-        <StatusBadge status={session.status} />
+        <Text style={styles.course} numberOfLines={2}>
+          {session.courseName}
+        </Text>
+        <LegacyStatusBadge status={session.status} />
       </View>
       <Text style={styles.group}>{session.groupName}</Text>
       <View style={styles.metaRow}>
@@ -53,36 +61,44 @@ export function AssistantSessionCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
+    borderRadius: radius['3xl'],
     padding: 18,
     gap: 8,
+    ...shadow.card,
   },
-  pressed: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+  pressed: {
+    backgroundColor: colors.lavenderSubtle,
+    borderColor: colors.violet,
+  },
   topRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   course: {
     flex: 1,
     flexShrink: 1,
-    fontSize: 17,
-    lineHeight: 24,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: colors.ink,
+    fontSize: 16,
   },
-  group: { fontSize: 15, lineHeight: 22, color: colors.muted },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 4 },
-  meta: { fontSize: 14, lineHeight: 20, color: colors.ink },
+  group: { ...typography.label, color: colors.inkMuted },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: 16,
+    rowGap: 4,
+  },
+  meta: { ...typography.label, color: colors.ink },
   footer: {
     marginTop: 6,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.borderSubtle,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
   },
-  footerText: { flexShrink: 1, fontSize: 14, color: colors.muted },
-  chevron: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  footerText: { flexShrink: 1, ...typography.label, color: colors.inkMuted },
+  chevron: { ...typography.label, color: colors.violet },
 });

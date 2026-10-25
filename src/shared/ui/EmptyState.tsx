@@ -1,7 +1,13 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from './theme';
+import {
+  colors,
+  radius,
+  shadow,
+  spacing,
+  typography,
+} from '../../theme/tokens';
 
 type EmptyStateProps = {
   title: string;
@@ -12,36 +18,53 @@ type EmptyStateProps = {
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <View accessible={false} style={styles.mark}>
-        <Text style={styles.markText}>—</Text>
+      <View style={styles.mark} accessibilityElementsHidden>
+        <Text style={styles.markGlyph}>◎</Text>
       </View>
       <Text accessibilityRole="header" style={styles.title}>
         {title}
       </Text>
       <Text style={styles.description}>{description}</Text>
-      {action}
+      {action ? <View style={styles.action}>{action}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    // Sticker sheet empty state: dashed border, surface tint, centered
     backgroundColor: colors.surface,
     borderWidth: 1,
+    borderStyle: 'dashed',
     borderColor: colors.border,
-    borderRadius: 20,
-    padding: 24,
-    gap: 14,
+    borderRadius: radius['2xl'],
+    padding: spacing['2xl'],
+    gap: 12,
+    alignItems: 'center',
   },
   mark: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
+    ...shadow.card,
   },
-  markText: { fontSize: 22, color: colors.primary },
-  title: { fontSize: 20, lineHeight: 28, fontWeight: '600', color: colors.ink },
-  description: { fontSize: 15, lineHeight: 24, color: colors.muted },
+  markGlyph: { ...typography.title, color: colors.violet, fontSize: 22 },
+  title: {
+    ...typography.bodyStrong,
+    fontSize: 14,
+    color: colors.ink,
+    textAlign: 'center',
+  },
+  description: {
+    ...typography.body,
+    color: colors.inkMuted,
+    textAlign: 'center',
+    maxWidth: 240,
+  },
+  action: { marginTop: spacing.sm },
 });

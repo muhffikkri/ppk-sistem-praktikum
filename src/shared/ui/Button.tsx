@@ -1,43 +1,79 @@
-import { Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
+import {
+  Pressable,
+  type PressableProps,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-import { colors } from './theme';
+import {
+  colors,
+  radius,
+  shadow,
+  spacing,
+  typography,
+} from '../../theme/tokens';
 
-type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
+type ButtonVariant =
+  | 'primary' // violet solid
+  | 'accent' // lime high-visibility
+  | 'soft' // lavender soft
+  | 'outline' // panel + border
+  | 'destructive'; // red danger
+
+export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
-  variant?: 'primary' | 'secondary';
+  variant?: ButtonVariant;
+  /** Small 40x40 icon button (sticker sheet "Loading and Icon States"). */
+  iconOnly?: boolean;
+  /** Leading glyph as plain text (unicode or icon-font char). */
+  leadingIcon?: string;
+  loading?: boolean;
 };
 
 export function Button({
   label,
   variant = 'primary',
+  iconOnly = false,
+  leadingIcon,
+  loading = false,
   disabled,
-  ...props
+  ...pressableProps
 }: ButtonProps) {
+  const isDisabled = disabled || loading;
+
   return (
     <Pressable
-      {...props}
-      disabled={disabled}
       accessibilityRole="button"
-      accessibilityState={{ disabled: Boolean(disabled) }}
+      accessibilityState={{ disabled: isDisabled }}
+      disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
-        variant === 'primary' ? styles.primary : styles.secondary,
-        pressed &&
-          (variant === 'primary'
-            ? styles.primaryPressed
-            : styles.secondaryPressed),
-        disabled && styles.disabled,
+        iconOnly && styles.iconOnly,
+        styles[variant],
+        !isDisabled && pressed && styles[`${variant}Pressed`],
+        isDisabled && styles.disabled,
       ]}
+      {...pressableProps}
     >
-      <Text
-        style={[
-          styles.label,
-          variant === 'primary' ? styles.primaryLabel : styles.secondaryLabel,
-          disabled && styles.disabledLabel,
-        ]}
-      >
-        {label}
-      </Text>
+      <View style={styles.row}>
+        {loading ? (
+          <View style={styles.spinner} accessibilityLabel="Memuat" />
+        ) : leadingIcon ? (
+          <Text style={styles.leadingIcon} accessible={false}>
+            {leadingIcon}
+          </Text>
+        ) : null}
+        <Text
+          style={[
+            styles.label,
+            styles[`${variant}Label`],
+            isDisabled && styles.disabledLabel,
+          ]}
+        >
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -45,25 +81,86 @@ export function Button({
 const styles = StyleSheet.create({
   button: {
     minHeight: 48,
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    borderRadius: radius['2xl'], // 18px, sticker sheet buttons
+    paddingHorizontal: spacing['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+    ...shadow.card,
   },
-  primary: { backgroundColor: colors.primary, borderColor: colors.primary },
-  secondary: { backgroundColor: colors.surface, borderColor: colors.border },
-  primaryPressed: { backgroundColor: colors.primaryPressed },
-  secondaryPressed: { backgroundColor: colors.primarySoft },
-  disabled: { backgroundColor: colors.disabled, borderColor: colors.disabled },
+  iconOnly: {
+    width: 40,
+    height: 40,
+    minHeight: 40,
+    padding: 0,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  leadingIcon: {
+    ...typography.label,
+    fontSize: 14,
+  },
+  spinner: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderTopColor: '#FFFFFF',
+  },
+
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.label,
     textAlign: 'center',
     flexShrink: 1,
   },
-  primaryLabel: { color: colors.surface },
-  secondaryLabel: { color: colors.primary },
-  disabledLabel: { color: colors.muted },
+
+  // Sticker sheet variants
+  primary: {
+    backgroundColor: colors.violet,
+    borderColor: colors.violet,
+  },
+  primaryPressed: { backgroundColor: colors.violetDark },
+  primaryLabel: { color: colors.panel, fontWeight: '500' },
+
+  accent: {
+    backgroundColor: colors.lime,
+    borderColor: colors.lime,
+  },
+  accentPressed: { backgroundColor: colors.limeHover },
+  accentLabel: { color: colors.ink, fontWeight: '600' },
+
+  soft: {
+    backgroundColor: colors.lavender,
+    borderColor: colors.lavender,
+  },
+  softPressed: { backgroundColor: colors.lavenderSubtle },
+  softLabel: { color: colors.violet, fontWeight: '600' },
+
+  outline: {
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+  },
+  outlinePressed: { backgroundColor: colors.surface },
+  outlineLabel: { color: colors.ink, fontWeight: '600' },
+
+  destructive: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: 'rgba(252, 165, 165, 0.4)',
+  },
+  destructivePressed: { backgroundColor: colors.dangerBorder },
+  destructiveLabel: { color: colors.dangerInk, fontWeight: '600' },
+
+  disabled: {
+    backgroundColor: colors.disabled,
+    borderColor: colors.disabled,
+    opacity: 0.7,
+  },
+  disabledLabel: { color: colors.inkMuted },
 });

@@ -4,11 +4,13 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { RootStackParamList } from '../../domain/types';
 import {
   Button,
+  Card,
   EmptyState,
   Header,
+  LegacyStatusBadge,
   Screen,
-  StatusBadge,
   colors,
+  typography,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
@@ -38,7 +40,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
           action={
             <Button
               label="Kembali"
-              variant="secondary"
+              variant="outline"
               onPress={() => navigation.goBack()}
             />
           }
@@ -56,7 +58,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
       />
 
       <View style={styles.summary}>
-        <StatusBadge status={session.status} />
+        <LegacyStatusBadge status={session.status} />
         <Text style={styles.summaryText}>
           {attendees.length} praktikan hadir
         </Text>
@@ -68,23 +70,27 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
           description="Belum ada praktikan yang tercatat hadir pada sesi ini di data demo."
         />
       ) : (
-        <View style={styles.list} accessibilityRole="list">
-          {attendees.map((record, index) => (
-            <View
-              key={record.id}
-              style={[
-                styles.row,
-                index < attendees.length - 1 && styles.rowDivider,
-              ]}
-              accessible
-              accessibilityLabel={`${index + 1}. ${record.studentName}, hadir pukul ${formatClock(record.checkedInAt)}`}
-            >
-              <Text style={styles.index}>{index + 1}</Text>
-              <Text style={styles.name}>{record.studentName}</Text>
-              <Text style={styles.time}>{formatClock(record.checkedInAt)}</Text>
-            </View>
-          ))}
-        </View>
+        <Card interactive={false}>
+          <View style={styles.list} accessibilityRole="list">
+            {attendees.map((record, index) => (
+              <View
+                key={record.id}
+                style={[
+                  styles.row,
+                  index < attendees.length - 1 && styles.rowDivider,
+                ]}
+                accessible
+                accessibilityLabel={`${index + 1}. ${record.studentName}, hadir pukul ${formatClock(record.checkedInAt)}`}
+              >
+                <Text style={styles.index}>{index + 1}</Text>
+                <Text style={styles.name}>{record.studentName}</Text>
+                <Text style={styles.time}>
+                  {formatClock(record.checkedInAt)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Card>
       )}
 
       <Text style={styles.note}>
@@ -102,12 +108,8 @@ const styles = StyleSheet.create({
     gap: 12,
     flexWrap: 'wrap',
   },
-  summaryText: { fontSize: 15, fontWeight: '600', color: colors.ink },
+  summaryText: { ...typography.bodyStrong, color: colors.ink },
   list: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 18,
     paddingHorizontal: 18,
   },
   row: {
@@ -116,15 +118,12 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 14,
   },
-  rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  index: { width: 24, fontSize: 14, color: colors.muted },
-  name: {
-    flex: 1,
-    flexShrink: 1,
-    fontSize: 16,
-    lineHeight: 22,
-    color: colors.ink,
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
   },
-  time: { fontSize: 15, fontWeight: '600', color: colors.primary },
-  note: { fontSize: 13, lineHeight: 20, color: colors.muted },
+  index: { width: 24, ...typography.label, color: colors.inkMuted },
+  name: { flex: 1, flexShrink: 1, ...typography.bodyStrong, color: colors.ink },
+  time: { ...typography.label, color: colors.violet },
+  note: { ...typography.label, color: colors.inkMuted },
 });

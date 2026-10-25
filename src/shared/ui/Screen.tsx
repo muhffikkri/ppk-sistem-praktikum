@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors } from './theme';
+import { colors, spacing } from '../../theme/tokens';
 
 export function Screen({ children }: PropsWithChildren) {
   return (
@@ -18,7 +18,7 @@ export function Screen({ children }: PropsWithChildren) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
-  scroll: { flexGrow: 1, padding: 20 },
-  content: { width: '100%', maxWidth: 680, alignSelf: 'center', gap: 24 },
+  safeArea: { flex: 1, backgroundColor: colors.surface },
+  scroll: { flexGrow: 1, padding: spacing.lg },
+  content: { width: '100%', maxWidth: 420, alignSelf: 'center', gap: 20 },
 });

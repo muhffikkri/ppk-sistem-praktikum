@@ -1,35 +1,43 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from './theme';
+import { colors, typography } from '../../theme/tokens';
 
-type HeaderProps = {
+export type HeaderProps = {
   eyebrow?: string;
   title: string;
   description?: string;
+  dark?: boolean;
 };
 
-export function Header({ eyebrow, title, description }: HeaderProps) {
+export function Header({ eyebrow, title, description, dark }: HeaderProps) {
   return (
     <View style={styles.container}>
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      <Text accessibilityRole="header" style={styles.title}>
+      {eyebrow ? (
+        <Text style={[styles.eyebrow, dark && styles.eyebrowDark]}>
+          {eyebrow}
+        </Text>
+      ) : null}
+      <Text
+        accessibilityRole="header"
+        style={[styles.title, dark && styles.titleDark]}
+      >
         {title}
       </Text>
       {description ? (
-        <Text style={styles.description}>{description}</Text>
+        <Text style={[styles.description, dark && styles.descriptionDark]}>
+          {description}
+        </Text>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 10 },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-  },
-  title: { color: colors.ink, fontSize: 30, lineHeight: 38, fontWeight: '700' },
-  description: { color: colors.muted, fontSize: 16, lineHeight: 25 },
+  container: { gap: 8 },
+  eyebrow: { ...typography.overline, color: colors.violet },
+  eyebrowDark: { color: 'rgba(255,255,255,0.7)' },
+  title: { ...typography.display, color: colors.ink },
+  titleDark: { color: colors.panel },
+  description: { ...typography.body, color: colors.inkMuted },
+  descriptionDark: { color: 'rgba(255,255,255,0.7)' },
 });

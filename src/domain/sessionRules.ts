@@ -1,4 +1,4 @@
-import { Session, SessionActionResult } from './types';
+import { Session } from './types';
 
 export type SessionTransitionResult =
   | { ok: true; updatedSession: Session }
