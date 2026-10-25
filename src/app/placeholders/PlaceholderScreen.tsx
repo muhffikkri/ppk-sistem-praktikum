@@ -13,7 +13,7 @@ import type { RootStackParamList } from '../navigation';
 
 type PlaceholderRoute = Exclude<
   keyof RootStackParamList,
-  'RoleSelect' | 'Profile'
+  'RoleSelect' | 'Profile' | 'AssistantDashboard'
 >;
 type Props = {
   [Name in PlaceholderRoute]: NativeStackScreenProps<RootStackParamList, Name>;

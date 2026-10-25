@@ -52,7 +52,7 @@ export function RoleSelectScreen({ navigation }: Props) {
             <Button
               label="Masuk mode Asisten"
               variant="soft"
-              onPress={() => navigation.navigate('AssistantSchedule')}
+              onPress={() => navigation.navigate('AssistantDashboard')}
             />
           </View>
         </Card>

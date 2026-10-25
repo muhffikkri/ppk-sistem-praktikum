@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AssistantAttendanceRosterScreen,
+  AssistantDashboardScreen,
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
 } from '../features/assistant';
@@ -82,6 +83,10 @@ export function AppNavigator() {
           />
         </Stack.Group>
         <Stack.Group screenOptions={{ title: 'Asisten · Demo' }}>
+          <Stack.Screen
+            name="AssistantDashboard"
+            component={AssistantDashboardScreen}
+          />
           <Stack.Screen
             name="AssistantSchedule"
             component={AssistantScheduleScreen}
