@@ -11,7 +11,10 @@ import {
 } from '../../shared/ui';
 import type { RootStackParamList } from '../navigation';
 
-type PlaceholderRoute = Exclude<keyof RootStackParamList, 'RoleSelect'>;
+type PlaceholderRoute = Exclude<
+  keyof RootStackParamList,
+  'RoleSelect' | 'Profile'
+>;
 type Props = {
   [Name in PlaceholderRoute]: NativeStackScreenProps<RootStackParamList, Name>;
 }[PlaceholderRoute];

@@ -1,4 +1,5 @@
 export { Banner } from './Banner';
+export { BottomDock, type DockTab } from './BottomDock';
 export { Button } from './Button';
 export { Card, CardContent, CardHeader, CardOverline } from './Card';
 export { EmptyState } from './EmptyState';

@@ -7,4 +7,12 @@ export type RootStackParamList = {
   AssistantSchedule: undefined;
   AssistantSessionDetail: { sessionId: string };
   AssistantAttendanceRoster: { sessionId: string };
+  Profile: undefined;
+};
+
+export type ActorPov = 'praktikan' | 'asisten';
+
+export const POVLABEL: Record<ActorPov, string> = {
+  praktikan: 'Praktikan',
+  asisten: 'Asisten',
 };

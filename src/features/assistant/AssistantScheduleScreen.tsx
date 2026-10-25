@@ -6,7 +6,13 @@ import type {
   Session,
   SessionStatus,
 } from '../../domain/types';
-import { EmptyState, Header, Screen, colors } from '../../shared/ui';
+import {
+  colors,
+  EmptyState,
+  Header,
+  Screen,
+  typography,
+} from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import { AssistantSessionCard } from './components/AssistantSessionCard';
 
@@ -75,9 +81,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   section: { gap: 12 },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    color: colors.muted,
+    ...typography.overline,
+    color: colors.inkMuted,
   },
 });
