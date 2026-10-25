@@ -15,6 +15,7 @@ export const colors = {
   pink: '#FFC2D9', // decorative accent (late / warning tint)
   ink: '#17141F', // primary text, dark surface, bottom dock
   inkMuted: '#5D586C', // secondary text
+  onPrimary: '#FFFFFF', // text/icons on violet & ink blocks
   surface: '#F4F2F9', // app canvas
   panel: '#FFFFFF', // cards, inputs, modals
   border: '#E7E3F2',
