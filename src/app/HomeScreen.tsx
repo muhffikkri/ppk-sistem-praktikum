@@ -111,13 +111,13 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       {/* Day strip */}
-      <View style={styles.dayStrip} accessibilityRole="list">
+      <View style={styles.dayStrip}>
         {WEEKDAY_LABELS.map((label, index) => {
           const isActive = active ? index === dayIndex : false;
           return (
             <Pressable
               key={label}
-              accessibilityRole="listitem"
+              accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
               style={[styles.dayItem, isActive && styles.dayItemActive]}
             >

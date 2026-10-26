@@ -71,7 +71,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         />
       ) : (
         <Card interactive={false}>
-          <View style={styles.list} accessibilityRole="list">
+          <View style={styles.list}>
             {attendees.map((record, index) => (
               <View
                 key={record.id}
