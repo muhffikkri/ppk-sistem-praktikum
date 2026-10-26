@@ -206,7 +206,11 @@ export function ProfileScreen({ navigation }: Props) {
                 pressed && styles.menuRowPressed,
               ]}
             >
-              <View style={styles.menuGlyph}>{item.glyph}</View>
+              <View style={styles.menuGlyph}>
+                <Text style={styles.menuGlyphText} accessible={false}>
+                  {item.glyph}
+                </Text>
+              </View>
               <View style={styles.menuText}>
                 <Text style={styles.menuLabel}>{item.label}</Text>
                 <Text style={styles.menuSub}>{item.sub}</Text>
