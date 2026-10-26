@@ -15,7 +15,7 @@ import {
   StatusBadge,
   typography,
 } from '../shared/ui';
-import { useAssistantSessionsViewModel, usePov } from '../state';
+import { useAssistantSessionsViewModel, usePov, useStudentAttendanceViewModel } from '../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -49,13 +49,21 @@ function initialsOf(name: string): string {
 export function HomeScreen({ navigation }: Props) {
   const { pov, setPov } = usePov();
 
-  const { sessions, getAttendanceForSession, closeSession } =
+  const { sessions, getAttendanceForSession } =
     useAssistantSessionsViewModel();
+  const { attendanceHistory: studentHistory } =
+    useStudentAttendanceViewModel();
 
   const active =
     sessions.find((s) => s.status === 'open') ??
     sessions.find((s) => s.status === 'scheduled');
-  const records = active ? getAttendanceForSession(active.id).slice() : [];
+
+  // Role-aware "all" data: asisten sees full roster, praktikan sees own history.
+  const allRecords =
+    pov === 'asisten' && active
+      ? getAttendanceForSession(active.id).slice()
+      : studentHistory.slice();
+  const records = allRecords;
   const sorted = records
     .sort(
       (a, b) =>
@@ -63,6 +71,22 @@ export function HomeScreen({ navigation }: Props) {
     )
     .slice(0, 5);
   const metrics = deriveMetrics(active, records);
+
+  const onSeeAllAttendance = () => {
+    if (pov === 'asisten') {
+      navigation.navigate('AssistantAllAttendance');
+    } else {
+      navigation.navigate('StudentAllAttendance');
+    }
+  };
+
+  const onSeeAllSessions = () => {
+    if (pov === 'asisten') {
+      navigation.navigate('AssistantAllSessions');
+    } else {
+      navigation.navigate('StudentAllSessions');
+    }
+  };
 
   const dayIndex = active ? (new Date(active.startsAt).getDay() + 6) % 7 : 0;
 
@@ -289,11 +313,7 @@ export function HomeScreen({ navigation }: Props) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Lihat semua ${metrics.total}`}
-                onPress={() =>
-                  navigation.navigate('AssistantAttendanceRoster', {
-                    sessionId: active.id,
-                  })
-                }
+                onPress={onSeeAllAttendance}
               >
                 <Text style={styles.seeAll}>Lihat Semua ({metrics.total})</Text>
               </Pressable>
@@ -345,7 +365,10 @@ export function HomeScreen({ navigation }: Props) {
               Manajemen Sesi Lab
             </Text>
             <View style={styles.toolsGrid}>
-              <Card variant="panel" interactive={false}>
+              <Card
+                variant="panel"
+                onPress={onSeeAllSessions}
+              >
                 <CardContent>
                   <View
                     style={[
@@ -358,17 +381,15 @@ export function HomeScreen({ navigation }: Props) {
                       ≡
                     </Text>
                   </View>
-                  <Text style={styles.toolLabel}>Berita Acara (BAP)</Text>
-                  <Text style={styles.toolCaption}>Generate & TTD Dosen</Text>
+                  <Text style={styles.toolLabel}>Lihat Semua Sesi</Text>
+                  <Text style={styles.toolCaption}>
+                    {pov === 'asisten' ? 'Daftar lengkap sesi lab' : 'Semua jadwal praktikum'}
+                  </Text>
                 </CardContent>
               </Card>
               <Card
                 variant="panel"
-                onPress={
-                  active.status === 'open'
-                    ? () => closeSession(active.id)
-                    : undefined
-                }
+                onPress={onSeeAllAttendance}
               >
                 <CardContent>
                   <View
@@ -379,12 +400,12 @@ export function HomeScreen({ navigation }: Props) {
                     accessibilityElementsHidden
                   >
                     <Text style={styles.toolIconText} accessible={false}>
-                      ⏻
+                      ✦
                     </Text>
                   </View>
-                  <Text style={styles.toolLabel}>Kunci Presensi</Text>
+                  <Text style={styles.toolLabel}>Lihat Semua Presensi</Text>
                   <Text style={styles.toolCaption}>
-                    Tutup sesi pukul {formatClock(active.endsAt)}
+                    {pov === 'asisten' ? 'Rekap kehadiran seluruh sesi' : 'Riwayat kehadiranmu'}
                   </Text>
                 </CardContent>
               </Card>

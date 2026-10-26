@@ -4,11 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   Button,
-  Card,
-  CardContent,
   colors,
   EmptyState,
-  Header,
   radius,
   shadow,
   Screen,
@@ -36,37 +33,30 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <Header
-        eyebrow="MODE PRAKTIKAN · RIWAYAT"
-        title="Riwayat kehadiran"
-        description={`${currentStudent.displayName} • NIM ${currentStudent.id}`}
-      />
+      {/* Praktikan: clean sans, bold title */}
+      <View style={styles.headerBlock}>
+        <Text style={styles.eyebrow}>MODE PRAKTIKAN · RIWAYAT</Text>
+        <Text style={styles.pageTitle}>Riwayat Kehadiran</Text>
+        <Text style={styles.pageSub}>
+          {currentStudent.displayName} • NIM {currentStudent.id}
+        </Text>
+      </View>
 
       <View style={styles.metricsGrid}>
-        <Card variant="panel" interactive={false}>
-          <CardContent>
-            <Text style={styles.metricLabel}>Total Presensi</Text>
-            <Text style={styles.metricValue}>
-              {total}
-              <Text style={styles.metricSub}> sesi</Text>
-            </Text>
-          </CardContent>
-        </Card>
-        <Card variant="panel" interactive={false}>
-          <CardContent>
-            <Text style={styles.metricLabel}>Hadir</Text>
-            <Text style={[styles.metricValue, { color: colors.successInk }]}>
-              {rate}
-              <Text style={styles.metricSub}>%</Text>
-            </Text>
-          </CardContent>
-        </Card>
+        <View style={styles.metricTile}>
+          <Text style={styles.metricValue}>{total}</Text>
+          <Text style={styles.metricLabel}>Total Presensi</Text>
+        </View>
+        <View style={styles.metricTile}>
+          <Text style={[styles.metricValue, { color: colors.successInk }]}>
+            {rate}%
+          </Text>
+          <Text style={styles.metricLabel}>Tingkat Kehadiran</Text>
+        </View>
       </View>
 
       <View style={styles.sectionBlock}>
-        <Text style={styles.sectionTitle} accessibilityRole="header">
-          Semua Presensi
-        </Text>
+        <Text style={styles.sectionTitle}>Semua Presensi</Text>
 
         {sorted.length === 0 ? (
           <EmptyState
@@ -107,9 +97,12 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
                         : 'Sesi tidak diketahui'}
                     </Text>
                   </View>
-                  <Text style={styles.rowTime}>
-                    {formatClock(record.checkedInAt)}
-                  </Text>
+                  <View style={styles.rowRight}>
+                    <Text style={styles.rowTime}>
+                      {formatClock(record.checkedInAt)}
+                    </Text>
+                    <Text style={styles.rowStatus}>Hadir</Text>
+                  </View>
                 </View>
               );
             })}
@@ -126,17 +119,51 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  // Praktikan: clean sans, bold — no italic, no editorial serif for titles
+  headerBlock: { gap: 4 },
+  eyebrow: { ...typography.overline, color: colors.violet },
+  pageTitle: {
+    ...typography.body,
+    fontFamily: 'Plus Jakarta Sans',
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.ink,
+    letterSpacing: -0.5,
+  },
+  pageSub: { ...typography.label, color: colors.inkMuted },
+
   metricsGrid: { flexDirection: 'row', gap: 8 },
-  metricLabel: { ...typography.caption, color: colors.inkMuted },
-  metricValue: { ...typography.title, color: colors.ink, fontSize: 22 },
-  metricSub: { ...typography.caption, color: colors.inkMuted },
-  sectionBlock: { gap: 12 },
-  sectionTitle: { ...typography.overline, color: colors.inkMuted },
-  list: {
+  metricTile: {
+    flex: 1,
     backgroundColor: colors.panel,
+    borderRadius: radius['3xl'],
     borderWidth: 1,
     borderColor: colors.border,
+    padding: 14,
+    gap: 4,
+  },
+  metricValue: {
+    ...typography.body,
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.ink,
+    fontFamily: 'Plus Jakarta Sans',
+  },
+  metricLabel: { ...typography.caption, color: colors.inkMuted },
+
+  sectionBlock: { gap: 12 },
+  sectionTitle: {
+    ...typography.label,
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  list: {
+    backgroundColor: colors.panel,
     borderRadius: radius['3xl'],
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
     ...shadow.card,
   },
   row: {
@@ -155,10 +182,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  indexText: { ...typography.label, color: colors.violet, fontSize: 12 },
+  indexText: { ...typography.label, color: colors.violet, fontWeight: '700' },
   rowText: { flex: 1, gap: 2 },
   rowTitle: { ...typography.bodyStrong, color: colors.ink },
   rowMeta: { ...typography.caption, color: colors.inkMuted },
-  rowTime: { ...typography.label, color: colors.violet, fontWeight: '700' },
+  rowRight: { alignItems: 'flex-end', gap: 2 },
+  rowTime: {
+    ...typography.label,
+    color: colors.ink,
+    fontWeight: '700',
+    fontFamily: 'Plus Jakarta Sans',
+  },
+  rowStatus: {
+    ...typography.caption,
+    color: colors.successInk,
+    fontWeight: '600',
+  },
   note: { ...typography.caption, color: colors.inkMuted },
 });

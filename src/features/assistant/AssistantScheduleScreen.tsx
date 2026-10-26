@@ -131,10 +131,16 @@ export function AssistantScheduleScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screenTitle: { ...typography.title, color: colors.ink },
+  // Asisten: editorial Fraunces display, italic accents (Sebenza signature)
+  screenTitle: {
+    ...typography.display,
+    color: colors.ink,
+    letterSpacing: -1,
+  },
   subhead: {
     ...typography.label,
     color: colors.inkMuted,
+    fontStyle: 'italic',
     marginTop: -8,
     marginBottom: 4,
   },
@@ -206,8 +212,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   panel: { marginTop: 4 },
-  panelTitle: { ...typography.title, color: colors.ink },
-  panelMeta: { ...typography.label, color: colors.inkMuted, marginTop: 4 },
+  panelTitle: { ...typography.subtitle, color: colors.ink },
+  panelMeta: {
+    ...typography.label,
+    color: colors.inkMuted,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
   sectionTitle: { ...typography.overline, color: colors.inkMuted },
   section: { gap: 12 },
 });

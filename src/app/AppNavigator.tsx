@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
+  AssistantAllAttendanceScreen,
+  AssistantAllSessionsScreen,
   AssistantAttendanceRosterScreen,
   AssistantModuleListScreen,
   AssistantScheduleScreen,
@@ -11,6 +13,8 @@ import {
   AssistantSettingsScreen,
 } from '../features/assistant';
 import {
+  StudentAllAttendanceScreen,
+  StudentAllSessionsScreen,
   StudentAttendanceHistoryScreen,
   StudentScheduleScreen,
   StudentSessionDetailScreen,
@@ -148,6 +152,14 @@ export function AppNavigator() {
             component={StudentAttendanceHistoryScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="StudentAllSessions"
+            component={StudentAllSessionsScreen}
+          />
+          <Stack.Screen
+            name="StudentAllAttendance"
+            component={StudentAllAttendanceScreen}
+          />
         </Stack.Group>
         <Stack.Group screenOptions={{ title: 'Asisten · Demo' }}>
           <Stack.Screen
@@ -171,6 +183,14 @@ export function AppNavigator() {
           <Stack.Screen
             name="AssistantSettings"
             component={AssistantSettingsScreen}
+          />
+          <Stack.Screen
+            name="AssistantAllSessions"
+            component={AssistantAllSessionsScreen}
+          />
+          <Stack.Screen
+            name="AssistantAllAttendance"
+            component={AssistantAllAttendanceScreen}
           />
         </Stack.Group>
         <Stack.Screen
