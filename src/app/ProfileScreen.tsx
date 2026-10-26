@@ -1,32 +1,37 @@
-import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import {
+  Banner,
   Card,
   CardContent,
-  CardHeader,
   colors,
   radius,
   Screen,
   StatusBadge,
   typography,
 } from '../shared/ui';
-import { POVLABEL, type ActorPov, type RootStackParamList } from './navigation';
+import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
-const POVS: ActorPov[] = ['praktikan', 'asisten'];
+/** Dummy profile data — swap with real user profile when API lands. */
+const DEMO_STUDENT = {
+  name: 'Saburo Ardiansyah',
+  nim: '2301010123',
+  program: 'Teknik Informatika',
+  department: 'Fakultas Teknik Informatika',
+  role: 'Praktikan',
+};
+
+const MENU_ITEMS = [
+  { label: 'Jadwal Praktikum', sub: '4 sesi minggu ini', glyph: '▦' },
+  { label: 'Riwayat Presensi', sub: '12 sesi tercatat', glyph: '✦' },
+  { label: 'Modul & Materi', sub: '8 modul tersedia', glyph: '≡' },
+  { label: 'Pengaturan', sub: 'Notifikasi & preferensi', glyph: '⚙' },
+] as const;
 
 export function ProfileScreen({ navigation }: Props) {
-  const [pov, setPov] = useState<ActorPov>('praktikan');
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const selectPov = (value: ActorPov) => {
-    setPov(value);
-    setMenuOpen(false);
-  };
-
   return (
     <Screen>
       <View style={styles.headRow}>
@@ -36,87 +41,78 @@ export function ProfileScreen({ navigation }: Props) {
         <StatusBadge label="DEMO" tone="violet" dot live />
       </View>
 
-      <Card variant="panel">
+      {/* Avatar + identity card */}
+      <Card variant="heroViolet" interactive={false}>
         <CardContent>
-          <CardHeader
-            title="Identitas demo"
-            trailing={<Text style={styles.povValue}>{POVLABEL[pov]}</Text>}
-          />
-          <Text style={styles.body}>
-            Profil ini masih dalam tahap pengerjaan. Pilih sudut pandang aktor
-            untuk meneruskan ke alur demo.
-          </Text>
-
-          <View>
-            <Text style={styles.chooserLabel}>Sudut pandang</Text>
-
-            {/* Select trigger */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Pilih sudut pandang: ${POVLABEL[pov]}`}
-              onPress={() => setMenuOpen((open) => !open)}
-              style={({ pressed }) => [
-                styles.trigger,
-                menuOpen && styles.triggerOpen,
-                pressed && styles.triggerPressed,
-              ]}
-            >
-              <Text style={styles.triggerText}>{POVLABEL[pov]}</Text>
-              <Text style={styles.chevron}>{menuOpen ? '▲' : '▼'}</Text>
-            </Pressable>
-
-            {/* Dropdown list */}
-            {menuOpen ? (
-              <View style={styles.menu}>
-                {POVS.map((value) => {
-                  const active = value === pov;
-                  return (
-                    <Pressable
-                      key={value}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                      onPress={() => selectPov(value)}
-                      style={styles.menuItem}
-                    >
-                      <Text
-                        style={[
-                          styles.menuItemText,
-                          active ? styles.menuItemActive : undefined,
-                        ]}
-                      >
-                        {POVLABEL[value]}
-                      </Text>
-                      {active ? (
-                        <Text style={styles.menuCheck} accessible={false}>
-                          ✓
-                        </Text>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
+          <View style={styles.identityRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText} accessible={false}>
+                SA
+              </Text>
+            </View>
+            <View style={styles.identityText}>
+              <Text style={styles.identityName}>{DEMO_STUDENT.name}</Text>
+              <Text style={styles.identitySub}>
+                NIM {DEMO_STUDENT.nim}
+              </Text>
+              <Text style={styles.identitySub}>
+                {DEMO_STUDENT.program} · {DEMO_STUDENT.department}
+              </Text>
+            </View>
           </View>
-
-          <Text style={styles.note}>
-            Halaman profil masih dalam tahap pengerjaan.
-          </Text>
         </CardContent>
       </Card>
 
-      <View style={styles.footer}>
-        <Text style={styles.footNote}>
-          Menutup dropdown & pilih POV akan dipakai alur demo berikutnya.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Kembali"
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.back, pressed && styles.backPressed]}
-        >
-          <Text style={styles.backText}>Kembali</Text>
-        </Pressable>
+      {/* Role + attendance summary */}
+      <View style={styles.metricsGrid}>
+        <Card variant="panel" interactive={false}>
+          <CardContent>
+            <Text style={styles.metricLabel}>Peran</Text>
+            <Text style={styles.metricValue}>{DEMO_STUDENT.role}</Text>
+          </CardContent>
+        </Card>
+        <Card variant="panel" interactive={false}>
+          <CardContent>
+            <Text style={styles.metricLabel}>Hadir</Text>
+            <Text style={[styles.metricValue, { color: colors.successInk }]}>
+              92%
+            </Text>
+          </CardContent>
+        </Card>
       </View>
+
+      {/* Menu */}
+      <View style={styles.sectionBlock}>
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          Menu
+        </Text>
+        <View style={styles.menuList}>
+          {MENU_ITEMS.map((item, index) => (
+            <View
+              key={item.label}
+              style={[
+                styles.menuRow,
+                index < MENU_ITEMS.length - 1 && styles.menuRowDivider,
+              ]}
+            >
+              <View style={styles.menuGlyph}>{item.glyph}</View>
+              <View style={styles.menuText}>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Text style={styles.menuSub}>{item.sub}</Text>
+              </View>
+              <Text style={styles.menuChevron} accessible={false}>
+                ›
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <Banner
+        title="Profil demo"
+        message="Data di atas adalah dummy untuk uji tampilan. Ganti dengan profil riil saat API siap."
+        tone="warning"
+      />
     </Screen>
   );
 }
@@ -128,64 +124,69 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  title: { ...typography.display, color: colors.ink },
-  body: { ...typography.body, color: colors.inkMuted },
-  povValue: { ...typography.bodyStrong, color: colors.violet },
-  chooserLabel: {
-    ...typography.overline,
-    color: colors.inkMuted,
-    marginBottom: 6,
-  },
-  trigger: {
-    flexDirection: 'row',
+  title: { ...typography.title, color: colors.ink },
+
+  identityRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.onPrimary,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 48,
-    paddingHorizontal: 16,
-    borderRadius: radius['2xl'],
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
+    justifyContent: 'center',
   },
-  triggerOpen: { borderColor: colors.violet },
-  triggerPressed: { backgroundColor: colors.lavenderSubtle },
-  triggerText: { ...typography.bodyStrong, color: colors.ink },
-  chevron: { ...typography.caption, color: colors.inkMuted },
-  menu: {
-    marginTop: 8,
-    borderRadius: radius['2xl'],
+  avatarText: {
+    ...typography.title,
+    color: colors.violet,
+    fontSize: 18,
+  },
+  identityText: { flex: 1, gap: 2 },
+  identityName: {
+    ...typography.subtitle,
+    color: colors.onPrimary,
+    fontSize: 17,
+  },
+  identitySub: {
+    ...typography.caption,
+    color: colors.onPrimary,
+    opacity: 0.8,
+  },
+
+  metricsGrid: { flexDirection: 'row', gap: 8 },
+  metricLabel: { ...typography.caption, color: colors.inkMuted },
+  metricValue: { ...typography.title, color: colors.ink, fontSize: 18 },
+
+  sectionBlock: { gap: 12 },
+  sectionTitle: { ...typography.overline, color: colors.inkMuted },
+  menuList: {
     backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: radius['3xl'],
     overflow: 'hidden',
   },
-  menuItem: {
+  menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    gap: 12,
+    paddingHorizontal: 18,
     paddingVertical: 14,
   },
-  menuItemText: { ...typography.bodyStrong, color: colors.ink },
-  menuItemActive: { color: colors.violet },
-  menuCheck: { ...typography.label, color: colors.violet },
-  note: { ...typography.caption, color: colors.inkMuted, marginTop: 8 },
-  footer: {
-    flexDirection: 'row',
+  menuRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+  },
+  menuGlyph: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.lg,
+    backgroundColor: colors.lavenderSubtle,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  footNote: { ...typography.caption, color: colors.inkMuted, flex: 1 },
-  back: {
-    minHeight: 44,
-    paddingHorizontal: 16,
     justifyContent: 'center',
-    borderRadius: radius['2xl'],
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
-  backPressed: { backgroundColor: colors.lavenderSubtle },
-  backText: { ...typography.label, color: colors.ink },
+  menuGlyphText: { ...typography.label, color: colors.violet },
+  menuText: { flex: 1, gap: 1 },
+  menuLabel: { ...typography.bodyStrong, color: colors.ink },
+  menuSub: { ...typography.caption, color: colors.inkMuted },
+  menuChevron: { ...typography.bodyStrong, color: colors.inkMuted },
 });
