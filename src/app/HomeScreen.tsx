@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AttendanceRecord, Session } from '../domain/types';
@@ -54,8 +55,7 @@ function initialsOf(name: string): string {
 export function HomeScreen({ navigation }: Props) {
   const { pov, setPov } = usePov();
 
-  const { sessions, getAttendanceForSession } =
-    useAssistantSessionsViewModel();
+  const { sessions, getAttendanceForSession } = useAssistantSessionsViewModel();
   const { sessions: studentSessions, attendanceHistory: studentHistory } =
     useStudentAttendanceViewModel();
 
@@ -97,410 +97,471 @@ export function HomeScreen({ navigation }: Props) {
     }
   };
 
-  // Day strip: day 16 = index 0 (Monday). The active session highlights
-  // its day; pressing a day routes to the all-sessions list.
+  // View toggle: 'home' = beranda utama, 'tanggal' = tampilan tanggal di beranda.
+  // Tekan tombol tanggal di beranda beralihalah ke tampilan tanggal; buka
+  // kalender penuh (CalendarScreen) hanya lewat halaman Jadwal.
+  const [view, setView] = useState<'home' | 'tanggal'>('home');
+
   const activeDayIndex = active
     ? (new Date(active.startsAt).getDay() + 6) % 7
     : 0;
   const onDayPress = () => {
-    // ponytail: day filter not yet wired to a per-day detail; routes to
-    // the all-sessions list for the active role.
-    onSeeAllSessions();
+    setView('tanggal');
   };
+  const onBackToHome = () => setView('home');
 
   const isAsisten = pov === 'asisten';
 
   return (
     <Screen>
-      {/* Greeting + POV switch */}
-      <View style={styles.greetingRow}>
-        <View style={styles.greetingText}>
-          <CardOverline>
-            {isAsisten ? 'Mode Asisten' : 'Mode Praktikan'}
-          </CardOverline>
-          <Text style={styles.greetingTitle}>
-            {isAsisten ? 'Selamat Datang, Kak Naufal' : 'Halo, Saburo'}
-          </Text>
-        </View>
-        <StatusBadge
-          label={isAsisten ? 'Asisten' : 'Praktikan'}
-          tone={isAsisten ? 'violet' : 'success'}
-          dot
-          live={isAsisten}
-        />
-      </View>
-
-      {/* POV segmented switch */}
-      <View style={styles.povBar}>
-        {(['praktikan', 'asisten'] as const).map((role) => (
-          <Pressable
-            key={role}
-            accessibilityRole="button"
-            accessibilityState={{ selected: pov === role }}
-            onPress={() => setPov(role)}
-            style={({ pressed }) => [
-              styles.povItem,
-              pov === role && styles.povItemActive,
-              pressed && styles.povItemPressed,
-            ]}
-          >
-            <Text
-              style={[styles.povLabel, pov === role && styles.povLabelActive]}
-              accessibilityElementsHidden
-            >
-              {role === 'praktikan' ? 'Praktikan' : 'Asisten'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Day strip — buttons are pressable, route to all-sessions */}
-      <View style={styles.dayStrip}>
-        {WEEKDAY_LABELS.map((label, index) => {
-          const isActive = active ? index === activeDayIndex : false;
-          return (
+      {view === 'tanggal' ? (
+        <View style={styles.tanggalView}>
+          <View style={styles.tanggalHeader}>
             <Pressable
-              key={label}
               accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-              onPress={onDayPress}
-              style={[styles.dayItem, isActive && styles.dayItemActive]}
+              accessibilityLabel="Kembali ke beranda"
+              onPress={onBackToHome}
+              style={styles.tanggalBack}
             >
-              <Text
-                style={[
-                  styles.dayLabel,
-                  isActive ? styles.dayLabelActive : undefined,
-                ]}
-              >
-                {label.toUpperCase()}
-              </Text>
-              <Text
-                style={[
-                  styles.dayNumber,
-                  isActive ? styles.dayNumberActive : undefined,
-                ]}
-              >
-                {index + 16}
-              </Text>
+              <Ionicons name="chevron-back" size={18} color={colors.inkMuted} />
             </Pressable>
-          );
-        })}
-      </View>
-
-      {active ? (
+            <Text style={styles.tanggalTitle}>Tanggal</Text>
+          </View>
+          <View style={styles.tanggalContent}>
+            <Text style={styles.tanggalDate}>
+              {WEEKDAY_LABELS[activeDayIndex]},{' '}
+              {active ? formatSessionDate(active.startsAt) : '-'}
+            </Text>
+          </View>
+        </View>
+      ) : (
         <>
-          {/* Tukar shift banner — asisten only */}
-          {isAsisten && (
-            <Banner
-              title="Tukar Shift Masuk"
-              message="Kak Naufal · Kamis 19 ↔ Jumat 20"
-              tone="warning"
-              action={
-                <View style={styles.swapActionWrap}>
-                  <Button label="Tinjau" variant="soft" />
-                </View>
-              }
+          {/* Greeting + POV switch */}
+          <View style={styles.greetingRow}>
+            <View style={styles.greetingText}>
+              <CardOverline>
+                {isAsisten ? 'Mode Asisten' : 'Mode Praktikan'}
+              </CardOverline>
+              <Text style={styles.greetingTitle}>
+                {isAsisten ? 'Selamat Datang, Kak Naufal' : 'Halo, Saburo'}
+              </Text>
+            </View>
+            <StatusBadge
+              label={isAsisten ? 'Asisten' : 'Praktikan'}
+              tone={isAsisten ? 'violet' : 'success'}
+              dot
+              live={isAsisten}
             />
-          )}
+          </View>
 
-          {/* Hero active session */}
-          <Card variant="heroViolet" interactive={false}>
-            <CardContent>
-              <View style={styles.heroTopRow}>
-                <View style={styles.heroBadges}>
-                  <StatusBadge
-                    label={isAsisten ? 'Shift Pagi · Utama' : 'Sesi Hari Ini'}
-                    tone="violet"
-                    dot
-                    live={isAsisten}
-                  />
-                </View>
-                <Text style={styles.heroLocation}>Lab 3.2 RPL</Text>
-              </View>
+          {/* POV segmented switch */}
+          <View style={styles.povBar}>
+            {(['praktikan', 'asisten'] as const).map((role) => (
+              <Pressable
+                key={role}
+                accessibilityRole="button"
+                accessibilityState={{ selected: pov === role }}
+                onPress={() => setPov(role)}
+                style={({ pressed }) => [
+                  styles.povItem,
+                  pov === role && styles.povItemActive,
+                  pressed && styles.povItemPressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.povLabel,
+                    pov === role && styles.povLabelActive,
+                  ]}
+                  accessibilityElementsHidden
+                >
+                  {role === 'praktikan' ? 'Praktikan' : 'Asisten'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
 
-              <Text style={styles.heroTime}>
-                {formatTimeRange(active.startsAt, active.endsAt)}
-                <Text style={styles.heroTimeUnit}> WIB</Text>
-              </Text>
-              <Text style={styles.heroTitle} numberOfLines={2}>
-                {active.courseName}
-              </Text>
-              <Text style={styles.heroMeta}>
-                {formatSessionDate(active.startsAt)} · {active.groupName}
-              </Text>
-
-              {/* Metadata inset */}
-              <View style={styles.metaInset}>
-                <View style={styles.metaInsetLeft}>
-                  <View style={styles.metaAvatar}>
-                    <Text style={styles.metaAvatarText} accessible={false}>
-                      PW
-                    </Text>
-                  </View>
-                  <View style={styles.metaInsetText}>
-                    <Text style={styles.metaName}>
-                      Dr. Putu Wirawan, M.T.
-                    </Text>
-                    <Text style={styles.metaCaption}>
-                      {isAsisten ? 'Dosen Pengampu Sesi' : 'Dosen Pengampu'}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.metaRight}>
-                  <Text style={styles.metaValue}>
-                    {isAsisten ? Math.max(records.length, 38) : 38}
+          {/* Day strip — press switches to tanggal view on home */}
+          <View style={styles.dayStrip}>
+            {WEEKDAY_LABELS.map((label, index) => {
+              const isActive = active ? index === activeDayIndex : false;
+              return (
+                <Pressable
+                  key={label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                  onPress={onDayPress}
+                  style={[styles.dayItem, isActive && styles.dayItemActive]}
+                >
+                  <Text
+                    style={[
+                      styles.dayLabel,
+                      isActive ? styles.dayLabelActive : undefined,
+                    ]}
+                  >
+                    {label.toUpperCase()}
                   </Text>
-                  <Text style={styles.metaCaption}>Praktikan</Text>
-                </View>
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      isActive ? styles.dayNumberActive : undefined,
+                    ]}
+                  >
+                    {index + 16}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {active ? (
+            <>
+              {/* Tukar shift banner — asisten only */}
+              {isAsisten && (
+                <Banner
+                  title="Tukar Shift Masuk"
+                  message="Kak Naufal · Kamis 19 ↔ Jumat 20"
+                  tone="warning"
+                  action={
+                    <View style={styles.swapActionWrap}>
+                      <Button label="Tinjau" variant="soft" />
+                    </View>
+                  }
+                />
+              )}
+
+              {/* Hero active session */}
+              <Card variant="heroViolet" interactive={false}>
+                <CardContent>
+                  <View style={styles.heroTopRow}>
+                    <View style={styles.heroBadges}>
+                      <StatusBadge
+                        label={
+                          isAsisten ? 'Shift Pagi · Utama' : 'Sesi Hari Ini'
+                        }
+                        tone="violet"
+                        dot
+                        live={isAsisten}
+                      />
+                    </View>
+                    <Text style={styles.heroLocation}>Lab 3.2 RPL</Text>
+                  </View>
+
+                  <Text style={styles.heroTime}>
+                    {formatTimeRange(active.startsAt, active.endsAt)}
+                    <Text style={styles.heroTimeUnit}> WIB</Text>
+                  </Text>
+                  <Text style={styles.heroTitle} numberOfLines={2}>
+                    {active.courseName}
+                  </Text>
+                  <Text style={styles.heroMeta}>
+                    {formatSessionDate(active.startsAt)} · {active.groupName}
+                  </Text>
+
+                  {/* Metadata inset */}
+                  <View style={styles.metaInset}>
+                    <View style={styles.metaInsetLeft}>
+                      <View style={styles.metaAvatar}>
+                        <Text style={styles.metaAvatarText} accessible={false}>
+                          PW
+                        </Text>
+                      </View>
+                      <View style={styles.metaInsetText}>
+                        <Text style={styles.metaName}>
+                          Dr. Putu Wirawan, M.T.
+                        </Text>
+                        <Text style={styles.metaCaption}>
+                          {isAsisten
+                            ? 'Dosen Pengampu Sesi'
+                            : 'Dosen Pengampu'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.metaRight}>
+                      <Text style={styles.metaValue}>
+                        {isAsisten ? Math.max(records.length, 38) : 38}
+                      </Text>
+                      <Text style={styles.metaCaption}>Praktikan</Text>
+                    </View>
+                  </View>
+
+                  {/* CTA — differs by role */}
+                  <View style={styles.heroActions}>
+                    {isAsisten ? (
+                      <>
+                        <View style={styles.heroPrimaryWrap}>
+                          <Button
+                            label="Clock In / Mulai Sesi"
+                            variant="accent"
+                            icon="checkmark-circle"
+                            accessibilityHint="Presensi masuk"
+                          />
+                        </View>
+                        <View style={styles.heroSecondaryWrap}>
+                          <Button
+                            label="Tukar"
+                            variant="soft"
+                            iconOnly
+                            icon="swap-horizontal"
+                            accessibilityLabel="Tukar shift sesi"
+                            accessibilityHint="Tukar shift sesi"
+                          />
+                        </View>
+                      </>
+                    ) : (
+                      <View style={styles.heroPrimaryWrap}>
+                        <Button
+                          label={
+                            active.status === 'open'
+                              ? 'Presensi Sekarang'
+                              : 'Lihat Detail Sesi'
+                          }
+                          variant="accent"
+                          icon={
+                            active.status === 'open'
+                              ? 'finger-print'
+                              : 'calendar'
+                          }
+                          onPress={() =>
+                            navigation.navigate('StudentSessionDetail', {
+                              sessionId: active.id,
+                            })
+                          }
+                          accessibilityHint={
+                            active.status === 'open'
+                              ? 'Lakukan presensi masuk'
+                              : 'Lihat detail sesi'
+                          }
+                        />
+                      </View>
+                    )}
+                  </View>
+                </CardContent>
+              </Card>
+
+              {/* Beacon banner — asisten only */}
+              {isAsisten && (
+                <Banner
+                  title="Beacon Lab RPL #02"
+                  message="Radius 5.4m · On-site validasi aktif"
+                  tone="success"
+                />
+              )}
+
+              {/* Metrics — shrink-to-fit */}
+              <View style={styles.metricsGrid}>
+                <Card
+                  variant="panel"
+                  interactive={false}
+                  style={styles.shrinkCard}
+                >
+                  <CardContent>
+                    <View style={styles.metricTop}>
+                      <Text style={styles.metricLabel}>Hadir</Text>
+                      <View
+                        style={[
+                          styles.metricDot,
+                          { backgroundColor: colors.lime },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.metricValue}>
+                      {metrics.present}
+                      <Text style={styles.metricSub}>
+                        /{Math.max(metrics.total, 40)}
+                      </Text>
+                    </Text>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  variant="panel"
+                  interactive={false}
+                  style={styles.shrinkCard}
+                >
+                  <CardContent>
+                    <View style={styles.metricTop}>
+                      <Text style={styles.metricLabel}>Telat</Text>
+                      <View
+                        style={[
+                          styles.metricDot,
+                          { backgroundColor: colors.pink },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.metricValue, { color: colors.violet }]}>
+                      {metrics.late}
+                      <Text style={styles.metricSub}> mhs</Text>
+                    </Text>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  variant="panel"
+                  interactive={false}
+                  style={styles.shrinkCard}
+                >
+                  <CardContent>
+                    <View style={styles.metricTop}>
+                      <Text style={styles.metricLabel}>Izin/Sakit</Text>
+                      <View
+                        style={[
+                          styles.metricDot,
+                          { backgroundColor: colors.violet },
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.metricValue, { color: colors.violet }]}>
+                      0<Text style={styles.metricSub}> dok</Text>
+                    </Text>
+                  </CardContent>
+                </Card>
               </View>
 
-              {/* CTA — differs by role */}
-              <View style={styles.heroActions}>
-                {isAsisten ? (
-                  <>
-                    <View style={styles.heroPrimaryWrap}>
-                      <Button
-                        label="Clock In / Mulai Sesi"
-                        variant="accent"
-                        icon="checkmark-circle"
-                        accessibilityHint="Presensi masuk"
-                      />
-                    </View>
-                    <View style={styles.heroSecondaryWrap}>
-                      <Button
-                        label="Tukar"
-                        variant="soft"
-                        iconOnly
-                        icon="swap-horizontal"
-                        accessibilityLabel="Tukar shift sesi"
-                        accessibilityHint="Tukar shift sesi"
-                      />
-                    </View>
-                  </>
+              {/* Live roster */}
+              <View style={styles.sectionBlock}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionHeaderLeft}>
+                    <Text style={styles.sectionTitle}>
+                      {isAsisten ? 'Presensi Terkini' : 'Riwayat Terakhir'}
+                    </Text>
+                    {isAsisten && (
+                      <StatusBadge label="Live" tone="violet" dot live />
+                    )}
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Lihat semua ${metrics.total}`}
+                    onPress={onSeeAllAttendance}
+                  >
+                    <Text style={styles.seeAll}>
+                      Lihat Semua ({metrics.total})
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {sorted.length === 0 ? (
+                  <Card variant="surface" interactive={false}>
+                    <CardContent>
+                      <Text style={styles.emptyText}>
+                        {isAsisten
+                          ? 'Belum ada presensi tercatat pada sesi ini.'
+                          : 'Belum ada presensi tercatat.'}
+                      </Text>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <View style={styles.heroPrimaryWrap}>
-                    <Button
-                      label={
-                        active.status === 'open'
-                          ? 'Presensi Sekarang'
-                          : 'Lihat Detail Sesi'
-                      }
-                      variant="primary"
-                      icon={
-                        active.status === 'open' ? 'finger-print' : 'calendar'
-                      }
-                      onPress={() =>
-                        navigation.navigate('StudentSessionDetail', {
-                          sessionId: active.id,
-                        })
-                      }
-                      accessibilityHint={
-                        active.status === 'open'
-                          ? 'Lakukan presensi masuk'
-                          : 'Lihat detail sesi'
-                      }
-                    />
+                  <View style={styles.rosterList}>
+                    {sorted.map((record) => (
+                      <Card
+                        key={record.id}
+                        variant="panel"
+                        interactive={false}
+                      >
+                        <View style={styles.rosterRow}>
+                          <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>
+                              {initialsOf(record.studentName)}
+                            </Text>
+                          </View>
+                          <View style={styles.rosterText}>
+                            <Text style={styles.rosterName} numberOfLines={1}>
+                              {record.studentName}
+                            </Text>
+                            <Text style={styles.rosterMeta}>
+                              NIM {record.studentId}
+                              {isAsisten && ' · Meja B'}
+                            </Text>
+                          </View>
+                          <View style={styles.rosterTrailing}>
+                            <StatusBadge
+                              label={`${formatClock(record.checkedInAt)} · Hadir`}
+                              tone="lime"
+                            />
+                            {isAsisten && (
+                              <Text style={styles.rosterNote}>QR Verified</Text>
+                            )}
+                          </View>
+                        </View>
+                      </Card>
+                    ))}
                   </View>
                 )}
               </View>
-            </CardContent>
-          </Card>
 
-          {/* Beacon banner — asisten only */}
-          {isAsisten && (
-            <Banner
-              title="Beacon Lab RPL #02"
-              message="Radius 5.4m · On-site validasi aktif"
-              tone="success"
-            />
-          )}
-
-          {/* Metrics — shrink-to-fit */}
-          <View style={styles.metricsGrid}>
-            <Card variant="panel" interactive={false} style={styles.shrinkCard}>
-              <CardContent>
-                <View style={styles.metricTop}>
-                  <Text style={styles.metricLabel}>Hadir</Text>
-                  <View
-                    style={[styles.metricDot, { backgroundColor: colors.lime }]}
-                  />
-                </View>
-                <Text style={styles.metricValue}>
-                  {metrics.present}
-                  <Text style={styles.metricSub}>
-                    /{Math.max(metrics.total, 40)}
-                  </Text>
+              {/* Quick tools — shrink-to-fit */}
+              <View style={styles.sectionBlock}>
+                <Text style={styles.sectionTitle} accessibilityRole="header">
+                  {isAsisten ? 'Manajemen Sesi Lab' : 'Menu Singkat'}
                 </Text>
-              </CardContent>
-            </Card>
-
-            <Card variant="panel" interactive={false} style={styles.shrinkCard}>
-              <CardContent>
-                <View style={styles.metricTop}>
-                  <Text style={styles.metricLabel}>Telat</Text>
-                  <View
-                    style={[styles.metricDot, { backgroundColor: colors.pink }]}
-                  />
-                </View>
-                <Text style={[styles.metricValue, { color: colors.violet }]}>
-                  {metrics.late}
-                  <Text style={styles.metricSub}> mhs</Text>
-                </Text>
-              </CardContent>
-            </Card>
-
-            <Card variant="panel" interactive={false} style={styles.shrinkCard}>
-              <CardContent>
-                <View style={styles.metricTop}>
-                  <Text style={styles.metricLabel}>Izin/Sakit</Text>
-                  <View
-                    style={[
-                      styles.metricDot,
-                      { backgroundColor: colors.violet },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.metricValue, { color: colors.violet }]}>
-                  0<Text style={styles.metricSub}> dok</Text>
-                </Text>
-              </CardContent>
-            </Card>
-          </View>
-
-          {/* Live roster */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionHeaderLeft}>
-                <Text style={styles.sectionTitle}>
-                  {isAsisten ? 'Presensi Terkini' : 'Riwayat Terakhir'}
-                </Text>
-                {isAsisten && <StatusBadge label="Live" tone="violet" dot live />}
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Lihat semua ${metrics.total}`}
-                onPress={onSeeAllAttendance}
-              >
-                <Text style={styles.seeAll}>Lihat Semua ({metrics.total})</Text>
-              </Pressable>
-            </View>
-
-            {sorted.length === 0 ? (
-              <Card variant="surface" interactive={false}>
-                <CardContent>
-                  <Text style={styles.emptyText}>
-                    {isAsisten
-                      ? 'Belum ada presensi tercatat pada sesi ini.'
-                      : 'Belum ada presensi tercatat.'}
-                  </Text>
-                </CardContent>
-              </Card>
-            ) : (
-              <View style={styles.rosterList}>
-                {sorted.map((record) => (
-                  <Card key={record.id} variant="panel" interactive={false}>
-                    <View style={styles.rosterRow}>
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                          {initialsOf(record.studentName)}
-                        </Text>
-                      </View>
-                      <View style={styles.rosterText}>
-                        <Text style={styles.rosterName} numberOfLines={1}>
-                          {record.studentName}
-                        </Text>
-                        <Text style={styles.rosterMeta}>
-                          NIM {record.studentId}
-                          {isAsisten && ' · Meja B'}
-                        </Text>
-                      </View>
-                      <View style={styles.rosterTrailing}>
-                        <StatusBadge
-                          label={`${formatClock(record.checkedInAt)} · Hadir`}
-                          tone="lime"
+                <View style={styles.toolsGrid}>
+                  <Card
+                    variant="panel"
+                    onPress={onSeeAllSessions}
+                    style={styles.shrinkCard}
+                  >
+                    <CardContent>
+                      <View
+                        style={[
+                          styles.toolIcon,
+                          { backgroundColor: colors.lavenderSubtle },
+                        ]}
+                        accessibilityElementsHidden
+                      >
+                        <Ionicons
+                          name="calendar-outline"
+                          size={18}
+                          color={colors.violet}
                         />
-                        {isAsisten && (
-                          <Text style={styles.rosterNote}>QR Verified</Text>
-                        )}
                       </View>
-                    </View>
+                      <Text style={styles.toolLabel}>Lihat Semua Sesi</Text>
+                      <Text style={styles.toolCaption}>
+                        {isAsisten
+                          ? 'Daftar lengkap sesi lab'
+                          : 'Semua jadwal praktikum'}
+                      </Text>
+                    </CardContent>
                   </Card>
-                ))}
+                  <Card
+                    variant="panel"
+                    onPress={onSeeAllAttendance}
+                    style={styles.shrinkCard}
+                  >
+                    <CardContent>
+                      <View
+                        style={[
+                          styles.toolIcon,
+                          { backgroundColor: colors.lavender },
+                        ]}
+                        accessibilityElementsHidden
+                      >
+                        <Ionicons
+                          name="finger-print"
+                          size={18}
+                          color={colors.violet}
+                        />
+                      </View>
+                      <Text style={styles.toolLabel}>Lihat Semua Presensi</Text>
+                      <Text style={styles.toolCaption}>
+                        {isAsisten
+                          ? 'Rekap kehadiran seluruh sesi'
+                          : 'Riwayat kehadiranmu'}
+                      </Text>
+                    </CardContent>
+                  </Card>
+                </View>
               </View>
-            )}
-          </View>
-
-          {/* Quick tools — shrink-to-fit */}
-          <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle} accessibilityRole="header">
-              {isAsisten ? 'Manajemen Sesi Lab' : 'Menu Singkat'}
-            </Text>
-            <View style={styles.toolsGrid}>
-              <Card
-                variant="panel"
-                onPress={onSeeAllSessions}
-                style={styles.shrinkCard}
-              >
-                <CardContent>
-                  <View
-                    style={[
-                      styles.toolIcon,
-                      { backgroundColor: colors.lavenderSubtle },
-                    ]}
-                    accessibilityElementsHidden
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={18}
-                      color={colors.violet}
-                    />
-                  </View>
-                  <Text style={styles.toolLabel}>Lihat Semua Sesi</Text>
-                  <Text style={styles.toolCaption}>
-                    {isAsisten
-                      ? 'Daftar lengkap sesi lab'
-                      : 'Semua jadwal praktikum'}
-                  </Text>
-                </CardContent>
-              </Card>
-              <Card
-                variant="panel"
-                onPress={onSeeAllAttendance}
-                style={styles.shrinkCard}
-              >
-                <CardContent>
-                  <View
-                    style={[
-                      styles.toolIcon,
-                      { backgroundColor: colors.lavender },
-                    ]}
-                    accessibilityElementsHidden
-                  >
-                    <Ionicons
-                      name="finger-print"
-                      size={18}
-                      color={colors.violet}
-                    />
-                  </View>
-                  <Text style={styles.toolLabel}>Lihat Semua Presensi</Text>
-                  <Text style={styles.toolCaption}>
-                    {isAsisten
-                      ? 'Rekap kehadiran seluruh sesi'
-                      : 'Riwayat kehadiranmu'}
-                  </Text>
-                </CardContent>
-              </Card>
-            </View>
-          </View>
+            </>
+          ) : (
+            <Card variant="surface" interactive={false}>
+              <CardContent>
+                <Text style={styles.emptyText}>
+                  Tidak ada sesi yang sedang berjalan.
+                </Text>
+              </CardContent>
+            </Card>
+          )}
         </>
-      ) : (
-        <Card variant="surface" interactive={false}>
-          <CardContent>
-            <Text style={styles.emptyText}>
-              Tidak ada sesi yang sedang berjalan.
-            </Text>
-          </CardContent>
-        </Card>
       )}
     </Screen>
   );
@@ -557,6 +618,31 @@ const styles = StyleSheet.create({
   dayLabelActive: { color: 'rgba(255,255,255,0.6)' },
   dayNumber: { ...typography.label, color: colors.ink, fontSize: 12 },
   dayNumberActive: { color: colors.lime },
+
+  // Tampilan tanggal di beranda (diakses via tombol tanggal di day strip).
+  tanggalView: { flex: 1, padding: 16 },
+  tanggalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  tanggalBack: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  tanggalTitle: { ...typography.title, color: colors.ink },
+  tanggalContent: { alignItems: 'center' },
+  tanggalDate: {
+    ...typography.display,
+    color: colors.ink,
+    fontSize: 40,
+    textAlign: 'center',
+  },
 
   heroTopRow: {
     flexDirection: 'row',
