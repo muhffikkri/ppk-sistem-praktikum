@@ -1,27 +1,40 @@
+import type { ComponentProps } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radius, spacing, typography } from '../../theme/tokens';
+import {
+  colors,
+  radius,
+  shadow,
+  spacing,
+  typography,
+} from '../../theme/tokens';
 
 export type DockTab = {
   key: string;
   label: string;
-  /** Simple glyph. Use an icon-font char or unicode for now. */
-  glyph: string;
+  /** Ionicons icon name, e.g. 'grid', 'calendar', 'finger-print', 'person'. */
+  glyph: ComponentProps<typeof Ionicons>['name'];
 };
 
 type BottomDockProps = {
   tabs: DockTab[];
   activeKey: string;
   onTabPress: (key: string) => void;
-  /** Optional center floating action. */
-  fab?: { glyph: string; label: string; onPress: () => void };
+  /** Center floating action button (QR scanner placeholder). */
+  fab?: {
+    glyph: ComponentProps<typeof Ionicons>['name'];
+    label: string;
+    onPress: () => void;
+  };
 };
 
 /**
  * Mobile bottom dock (sticker sheet "BottomNavigationPreview").
- * Ink background, rounded top, active tab = lime. Responsive: flex-based
- * layout so it adapts to any screen width.
+ * 5 slots: [tab] [tab] [FAB] [tab] [tab].
+ * Ink background, rounded top, active tab = lime. Responsive:
+ * flex-based layout so it adapts to any screen width.
  */
 export function BottomDock({
   tabs,
@@ -31,59 +44,49 @@ export function BottomDock({
 }: BottomDockProps) {
   const insets = useSafeAreaInsets();
 
+  // Split the 4 tabs so the row reads [tab] [tab] [FAB] [tab] [tab].
+  // Pass an even-length tab list (4) to get a centered FAB slot.
+  const half = Math.floor(tabs.length / 2);
+  const leftTabs = tabs.slice(0, half);
+  const rightTabs = tabs.slice(half);
+
+  const renderTab = (tab: DockTab) => {
+    const active = tab.key === activeKey;
+    const iconColor = active ? colors.lime : colors.inkMuted;
+    return (
+      <Pressable
+        key={tab.key}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        onPress={() => onTabPress(tab.key)}
+        style={styles.tabSlot}
+      >
+        <Ionicons name={tab.glyph} size={22} color={iconColor} />
+        <Text style={[styles.tabLabel, { color: iconColor }]}>{tab.label}</Text>
+      </Pressable>
+    );
+  };
+
   return (
     <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.row}>
-        {tabs.map((tab, index) => {
-          const active = tab.key === activeKey;
-          // FAB replaces the middle slot visually.
-          const isFabSlot = fab ? index === Math.floor(tabs.length / 2) : false;
-          if (isFabSlot && fab) {
-            return (
-              <Pressable
-                key={tab.key}
-                accessibilityRole="button"
-                accessibilityLabel={fab.label}
-                onPress={fab.onPress}
-                style={({ pressed }) => [
-                  styles.fab,
-                  pressed && styles.fabPressed,
-                ]}
-              >
-                <Text style={styles.fabGlyph} accessible={false}>
-                  {fab.glyph}
-                </Text>
-              </Pressable>
-            );
-          }
-          return (
-            <Pressable
-              key={tab.key}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              onPress={() => onTabPress(tab.key)}
-              style={styles.tab}
-            >
-              <Text
-                style={[
-                  styles.tabGlyph,
-                  { color: active ? colors.lime : colors.inkMuted },
-                ]}
-                accessible={false}
-              >
-                {tab.glyph}
-              </Text>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  { color: active ? colors.lime : colors.inkMuted },
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {leftTabs.map(renderTab)}
+        {fab ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={fab.label}
+            onPress={fab.onPress}
+            style={({ pressed }) => [
+              styles.fabSlot,
+              pressed && styles.fabSlotPressed,
+            ]}
+          >
+            <View style={styles.fab}>
+              <Ionicons name={fab.glyph} size={24} color={colors.ink} />
+            </View>
+          </Pressable>
+        ) : null}
+        {rightTabs.map(renderTab)}
       </View>
     </View>
   );
@@ -99,29 +102,35 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
   },
-  tab: {
+  // Each tab + the FAB slot get equal horizontal space.
+  tabSlot: {
     flex: 1,
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 3,
     paddingVertical: spacing.sm,
-    minHeight: 48,
+    minHeight: 52,
+  },
+  tabGlyph: { ...typography.title, fontSize: 20 },
+  tabLabel: { ...typography.caption, fontSize: 9, fontWeight: '600' },
+  fabSlot: {
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  tabGlyph: { ...typography.title, fontSize: 18 },
-  tabLabel: { ...typography.caption, fontSize: 9, fontWeight: '600' },
+  fabSlotPressed: { opacity: 0.85 },
   fab: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: radius['2xl'],
     backgroundColor: colors.lime,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.ink,
-    marginTop: -20,
+    marginTop: -24,
+    ...shadow.elevated,
   },
-  fabPressed: { backgroundColor: colors.limeHover },
-  fabGlyph: { fontSize: 22, color: colors.ink },
+  fabGlyph: { ...typography.title, fontSize: 24, color: colors.ink },
 });

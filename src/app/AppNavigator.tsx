@@ -20,14 +20,13 @@ import { ProfileScreen } from './ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// ponytail: dock adapts its middle tab label to the active POV so the
-// user always sees a "Beranda" that reflects their current role.
-// Replace with a single icon-font icon set when @react-navigation icons land.
+// 5-slot dock: [Beranda] [Jadwal] [QR FAB] [Presensi] [Akun]
+// Uses Ionicons from @expo/vector-icons.
 const DOCK_TABS: DockTab[] = [
-  { key: 'Home', label: 'Beranda', glyph: '◆' },
-  { key: 'StudentSchedule', label: 'Jadwal', glyph: '▦' },
-  { key: 'StudentAttendanceHistory', label: 'Presensi', glyph: '✦' },
-  { key: 'Profile', label: 'Akun', glyph: '◉' },
+  { key: 'Home', label: 'Beranda', glyph: 'grid' },
+  { key: 'StudentSchedule', label: 'Jadwal', glyph: 'calendar' },
+  { key: 'StudentAttendanceHistory', label: 'Presensi', glyph: 'finger-print' },
+  { key: 'Profile', label: 'Akun', glyph: 'person' },
 ];
 
 export function AppNavigator() {
@@ -130,6 +129,14 @@ export function AppNavigator() {
         tabs={DOCK_TABS}
         activeKey={activeKey}
         onTabPress={onTabPress}
+        fab={{
+          glyph: 'scan',
+          label: 'Scan QR',
+          onPress: () => {
+            // ponytail: QR scanner screen not yet implemented; no-op.
+            // Replace with camera-scan navigation when that screen lands.
+          },
+        }}
       />
     </View>
   );
