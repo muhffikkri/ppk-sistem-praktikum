@@ -1,8 +1,9 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   Banner,
+  Button,
   Card,
   CardContent,
   colors,
@@ -11,17 +12,17 @@ import {
   StatusBadge,
   typography,
 } from '../shared/ui';
+import { usePov } from '../state';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
 /** Dummy profile data — swap with real user profile when API lands. */
-const DEMO_STUDENT = {
+const DEMO_IDENTITY = {
   name: 'Saburo Ardiansyah',
   nim: '2301010123',
   program: 'Teknik Informatika',
   department: 'Fakultas Teknik Informatika',
-  role: 'Praktikan',
 };
 
 const MENU_ITEMS = [
@@ -32,6 +33,8 @@ const MENU_ITEMS = [
 ] as const;
 
 export function ProfileScreen({ navigation }: Props) {
+  const { pov, setPov } = usePov();
+
   return (
     <Screen>
       <View style={styles.headRow}>
@@ -51,24 +54,87 @@ export function ProfileScreen({ navigation }: Props) {
               </Text>
             </View>
             <View style={styles.identityText}>
-              <Text style={styles.identityName}>{DEMO_STUDENT.name}</Text>
+              <Text style={styles.identityName}>{DEMO_IDENTITY.name}</Text>
+              <Text style={styles.identitySub}>NIM {DEMO_IDENTITY.nim}</Text>
               <Text style={styles.identitySub}>
-                NIM {DEMO_STUDENT.nim}
-              </Text>
-              <Text style={styles.identitySub}>
-                {DEMO_STUDENT.program} · {DEMO_STUDENT.department}
+                {DEMO_IDENTITY.program} · {DEMO_IDENTITY.department}
               </Text>
             </View>
           </View>
         </CardContent>
       </Card>
 
+      {/* Role selector */}
+      <View style={styles.roleSection}>
+        <Text style={styles.roleTitle} accessibilityRole="header">
+          Pilih Peran
+        </Text>
+        <Text style={styles.roleSubtitle}>
+          Beranda dan menu dock mengikuti peran aktif ini.
+        </Text>
+        <View style={styles.roleRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: pov === 'praktikan' }}
+            onPress={() => setPov('praktikan')}
+            style={({ pressed }) => [
+              styles.roleCard,
+              pov === 'praktikan' && styles.roleCardActive,
+              pressed && styles.roleCardPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.roleCardLabel,
+                pov === 'praktikan' && styles.roleCardLabelActive,
+              ]}
+            >
+              Praktikan
+            </Text>
+            <Text style={styles.roleCardCaption}>Presensi & riwayat</Text>
+            {pov === 'praktikan' ? (
+              <Text style={styles.roleCheck} accessible={false}>
+                ✓ Aktif
+              </Text>
+            ) : null}
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: pov === 'asisten' }}
+            onPress={() => setPov('asisten')}
+            style={({ pressed }) => [
+              styles.roleCard,
+              pov === 'asisten' && styles.roleCardActive,
+              pressed && styles.roleCardPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.roleCardLabel,
+                pov === 'asisten' && styles.roleCardLabelActive,
+              ]}
+            >
+              Asisten
+            </Text>
+            <Text style={styles.roleCardCaption}>Kelola sesi & rekap</Text>
+            {pov === 'asisten' ? (
+              <Text style={styles.roleCheck} accessible={false}>
+                ✓ Aktif
+              </Text>
+            ) : null}
+          </Pressable>
+        </View>
+      </View>
+
       {/* Role + attendance summary */}
       <View style={styles.metricsGrid}>
         <Card variant="panel" interactive={false}>
           <CardContent>
-            <Text style={styles.metricLabel}>Peran</Text>
-            <Text style={styles.metricValue}>{DEMO_STUDENT.role}</Text>
+            <Text style={styles.metricLabel}>Peran Aktif</Text>
+            <Text style={styles.metricValue}>
+              {pov === 'asisten' ? 'Asisten' : 'Praktikan'}
+            </Text>
           </CardContent>
         </Card>
         <Card variant="panel" interactive={false}>
@@ -107,6 +173,12 @@ export function ProfileScreen({ navigation }: Props) {
           ))}
         </View>
       </View>
+
+      <Button
+        label="Ke Beranda"
+        variant="soft"
+        onPress={() => navigation.navigate('Home')}
+      />
 
       <Banner
         title="Profil demo"
@@ -150,6 +222,37 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.onPrimary,
     opacity: 0.8,
+  },
+
+  roleSection: { gap: 8 },
+  roleTitle: { ...typography.overline, color: colors.inkMuted },
+  roleSubtitle: { ...typography.caption, color: colors.inkMuted },
+  roleRow: { flexDirection: 'row', gap: 12 },
+  roleCard: {
+    flex: 1,
+    gap: 4,
+    padding: 14,
+    borderRadius: radius['2xl'],
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  roleCardActive: {
+    backgroundColor: colors.violet,
+    borderColor: colors.violet,
+  },
+  roleCardPressed: { opacity: 0.85 },
+  roleCardLabel: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+    fontSize: 14,
+  },
+  roleCardLabelActive: { color: colors.onPrimary },
+  roleCardCaption: { ...typography.caption, color: colors.inkMuted },
+  roleCheck: {
+    ...typography.label,
+    color: colors.onPrimary,
+    fontWeight: '700',
   },
 
   metricsGrid: { flexDirection: 'row', gap: 8 },
