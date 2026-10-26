@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Session } from '../../domain/types';
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Button,
   CardOverline,
   colors,
   radius,
@@ -52,6 +53,17 @@ export function StudentScheduleScreen({ navigation }: Props) {
         <Text style={styles.heroMeta}>
           {sorted.length} sesi praktikum minggu ini
         </Text>
+        <View style={styles.heroActions}>
+          <View style={styles.heroPrimaryWrap}>
+            <Button
+              label="Lihat Kalender"
+              variant="accent"
+              icon="calendar"
+              onPress={() => navigation.navigate('StudentAllSessions')}
+              accessibilityHint="Membuka halaman kalender semua jadwal"
+            />
+          </View>
+        </View>
       </View>
 
       <Text style={styles.sectionTitle}>Semua Sesi ({sorted.length})</Text>
@@ -143,9 +155,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.violet,
     borderRadius: radius['3xl'],
     padding: 18,
-    gap: 4,
+    gap: 8,
     ...shadow.elevated,
   },
+  heroActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  heroPrimaryWrap: { flex: 1 },
   heroTitle: {
     ...typography.subtitle,
     color: colors.panel,

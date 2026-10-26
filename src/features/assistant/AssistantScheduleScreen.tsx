@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Button,
   Card,
   CardContent,
   CardOverline,
@@ -89,6 +90,21 @@ export function AssistantScheduleScreen({ navigation }: Props) {
                 {formatSessionDate(openSession.startsAt)} •{' '}
                 {openSession.groupName}
               </Text>
+              <View style={styles.heroActions}>
+                <View style={styles.heroPrimaryWrap}>
+                  <Button
+                    label="Mulai Sesi"
+                    variant="accent"
+                    icon="play"
+                    onPress={() =>
+                      navigation.navigate('AssistantSessionDetail', {
+                        sessionId: openSession.id,
+                      })
+                    }
+                    accessibilityHint="Buka detail sesi untuk presensi"
+                  />
+                </View>
+              </View>
             </CardContent>
           </Card>
         </View>
@@ -112,6 +128,15 @@ export function AssistantScheduleScreen({ navigation }: Props) {
       <Text accessibilityRole="header" style={styles.sectionTitle}>
         Semua Sesi ({sessionsSorted.length})
       </Text>
+      <View style={styles.seeAllRow}>
+        <Button
+          label="Lihat Kalender"
+          variant="soft"
+          icon="calendar"
+          onPress={() => navigation.navigate('AssistantAllSessions')}
+          accessibilityHint="Membuka halaman kalender semua sesi"
+        />
+      </View>
       <View style={styles.section}>
         {sessionsSorted.map((session) => (
           <AssistantSessionCard
@@ -212,6 +237,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   panel: { marginTop: 4 },
+  heroActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  heroPrimaryWrap: { flex: 1 },
+  seeAllRow: { marginBottom: 8 },
   panelTitle: { ...typography.subtitle, color: colors.ink },
   panelMeta: {
     ...typography.label,

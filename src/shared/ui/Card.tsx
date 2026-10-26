@@ -1,9 +1,11 @@
 import {
   Pressable,
   type PressableProps,
+  type StyleProp,
   StyleSheet,
   Text,
   View,
+  type ViewStyle,
 } from 'react-native';
 import type { ReactNode } from 'react';
 
@@ -27,19 +29,25 @@ export type CardProps = Omit<PressableProps, 'children' | 'style'> & {
   variant?: CardVariant;
   /** Wrap the card in a Pressable (default true when onPress given). */
   interactive?: boolean;
+  /** Extra layout styles (e.g. `flex: 1` for shrink-to-fill grids). */
+  style?: StyleProp<ViewStyle>;
 };
 
 export function Card({
   children,
   variant = 'panel',
   interactive,
+  style,
   ...pressableProps
 }: CardProps) {
   const isInteractive = interactive ?? 'onPress' in pressableProps;
 
   if (!isInteractive) {
     return (
-      <View style={[styles.base, styles[variant]]} accessibilityRole="none">
+      <View
+        style={[styles.base, styles[variant], style]}
+        accessibilityRole="none"
+      >
         {children}
       </View>
     );
@@ -51,6 +59,7 @@ export function Card({
       style={({ pressed }) => [
         styles.base,
         styles[variant],
+        style,
         pressed && styles.pressed,
       ]}
       {...pressableProps}

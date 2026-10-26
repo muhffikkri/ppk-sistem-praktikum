@@ -60,7 +60,7 @@ export function ProfileScreen({ navigation }: Props) {
         <StatusBadge label="DEMO" tone="violet" dot live />
       </View>
 
-      {/* Avatar + identity card */}
+      {/* Avatar + identity card — with edit-profile action */}
       <Card variant="heroViolet" interactive={false}>
         <CardContent>
           <View style={styles.identityRow}>
@@ -76,6 +76,17 @@ export function ProfileScreen({ navigation }: Props) {
                 {DEMO_IDENTITY.program} · {DEMO_IDENTITY.department}
               </Text>
             </View>
+          </View>
+          <View style={styles.editRow}>
+            <Button
+              label="Edit Profil"
+              variant="accent"
+              iconOnly
+              icon="create"
+              onPress={() => navigation.navigate('ProfileEdit')}
+              accessibilityLabel="Edit profil"
+              accessibilityHint="Membuka form edit profil"
+            />
           </View>
         </CardContent>
       </Card>
@@ -143,9 +154,9 @@ export function ProfileScreen({ navigation }: Props) {
         </View>
       </View>
 
-      {/* Role + attendance summary */}
+      {/* Role + attendance summary — shrink to fill container */}
       <View style={styles.metricsGrid}>
-        <Card variant="panel" interactive={false}>
+        <Card variant="panel" interactive={false} style={styles.shrinkCard}>
           <CardContent>
             <Text style={styles.metricLabel}>Peran Aktif</Text>
             <Text style={styles.metricValue}>
@@ -153,7 +164,7 @@ export function ProfileScreen({ navigation }: Props) {
             </Text>
           </CardContent>
         </Card>
-        <Card variant="panel" interactive={false}>
+        <Card variant="panel" interactive={false} style={styles.shrinkCard}>
           <CardContent>
             <Text style={styles.metricLabel}>Hadir</Text>
             <Text style={[styles.metricValue, { color: colors.successInk }]}>
@@ -257,6 +268,11 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
     opacity: 0.8,
   },
+  editRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+  },
 
   roleSection: { gap: 8 },
   roleTitle: { ...typography.overline, color: colors.inkMuted },
@@ -290,6 +306,7 @@ const styles = StyleSheet.create({
   },
 
   metricsGrid: { flexDirection: 'row', gap: 8 },
+  shrinkCard: { flex: 1 },
   metricLabel: { ...typography.caption, color: colors.inkMuted },
   metricValue: { ...typography.title, color: colors.ink, fontSize: 18 },
 

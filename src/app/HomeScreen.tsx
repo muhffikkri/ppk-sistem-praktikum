@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -15,7 +16,11 @@ import {
   StatusBadge,
   typography,
 } from '../shared/ui';
-import { useAssistantSessionsViewModel, usePov, useStudentAttendanceViewModel } from '../state';
+import {
+  useAssistantSessionsViewModel,
+  usePov,
+  useStudentAttendanceViewModel,
+} from '../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -51,12 +56,16 @@ export function HomeScreen({ navigation }: Props) {
 
   const { sessions, getAttendanceForSession } =
     useAssistantSessionsViewModel();
-  const { attendanceHistory: studentHistory } =
+  const { sessions: studentSessions, attendanceHistory: studentHistory } =
     useStudentAttendanceViewModel();
 
+  // Each role has its own session source: asisten manages lab sessions,
+  // praktikan follows their own class schedule.
+  const roleSessions = pov === 'asisten' ? sessions : studentSessions;
+
   const active =
-    sessions.find((s) => s.status === 'open') ??
-    sessions.find((s) => s.status === 'scheduled');
+    roleSessions.find((s) => s.status === 'open') ??
+    roleSessions.find((s) => s.status === 'scheduled');
 
   // Role-aware "all" data: asisten sees full roster, praktikan sees own history.
   const allRecords =
@@ -88,7 +97,18 @@ export function HomeScreen({ navigation }: Props) {
     }
   };
 
-  const dayIndex = active ? (new Date(active.startsAt).getDay() + 6) % 7 : 0;
+  // Day strip: day 16 = index 0 (Monday). The active session highlights
+  // its day; pressing a day routes to the all-sessions list.
+  const activeDayIndex = active
+    ? (new Date(active.startsAt).getDay() + 6) % 7
+    : 0;
+  const onDayPress = () => {
+    // ponytail: day filter not yet wired to a per-day detail; routes to
+    // the all-sessions list for the active role.
+    onSeeAllSessions();
+  };
+
+  const isAsisten = pov === 'asisten';
 
   return (
     <Screen>
@@ -96,17 +116,17 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.greetingRow}>
         <View style={styles.greetingText}>
           <CardOverline>
-            {pov === 'asisten' ? 'Mode Asisten' : 'Mode Praktikan'}
+            {isAsisten ? 'Mode Asisten' : 'Mode Praktikan'}
           </CardOverline>
           <Text style={styles.greetingTitle}>
-            Selamat Datang, {pov === 'asisten' ? 'Kak Naufal' : 'Saburo'}
+            {isAsisten ? 'Selamat Datang, Kak Naufal' : 'Halo, Saburo'}
           </Text>
         </View>
         <StatusBadge
-          label={pov === 'asisten' ? 'Asisten' : 'Praktikan'}
-          tone={pov === 'asisten' ? 'violet' : 'success'}
+          label={isAsisten ? 'Asisten' : 'Praktikan'}
+          tone={isAsisten ? 'violet' : 'success'}
           dot
-          live={pov === 'asisten'}
+          live={isAsisten}
         />
       </View>
 
@@ -134,15 +154,16 @@ export function HomeScreen({ navigation }: Props) {
         ))}
       </View>
 
-      {/* Day strip */}
+      {/* Day strip — buttons are pressable, route to all-sessions */}
       <View style={styles.dayStrip}>
         {WEEKDAY_LABELS.map((label, index) => {
-          const isActive = active ? index === dayIndex : false;
+          const isActive = active ? index === activeDayIndex : false;
           return (
             <Pressable
               key={label}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
+              onPress={onDayPress}
               style={[styles.dayItem, isActive && styles.dayItemActive]}
             >
               <Text
@@ -168,17 +189,19 @@ export function HomeScreen({ navigation }: Props) {
 
       {active ? (
         <>
-          {/* Tukar shift banner */}
-          <Banner
-            title="Tukar Shift Masuk"
-            message="Kak Naufal · Kamis 19 ↔ Jumat 20"
-            tone="warning"
-            action={
-              <View style={styles.swapActionWrap}>
-                <Button label="Tinjau" variant="soft" />
-              </View>
-            }
-          />
+          {/* Tukar shift banner — asisten only */}
+          {isAsisten && (
+            <Banner
+              title="Tukar Shift Masuk"
+              message="Kak Naufal · Kamis 19 ↔ Jumat 20"
+              tone="warning"
+              action={
+                <View style={styles.swapActionWrap}>
+                  <Button label="Tinjau" variant="soft" />
+                </View>
+              }
+            />
+          )}
 
           {/* Hero active session */}
           <Card variant="heroViolet" interactive={false}>
@@ -186,10 +209,10 @@ export function HomeScreen({ navigation }: Props) {
               <View style={styles.heroTopRow}>
                 <View style={styles.heroBadges}>
                   <StatusBadge
-                    label="Shift Pagi · Utama"
+                    label={isAsisten ? 'Shift Pagi · Utama' : 'Sesi Hari Ini'}
                     tone="violet"
                     dot
-                    live
+                    live={isAsisten}
                   />
                 </View>
                 <Text style={styles.heroLocation}>Lab 3.2 RPL</Text>
@@ -215,45 +238,86 @@ export function HomeScreen({ navigation }: Props) {
                     </Text>
                   </View>
                   <View style={styles.metaInsetText}>
-                    <Text style={styles.metaName}>Dr. Putu Wirawan, M.T.</Text>
-                    <Text style={styles.metaCaption}>Dosen Pengampu Sesi</Text>
+                    <Text style={styles.metaName}>
+                      Dr. Putu Wirawan, M.T.
+                    </Text>
+                    <Text style={styles.metaCaption}>
+                      {isAsisten ? 'Dosen Pengampu Sesi' : 'Dosen Pengampu'}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.metaRight}>
                   <Text style={styles.metaValue}>
-                    {Math.max(records.length, 38)}
+                    {isAsisten ? Math.max(records.length, 38) : 38}
                   </Text>
                   <Text style={styles.metaCaption}>Praktikan</Text>
                 </View>
               </View>
 
-              {/* Clock-in CTA */}
+              {/* CTA — differs by role */}
               <View style={styles.heroActions}>
-                <View style={styles.heroPrimaryWrap}>
-                  <Button
-                    label="Clock In / Mulai Sesi"
-                    variant="accent"
-                    leadingIcon="✓"
-                    accessibilityHint="Presensi masuk"
-                  />
-                </View>
-                <View style={styles.heroSecondaryWrap}>
-                  <Button label="Tukar" variant="soft" iconOnly />
-                </View>
+                {isAsisten ? (
+                  <>
+                    <View style={styles.heroPrimaryWrap}>
+                      <Button
+                        label="Clock In / Mulai Sesi"
+                        variant="accent"
+                        icon="checkmark-circle"
+                        accessibilityHint="Presensi masuk"
+                      />
+                    </View>
+                    <View style={styles.heroSecondaryWrap}>
+                      <Button
+                        label="Tukar"
+                        variant="soft"
+                        iconOnly
+                        icon="swap-horizontal"
+                        accessibilityLabel="Tukar shift sesi"
+                        accessibilityHint="Tukar shift sesi"
+                      />
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.heroPrimaryWrap}>
+                    <Button
+                      label={
+                        active.status === 'open'
+                          ? 'Presensi Sekarang'
+                          : 'Lihat Detail Sesi'
+                      }
+                      variant="primary"
+                      icon={
+                        active.status === 'open' ? 'finger-print' : 'calendar'
+                      }
+                      onPress={() =>
+                        navigation.navigate('StudentSessionDetail', {
+                          sessionId: active.id,
+                        })
+                      }
+                      accessibilityHint={
+                        active.status === 'open'
+                          ? 'Lakukan presensi masuk'
+                          : 'Lihat detail sesi'
+                      }
+                    />
+                  </View>
+                )}
               </View>
             </CardContent>
           </Card>
 
-          {/* Beacon banner */}
-          <Banner
-            title="Beacon Lab RPL #02"
-            message="Radius 5.4m · On-site validasi aktif"
-            tone="success"
-          />
+          {/* Beacon banner — asisten only */}
+          {isAsisten && (
+            <Banner
+              title="Beacon Lab RPL #02"
+              message="Radius 5.4m · On-site validasi aktif"
+              tone="success"
+            />
+          )}
 
-          {/* Metrics */}
+          {/* Metrics — shrink-to-fit */}
           <View style={styles.metricsGrid}>
-            <Card variant="panel" interactive={false}>
+            <Card variant="panel" interactive={false} style={styles.shrinkCard}>
               <CardContent>
                 <View style={styles.metricTop}>
                   <Text style={styles.metricLabel}>Hadir</Text>
@@ -270,7 +334,7 @@ export function HomeScreen({ navigation }: Props) {
               </CardContent>
             </Card>
 
-            <Card variant="panel" interactive={false}>
+            <Card variant="panel" interactive={false} style={styles.shrinkCard}>
               <CardContent>
                 <View style={styles.metricTop}>
                   <Text style={styles.metricLabel}>Telat</Text>
@@ -285,7 +349,7 @@ export function HomeScreen({ navigation }: Props) {
               </CardContent>
             </Card>
 
-            <Card variant="panel" interactive={false}>
+            <Card variant="panel" interactive={false} style={styles.shrinkCard}>
               <CardContent>
                 <View style={styles.metricTop}>
                   <Text style={styles.metricLabel}>Izin/Sakit</Text>
@@ -307,8 +371,10 @@ export function HomeScreen({ navigation }: Props) {
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionHeaderLeft}>
-                <Text style={styles.sectionTitle}>Presensi Terkini</Text>
-                <StatusBadge label="Live" tone="violet" dot live />
+                <Text style={styles.sectionTitle}>
+                  {isAsisten ? 'Presensi Terkini' : 'Riwayat Terakhir'}
+                </Text>
+                {isAsisten && <StatusBadge label="Live" tone="violet" dot live />}
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -323,7 +389,9 @@ export function HomeScreen({ navigation }: Props) {
               <Card variant="surface" interactive={false}>
                 <CardContent>
                   <Text style={styles.emptyText}>
-                    Belum ada presensi tercatat pada sesi ini.
+                    {isAsisten
+                      ? 'Belum ada presensi tercatat pada sesi ini.'
+                      : 'Belum ada presensi tercatat.'}
                   </Text>
                 </CardContent>
               </Card>
@@ -342,7 +410,8 @@ export function HomeScreen({ navigation }: Props) {
                           {record.studentName}
                         </Text>
                         <Text style={styles.rosterMeta}>
-                          NIM {record.studentId} · Meja B
+                          NIM {record.studentId}
+                          {isAsisten && ' · Meja B'}
                         </Text>
                       </View>
                       <View style={styles.rosterTrailing}>
@@ -350,7 +419,9 @@ export function HomeScreen({ navigation }: Props) {
                           label={`${formatClock(record.checkedInAt)} · Hadir`}
                           tone="lime"
                         />
-                        <Text style={styles.rosterNote}>QR Verified</Text>
+                        {isAsisten && (
+                          <Text style={styles.rosterNote}>QR Verified</Text>
+                        )}
                       </View>
                     </View>
                   </Card>
@@ -359,15 +430,16 @@ export function HomeScreen({ navigation }: Props) {
             )}
           </View>
 
-          {/* Quick tools */}
+          {/* Quick tools — shrink-to-fit */}
           <View style={styles.sectionBlock}>
             <Text style={styles.sectionTitle} accessibilityRole="header">
-              Manajemen Sesi Lab
+              {isAsisten ? 'Manajemen Sesi Lab' : 'Menu Singkat'}
             </Text>
             <View style={styles.toolsGrid}>
               <Card
                 variant="panel"
                 onPress={onSeeAllSessions}
+                style={styles.shrinkCard}
               >
                 <CardContent>
                   <View
@@ -377,19 +449,24 @@ export function HomeScreen({ navigation }: Props) {
                     ]}
                     accessibilityElementsHidden
                   >
-                    <Text style={styles.toolIconText} accessible={false}>
-                      ≡
-                    </Text>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={18}
+                      color={colors.violet}
+                    />
                   </View>
                   <Text style={styles.toolLabel}>Lihat Semua Sesi</Text>
                   <Text style={styles.toolCaption}>
-                    {pov === 'asisten' ? 'Daftar lengkap sesi lab' : 'Semua jadwal praktikum'}
+                    {isAsisten
+                      ? 'Daftar lengkap sesi lab'
+                      : 'Semua jadwal praktikum'}
                   </Text>
                 </CardContent>
               </Card>
               <Card
                 variant="panel"
                 onPress={onSeeAllAttendance}
+                style={styles.shrinkCard}
               >
                 <CardContent>
                   <View
@@ -399,13 +476,17 @@ export function HomeScreen({ navigation }: Props) {
                     ]}
                     accessibilityElementsHidden
                   >
-                    <Text style={styles.toolIconText} accessible={false}>
-                      ✦
-                    </Text>
+                    <Ionicons
+                      name="finger-print"
+                      size={18}
+                      color={colors.violet}
+                    />
                   </View>
                   <Text style={styles.toolLabel}>Lihat Semua Presensi</Text>
                   <Text style={styles.toolCaption}>
-                    {pov === 'asisten' ? 'Rekap kehadiran seluruh sesi' : 'Riwayat kehadiranmu'}
+                    {isAsisten
+                      ? 'Rekap kehadiran seluruh sesi'
+                      : 'Riwayat kehadiranmu'}
                   </Text>
                 </CardContent>
               </Card>
@@ -557,6 +638,7 @@ const styles = StyleSheet.create({
   heroSecondaryWrap: { flexShrink: 0 },
 
   metricsGrid: { flexDirection: 'row', gap: 8 },
+  shrinkCard: { flex: 1 },
   metricTop: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -620,7 +702,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 6,
   },
-  toolIconText: { fontSize: 16, color: colors.violet },
   toolLabel: { ...typography.label, color: colors.ink, fontWeight: '600' },
   toolCaption: { ...typography.caption, color: colors.inkMuted },
 });

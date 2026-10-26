@@ -23,6 +23,7 @@ import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 import { usePov } from '../state';
 import type { RootStackParamList } from './navigation';
 import { HomeScreen } from './HomeScreen';
+import { ProfileEditScreen } from './ProfileEditScreen';
 import { ProfileScreen } from './ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -200,6 +201,15 @@ export function AppNavigator() {
             headerRight: () => null,
             headerTintColor: colors.inkMuted,
             headerStyle: { backgroundColor: colors.surface },
+          }}
+        />
+        <Stack.Screen
+          name="ProfileEdit"
+          component={ProfileEditScreen}
+          options={{
+            headerTintColor: colors.inkMuted,
+            headerStyle: { backgroundColor: colors.surface },
+            title: 'Edit Profil',
           }}
         />
       </Stack.Navigator>

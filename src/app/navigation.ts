@@ -14,6 +14,7 @@ export type RootStackParamList = {
   StudentAllSessions: undefined;
   StudentAllAttendance: undefined;
   Profile: undefined;
+  ProfileEdit: undefined;
 };
 
 export type ActorPov = 'praktikan' | 'asisten';

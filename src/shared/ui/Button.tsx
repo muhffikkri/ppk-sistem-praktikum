@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Pressable,
   type PressableProps,
@@ -28,6 +30,11 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   iconOnly?: boolean;
   /** Leading glyph as plain text (unicode or icon-font char). */
   leadingIcon?: string;
+  /**
+   * Ionicons icon name (e.g. 'swap-horizontal', 'calendar'). Rendered as a
+   * vector icon next to the label — preferred over `leadingIcon` for named icons.
+   */
+  icon?: ComponentProps<typeof Ionicons>['name'];
   loading?: boolean;
 };
 
@@ -36,11 +43,26 @@ export function Button({
   variant = 'primary',
   iconOnly = false,
   leadingIcon,
+  icon,
   loading = false,
   disabled,
   ...pressableProps
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+
+  // Icon color follows the variant label color so it reads on any background.
+  const iconColor =
+    variant === 'primary'
+      ? colors.panel
+      : variant === 'accent'
+        ? colors.ink
+        : variant === 'soft'
+          ? colors.violet
+          : variant === 'outline'
+            ? colors.ink
+            : colors.dangerInk;
+
+  const leadingGlyph = icon ? null : leadingIcon;
 
   return (
     <Pressable
@@ -59,20 +81,29 @@ export function Button({
       <View style={styles.row}>
         {loading ? (
           <View style={styles.spinner} accessibilityLabel="Memuat" />
-        ) : leadingIcon ? (
+        ) : icon ? (
+          <Ionicons
+            name={icon}
+            size={16}
+            color={iconColor}
+            style={styles.vectorIcon}
+          />
+        ) : leadingGlyph ? (
           <Text style={styles.leadingIcon} accessible={false}>
-            {leadingIcon}
+            {leadingGlyph}
           </Text>
         ) : null}
-        <Text
-          style={[
-            styles.label,
-            styles[`${variant}Label`],
-            isDisabled && styles.disabledLabel,
-          ]}
-        >
-          {label}
-        </Text>
+        {!iconOnly && (
+          <Text
+            style={[
+              styles.label,
+              styles[`${variant}Label`],
+              isDisabled && styles.disabledLabel,
+            ]}
+          >
+            {label}
+          </Text>
+        )}
       </View>
     </Pressable>
   );
@@ -105,6 +136,9 @@ const styles = StyleSheet.create({
   leadingIcon: {
     ...typography.label,
     fontSize: 14,
+  },
+  vectorIcon: {
+    marginLeft: 0,
   },
   spinner: {
     width: 14,
