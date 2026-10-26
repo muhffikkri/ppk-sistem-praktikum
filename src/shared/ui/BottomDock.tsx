@@ -82,7 +82,7 @@ export function BottomDock({
             ]}
           >
             <View style={styles.fab}>
-              <Ionicons name={fab.glyph} size={24} color={colors.ink} />
+              <Ionicons name={fab.glyph} size={32} color={colors.ink} />
             </View>
           </Pressable>
         ) : null}
@@ -121,15 +121,15 @@ const styles = StyleSheet.create({
   },
   fabSlotPressed: { opacity: 0.85 },
   fab: {
-    width: 56,
-    height: 56,
+    width: 72,
+    height: 72,
     borderRadius: radius['2xl'],
     backgroundColor: colors.lime,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.ink,
-    marginTop: -24,
+    marginTop: -30,
     ...shadow.elevated,
   },
   fabGlyph: { ...typography.title, fontSize: 24, color: colors.ink },
