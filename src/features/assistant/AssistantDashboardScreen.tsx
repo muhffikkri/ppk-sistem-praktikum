@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AttendanceRecord, Session } from '../../domain/types';
 import type { RootStackParamList } from '../../app/navigation';
@@ -68,10 +68,7 @@ export function AssistantDashboardScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
+      <>
         {/* Greeting */}
         <View style={styles.greetingRow}>
           <View style={styles.greetingText}>
@@ -341,7 +338,7 @@ export function AssistantDashboardScreen({ navigation }: Props) {
             </CardContent>
           </Card>
         )}
-      </ScrollView>
+      </>
     </Screen>
   );
 }
@@ -354,8 +351,6 @@ function initialsOf(name: string): string {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: 20 },
-
   // Greeting
   greetingRow: {
     flexDirection: 'row',

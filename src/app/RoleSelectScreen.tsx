@@ -71,7 +71,7 @@ export function RoleSelectScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   cards: { gap: 16 },
-  cardInner: { gap: 12 },
+  cardInner: { padding: 18, gap: 12 },
   cardTitle: {
     ...typography.title,
     color: colors.ink,

@@ -28,13 +28,16 @@ export function AppNavigator() {
   const [activeKey, setActiveKey] = useState<string>('RoleSelect');
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
+    /** Reset the whole stack to a single top-level route — used by the
+     *  bottom dock so it never surfaces a "back" chevron. */
+    reset: (state: { index: number; routes: { name: string }[] }) => void;
   };
 
-  // Keep the dock in sync with the current route so the highlight follows
-  // navigation (not just direct taps on the dock).
   const onTabPress = (key: string) => {
     setActiveKey(key);
-    navigation.navigate(key);
+    // Dock = top-level context. Reset the stack to the pressed tab so any
+    // pushed detail routes collapse and no header back button is shown.
+    navigation.reset({ index: 0, routes: [{ name: key }] });
   };
 
   useEffect(() => {
@@ -69,10 +72,18 @@ export function AppNavigator() {
         <Stack.Screen
           name="RoleSelect"
           component={RoleSelectScreen}
-          options={{ title: 'PPK Mobile', headerRight: () => null }}
+          options={{
+            title: 'PPK Mobile',
+            headerRight: () => null,
+            headerBackTitle: '',
+          }}
         />
         <Stack.Group screenOptions={{ title: 'Praktikan · Demo' }}>
-          <Stack.Screen name="StudentSchedule" component={PlaceholderScreen} />
+          <Stack.Screen
+            name="StudentSchedule"
+            component={PlaceholderScreen}
+            options={{ headerShown: false }}
+          />
           <Stack.Screen
             name="StudentSessionDetail"
             component={PlaceholderScreen}
@@ -80,12 +91,14 @@ export function AppNavigator() {
           <Stack.Screen
             name="StudentAttendanceHistory"
             component={PlaceholderScreen}
+            options={{ headerShown: false }}
           />
         </Stack.Group>
         <Stack.Group screenOptions={{ title: 'Asisten · Demo' }}>
           <Stack.Screen
             name="AssistantDashboard"
             component={AssistantDashboardScreen}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="AssistantSchedule"

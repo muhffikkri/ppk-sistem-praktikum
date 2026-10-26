@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
@@ -39,103 +39,98 @@ export function AssistantScheduleScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text accessibilityRole="header" style={styles.screenTitle}>
-          Jadwal
-        </Text>
-        <Text style={styles.subhead}>
-          Semester Ganjil 2026/2027 • Lab Terpadu FTI
-        </Text>
+      <Text accessibilityRole="header" style={styles.screenTitle}>
+        Jadwal
+      </Text>
+      <Text style={styles.subhead}>
+        Semester Ganjil 2026/2027 • Lab Terpadu FTI
+      </Text>
 
-        <View style={styles.tabBar}>
-          {(['today', 'week', 'swap'] as const).map((t) => (
-            <Pressable
-              key={t}
-              style={({ pressed }) => [
-                styles.tab,
-                tab === t && styles.tabActive,
-                pressed && styles.tabPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: tab === t }}
-              onPress={() => setTab(t)}
+      <View style={styles.tabBar}>
+        {(['today', 'week', 'swap'] as const).map((t) => (
+          <Pressable
+            key={t}
+            style={({ pressed }) => [
+              styles.tab,
+              tab === t && styles.tabActive,
+              pressed && styles.tabPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: tab === t }}
+            onPress={() => setTab(t)}
+          >
+            <Text
+              style={[styles.tabLabel, tab === t && styles.tabLabelActive]}
+              accessibilityElementsHidden
             >
-              <Text
-                style={[styles.tabLabel, tab === t && styles.tabLabelActive]}
-                accessibilityElementsHidden
-              >
-                {WEEK_TITLES[t]}
-              </Text>
-              {tab === t && <View style={styles.tabDot} />}
-            </Pressable>
-          ))}
-        </View>
+              {WEEK_TITLES[t]}
+            </Text>
+            {tab === t && <View style={styles.tabDot} />}
+          </Pressable>
+        ))}
+      </View>
 
-        {openSession && (
-          <View style={styles.hero}>
-            <Card variant="heroViolet" interactive={false}>
-              <CardContent>
-                <View style={styles.heroTop}>
-                  <View style={styles.heroBadge}>
-                    <StatusBadge label="Siap Clock-in" tone="success" />
-                  </View>
-                  <Text style={styles.heroLocation}>
-                    {openSession.groupName}
-                  </Text>
+      {openSession && (
+        <View style={styles.hero}>
+          <Card variant="heroViolet" interactive={false}>
+            <CardContent>
+              <View style={styles.heroTop}>
+                <View style={styles.heroBadge}>
+                  <StatusBadge label="Siap Clock-in" tone="success" />
                 </View>
-                <Text style={styles.heroTime}>
-                  {formatTimeRange(openSession.startsAt, openSession.endsAt)}
-                  <Text style={styles.heroTimeUnit}> WIB</Text>
-                </Text>
-                <Text style={styles.heroCourse}>{openSession.courseName}</Text>
-                <Text style={styles.heroMeta}>
-                  {formatSessionDate(openSession.startsAt)} •{' '}
-                  {openSession.groupName}
-                </Text>
-              </CardContent>
-            </Card>
-          </View>
-        )}
-
-        {nextSession && (
-          <View style={styles.panel}>
-            <Card variant="panel" interactive={false}>
-              <CardContent>
-                <CardOverline>BERIKUTNYA</CardOverline>
-                <Text style={styles.panelTitle}>{nextSession.courseName}</Text>
-                <Text style={styles.panelMeta}>
-                  {formatTimeRange(nextSession.startsAt, nextSession.endsAt)} •{' '}
-                  {formatSessionDate(nextSession.startsAt)}
-                </Text>
-              </CardContent>
-            </Card>
-          </View>
-        )}
-
-        <Text accessibilityRole="header" style={styles.sectionTitle}>
-          Semua Sesi ({sessionsSorted.length})
-        </Text>
-        <View style={styles.section}>
-          {sessionsSorted.map((session) => (
-            <AssistantSessionCard
-              key={session.id}
-              session={session}
-              attendeeCount={getAttendanceForSession(session.id).length}
-              onPress={() =>
-                navigation.navigate('AssistantSessionDetail', {
-                  sessionId: session.id,
-                })
-              }
-            />
-          ))}
+                <Text style={styles.heroLocation}>{openSession.groupName}</Text>
+              </View>
+              <Text style={styles.heroTime}>
+                {formatTimeRange(openSession.startsAt, openSession.endsAt)}
+                <Text style={styles.heroTimeUnit}> WIB</Text>
+              </Text>
+              <Text style={styles.heroCourse}>{openSession.courseName}</Text>
+              <Text style={styles.heroMeta}>
+                {formatSessionDate(openSession.startsAt)} •{' '}
+                {openSession.groupName}
+              </Text>
+            </CardContent>
+          </Card>
         </View>
-      </ScrollView>
+      )}
+
+      {nextSession && (
+        <View style={styles.panel}>
+          <Card variant="panel" interactive={false}>
+            <CardContent>
+              <CardOverline>BERIKUTNYA</CardOverline>
+              <Text style={styles.panelTitle}>{nextSession.courseName}</Text>
+              <Text style={styles.panelMeta}>
+                {formatTimeRange(nextSession.startsAt, nextSession.endsAt)} •{' '}
+                {formatSessionDate(nextSession.startsAt)}
+              </Text>
+            </CardContent>
+          </Card>
+        </View>
+      )}
+
+      <Text accessibilityRole="header" style={styles.sectionTitle}>
+        Semua Sesi ({sessionsSorted.length})
+      </Text>
+      <View style={styles.section}>
+        {sessionsSorted.map((session) => (
+          <AssistantSessionCard
+            key={session.id}
+            session={session}
+            attendeeCount={getAttendanceForSession(session.id).length}
+            onPress={() =>
+              navigation.navigate('AssistantSessionDetail', {
+                sessionId: session.id,
+              })
+            }
+          />
+        ))}
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingVertical: 16, gap: 12 },
   screenTitle: { ...typography.title, color: colors.ink },
   subhead: {
     ...typography.label,
