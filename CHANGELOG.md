@@ -4,7 +4,16 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
-### Development build dan build via tag
+### Fitur Baru
+
+- **Kalender interaktif (CalendarScreen)**: grid hari × jam (07:00–18:00) dengan event cards absolut, bottom sheet drawer detail sesi, view mode switcher (Hari/Minggu/Agenda), navigasi minggu dengan label tanggal dan badge peran.
+- **HomeScreen: radio button hari**: tombol Senin–Sabtu di bar bawah kini perilakutama radio button—setak diklik menyimpan hari aktif di state dan menampilkan tampilan `tanggal` di beranda; kalender penuh hanya bisa dibuka lewat halaman Jadwal.
+- **ProfileScreen fix**: menyelesaikan error runtime "Text strings must be rendered within a <Text> component" dengan membungkus teks glyph di `<Text>`.
+- **Setup lint & CI**: aturan ESLint `react-native/no-raw-text` baru, serta GitHub Actions workflow (`lint.yml`) yang menjalankan `eslint src/` + `tsc --noEmit` pada setiap pull request ke `main`.
+
+### [1.1.0] - 2026-10-21
+
+(Membuat turun dari entri sebelumnya)
 
 - Menambahkan `expo-dev-client` dan profil `development` di `eas.json` (development client, APK internal, channel `development`, iOS simulator).
 - Menambahkan `android.package` `com.muhffikkris.ppkmobile` agar build Android bisa berjalan di EAS.
