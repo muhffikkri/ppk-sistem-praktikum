@@ -15,8 +15,7 @@ import { formatSessionDate, formatTimeRange } from './formatters';
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantAllSessions'>;
 
 export function AssistantAllSessionsScreen({ navigation }: Props) {
-  const { sessions, getAttendanceForSession } =
-    useAssistantSessionsViewModel();
+  const { sessions, getAttendanceForSession } = useAssistantSessionsViewModel();
 
   const sorted = [...sessions].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
@@ -67,13 +66,21 @@ export function AssistantAllSessionsScreen({ navigation }: Props) {
                         ? 'Terjadwal'
                         : 'Tertutup'
                   }
-                  tone={session.status === 'open' ? 'violet' : session.status === 'scheduled' ? 'lavender' : 'neutral'}
+                  tone={
+                    session.status === 'open'
+                      ? 'violet'
+                      : session.status === 'scheduled'
+                        ? 'lavender'
+                        : 'neutral'
+                  }
                   dot
                   live={session.status === 'open'}
                 />
               </View>
               <View style={styles.metaRow}>
-                <Text style={styles.meta}>{formatSessionDate(session.startsAt)}</Text>
+                <Text style={styles.meta}>
+                  {formatSessionDate(session.startsAt)}
+                </Text>
                 <Text style={styles.meta}>
                   {formatTimeRange(session.startsAt, session.endsAt)}
                 </Text>

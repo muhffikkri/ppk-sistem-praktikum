@@ -2,12 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import {
-  colors,
-  radius,
-  Screen,
-  typography,
-} from '../../shared/ui';
+import { colors, radius, Screen, typography } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate } from './formatters';
 
@@ -22,7 +17,8 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
       new Date(b.checkedInAt).getTime() - new Date(a.checkedInAt).getTime(),
   );
   const total = sorted.length;
-  const rate = sessions.length > 0 ? Math.round((total / sessions.length) * 100) : 0;
+  const rate =
+    sessions.length > 0 ? Math.round((total / sessions.length) * 100) : 0;
 
   return (
     <Screen>
@@ -173,7 +169,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.violet,
   },
   emptyActionPressed: { backgroundColor: colors.violetDark },
-  emptyActionLabel: { ...typography.label, color: colors.panel, fontWeight: '600' },
+  emptyActionLabel: {
+    ...typography.label,
+    color: colors.panel,
+    fontWeight: '600',
+  },
 
   list: {
     backgroundColor: colors.panel,
@@ -210,5 +210,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Plus Jakarta Sans',
   },
-  rowStatus: { ...typography.caption, color: colors.successInk, fontWeight: '600' },
+  rowStatus: {
+    ...typography.caption,
+    color: colors.successInk,
+    fontWeight: '600',
+  },
 });

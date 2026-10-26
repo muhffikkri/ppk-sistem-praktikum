@@ -99,12 +99,8 @@ export function HomeScreen({ navigation }: Props) {
 
   // Radio button: hari yang dipilih di bar hari bawah.
   // Nilai awal = activeDayIndex dari sesi yang sedang berjalan.
-  const [selectedDayIndex, setSelectedDayIndex] = useState<
-    number | undefined
-  >(
-    active
-      ? (new Date(active.startsAt).getDay() + 6) % 7
-      : undefined,
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | undefined>(
+    active ? (new Date(active.startsAt).getDay() + 6) % 7 : undefined,
   );
 
   // Tampilan utama: 'home' = beranda biasa, 'tanggal' = tampilan detail hari terpilih.
@@ -119,14 +115,14 @@ export function HomeScreen({ navigation }: Props) {
   const isAsisten = pov === 'asisten';
 
   // Menghari hari dalam bentuk nama lengkap saat view 'tanggal'
-  const selectedDayName = selectedDayIndex !== undefined
-    ? WEEKDAY_LABELS[selectedDayIndex]
-    : '';
+  const selectedDayName =
+    selectedDayIndex !== undefined ? WEEKDAY_LABELS[selectedDayIndex] : '';
 
   // Menghari tanggal: gunakan format active session jika ada, else "-"
-  const selectedDayDate = selectedDayIndex !== undefined && active
-    ? formatSessionDate(active.startsAt)
-    : '-';
+  const selectedDayDate =
+    selectedDayIndex !== undefined && active
+      ? formatSessionDate(active.startsAt)
+      : '-';
 
   return (
     <Screen>
@@ -145,8 +141,7 @@ export function HomeScreen({ navigation }: Props) {
           </View>
           <View style={styles.tanggalContent}>
             <Text style={styles.tanggalDate}>
-              {selectedDayName},{' '}
-              {selectedDayDate}
+              {selectedDayName}, {selectedDayDate}
             </Text>
           </View>
         </View>
@@ -287,9 +282,7 @@ export function HomeScreen({ navigation }: Props) {
                           Dr. Putu Wirawan, M.T.
                         </Text>
                         <Text style={styles.metaCaption}>
-                          {isAsisten
-                            ? 'Dosen Pengampu Sesi'
-                            : 'Dosen Pengampu'}
+                          {isAsisten ? 'Dosen Pengampu Sesi' : 'Dosen Pengampu'}
                         </Text>
                       </View>
                     </View>
@@ -405,7 +398,9 @@ export function HomeScreen({ navigation }: Props) {
                         ]}
                       />
                     </View>
-                    <Text style={[styles.metricValue, { color: colors.violet }]}>
+                    <Text
+                      style={[styles.metricValue, { color: colors.violet }]}
+                    >
                       {metrics.late}
                       <Text style={styles.metricSub}> mhs</Text>
                     </Text>
@@ -427,7 +422,9 @@ export function HomeScreen({ navigation }: Props) {
                         ]}
                       />
                     </View>
-                    <Text style={[styles.metricValue, { color: colors.violet }]}>
+                    <Text
+                      style={[styles.metricValue, { color: colors.violet }]}
+                    >
                       0<Text style={styles.metricSub}> dok</Text>
                     </Text>
                   </CardContent>
@@ -469,11 +466,7 @@ export function HomeScreen({ navigation }: Props) {
                 ) : (
                   <View style={styles.rosterList}>
                     {sorted.map((record) => (
-                      <Card
-                        key={record.id}
-                        variant="panel"
-                        interactive={false}
-                      >
+                      <Card key={record.id} variant="panel" interactive={false}>
                         <View style={styles.rosterRow}>
                           <View style={styles.avatar}>
                             <Text style={styles.avatarText}>

@@ -17,24 +17,15 @@ import {
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
-type Props = NativeStackScreenProps<
-  RootStackParamList,
-  'StudentSessionDetail'
->;
+type Props = NativeStackScreenProps<RootStackParamList, 'StudentSessionDetail'>;
 
 type Feedback =
-  | { kind: 'ok'; message: string }
-  | { kind: 'error'; message: string }
-  | null;
+  { kind: 'ok'; message: string } | { kind: 'error'; message: string } | null;
 
 export function StudentSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const {
-    getSessionById,
-    getAttendanceForSession,
-    checkIn,
-    currentStudent,
-  } = useStudentAttendanceViewModel();
+  const { getSessionById, getAttendanceForSession, checkIn, currentStudent } =
+    useStudentAttendanceViewModel();
   const [feedback, setFeedback] = useState<Feedback>(null);
 
   const session = getSessionById(sessionId);

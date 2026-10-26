@@ -41,15 +41,41 @@ type ViewMode = 'day' | 'week' | 'agenda';
 
 const WEEKDAY_SHORT = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const WEEKDAY_FULL = [
-  'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu',
+  'Senin',
+  'Selasa',
+  'Rabu',
+  'Kamis',
+  'Jumat',
+  'Sabtu',
+  'Minggu',
 ];
 const MONTHS_SHORT = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
 ];
 const MONTHS_FULL = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
 ];
 
 function pad2(n: number): string {
@@ -82,21 +108,26 @@ function isWeekend(date: Date): boolean {
 }
 
 function weekNumber(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
-function sessionMinutes(session: Session): { day: Date; startMin: number; endMin: number } {
+function sessionMinutes(session: Session): {
+  day: Date;
+  startMin: number;
+  endMin: number;
+} {
   const start = new Date(session.startsAt);
   const end = new Date(session.endsAt);
   const startMin = start.getHours() * 60 + start.getMinutes();
   const endMin = end.getHours() * 60 + end.getMinutes();
   return { day: start, startMin, endMin };
 }
-
 
 /**
  * Kalender interaktif (grid hari × jam, gaya Google Calendar) — dipakai
@@ -112,7 +143,9 @@ export function CalendarScreen({ navigation }: Props) {
   const sessions = isAsisten ? assistantSessions : studentSessions;
 
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [weekStart, setWeekStart] = useState(() => startOfWeekLocal(new Date()));
+  const [weekStart, setWeekStart] = useState(() =>
+    startOfWeekLocal(new Date()),
+  );
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [drawerSession, setDrawerSession] = useState<Session | null>(null);
 
@@ -179,22 +212,20 @@ export function CalendarScreen({ navigation }: Props) {
   }, [sessions]);
 
   const weekSessions = useMemo(
-    () => sessions.filter((s) => {
-      const { day } = sessionMinutes(s);
-      return day >= weekStart && day < addDays(weekStart, 7);
-    }),
+    () =>
+      sessions.filter((s) => {
+        const { day } = sessionMinutes(s);
+        return day >= weekStart && day < addDays(weekStart, 7);
+      }),
     [sessions, weekStart],
   );
 
   const totalHours = useMemo(
     () =>
-      weekSessions.reduce(
-        (sum, s) => {
-          const { startMin, endMin } = sessionMinutes(s);
-          return sum + (endMin - startMin) / 60;
-        },
-        0,
-      ),
+      weekSessions.reduce((sum, s) => {
+        const { startMin, endMin } = sessionMinutes(s);
+        return sum + (endMin - startMin) / 60;
+      }, 0),
     [weekSessions],
   );
 
@@ -268,7 +299,10 @@ export function CalendarScreen({ navigation }: Props) {
             return null;
           }
           const top = ((clampedStart - DAY_START * 60) / 60) * PX_PER_HOUR;
-          const height = Math.max(((clampedEnd - clampedStart) / 60) * PX_PER_HOUR - 4, 34);
+          const height = Math.max(
+            ((clampedEnd - clampedStart) / 60) * PX_PER_HOUR - 4,
+            34,
+          );
           const startLabel = `${pad2(Math.floor(startMin / 60))}:${pad2(startMin % 60)}`;
           const endLabel = `${pad2(Math.floor(endMin / 60))}:${pad2(endMin % 60)}`;
           const open = session.status === 'open';
@@ -317,7 +351,11 @@ export function CalendarScreen({ navigation }: Props) {
                         pressed && { opacity: 0.8 },
                       ]}
                     >
-                      <Ionicons name="finger-print" size={12} color={colors.ink} />
+                      <Ionicons
+                        name="finger-print"
+                        size={12}
+                        color={colors.ink}
+                      />
                       <Text style={styles.eventActionText}>Presensi</Text>
                     </Pressable>
                   ) : (
@@ -336,7 +374,9 @@ export function CalendarScreen({ navigation }: Props) {
               styles.nowLine,
               {
                 top:
-                  ((today.getHours() * 60 + today.getMinutes() - DAY_START * 60) /
+                  ((today.getHours() * 60 +
+                    today.getMinutes() -
+                    DAY_START * 60) /
                     60) *
                   PX_PER_HOUR,
               },
@@ -369,7 +409,9 @@ export function CalendarScreen({ navigation }: Props) {
     <Screen>
       <View style={styles.headRow}>
         <View style={styles.headText}>
-          <CardOverline><Text>KALENDER &amp; JADWAL LAB</Text></CardOverline>
+          <CardOverline>
+            <Text>KALENDER &amp; JADWAL LAB</Text>
+          </CardOverline>
           <Text style={styles.title} accessibilityRole="header">
             Kalender
           </Text>
@@ -404,7 +446,11 @@ export function CalendarScreen({ navigation }: Props) {
               pressed && styles.navArrowPressed,
             ]}
           >
-            <Ionicons name="chevron-forward" size={18} color={colors.inkMuted} />
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.inkMuted}
+            />
           </Pressable>
           <View style={styles.navWeekText}>
             <Text style={styles.navWeekLabel}>
@@ -485,11 +531,7 @@ export function CalendarScreen({ navigation }: Props) {
           <CardContent>
             <View style={styles.kpiTop}>
               <Text style={styles.kpiLabelMuted}>Sesi Lab</Text>
-              <Ionicons
-                name="flask-outline"
-                size={15}
-                color={colors.violet}
-              />
+              <Ionicons name="flask-outline" size={15} color={colors.violet} />
             </View>
             <Text style={styles.kpiValue}>{weekSessions.length} Sesi</Text>
             <Text style={styles.kpiCaptionMuted}>Terjadwal aktif</Text>
@@ -505,9 +547,7 @@ export function CalendarScreen({ navigation }: Props) {
                 color={colors.violet}
               />
             </View>
-            <Text style={styles.kpiValue}>
-              {shiftSessions.length} Slot
-            </Text>
+            <Text style={styles.kpiValue}>{shiftSessions.length} Slot</Text>
             <Text style={styles.kpiCaptionMuted}>Belum dimulai</Text>
           </CardContent>
         </Card>
@@ -623,7 +663,11 @@ export function CalendarScreen({ navigation }: Props) {
                   pressed && styles.navArrowPressed,
                 ]}
               >
-                <Ionicons name="chevron-back" size={18} color={colors.inkMuted} />
+                <Ionicons
+                  name="chevron-back"
+                  size={18}
+                  color={colors.inkMuted}
+                />
               </Pressable>
               <View style={styles.dayViewTitle}>
                 <Text style={styles.dayViewLabel}>
@@ -642,12 +686,18 @@ export function CalendarScreen({ navigation }: Props) {
                   pressed && styles.navArrowPressed,
                 ]}
               >
-                <Ionicons name="chevron-forward" size={18} color={colors.inkMuted} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.inkMuted}
+                />
               </Pressable>
             </View>
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: (insets?.bottom ?? 0) + 24 }}
+              contentContainerStyle={{
+                paddingBottom: (insets?.bottom ?? 0) + 24,
+              }}
             >
               <View style={styles.bodyRow}>
                 <View style={styles.timeGutter}>
@@ -682,19 +732,20 @@ export function CalendarScreen({ navigation }: Props) {
         {/* Legend */}
         <View style={styles.legend}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.violet }]} />
+            <View
+              style={[styles.legendDot, { backgroundColor: colors.violet }]}
+            />
             <Text style={styles.legendText}>Sesi Lab</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.lime }]} />
+            <View
+              style={[styles.legendDot, { backgroundColor: colors.lime }]}
+            />
             <Text style={styles.legendText}>Sesi terbuka</Text>
           </View>
           <View style={styles.legendItem}>
             <View
-              style={[
-                styles.legendDot,
-                { backgroundColor: colors.dangerInk },
-              ]}
+              style={[styles.legendDot, { backgroundColor: colors.dangerInk }]}
             />
             <Text style={styles.legendText}>Waktu sekarang</Text>
           </View>
@@ -754,11 +805,7 @@ export function CalendarScreen({ navigation }: Props) {
             </View>
             <View style={styles.sheetDetailGrid}>
               <View style={styles.sheetDetail}>
-                <Ionicons
-                  name="time-outline"
-                  size={16}
-                  color={colors.violet}
-                />
+                <Ionicons name="time-outline" size={16} color={colors.violet} />
                 <Text style={styles.sheetDetailLabel}>Waktu Sesi</Text>
                 <Text style={styles.sheetDetailValue}>
                   {(() => {
@@ -771,7 +818,11 @@ export function CalendarScreen({ navigation }: Props) {
                 </Text>
               </View>
               <View style={styles.sheetDetail}>
-                <Ionicons name="location-outline" size={16} color={colors.violet} />
+                <Ionicons
+                  name="location-outline"
+                  size={16}
+                  color={colors.violet}
+                />
                 <Text style={styles.sheetDetailLabel}>Lokasi Lab</Text>
                 <Text style={styles.sheetDetailValue} numberOfLines={1}>
                   {drawerSession.lab ?? drawerSession.groupName}
@@ -781,7 +832,11 @@ export function CalendarScreen({ navigation }: Props) {
             {/* Dosen & asisten info */}
             <View style={styles.sheetPeople}>
               <View style={styles.sheetPeopleItem}>
-                <Ionicons name="school-outline" size={16} color={colors.inkMuted} />
+                <Ionicons
+                  name="school-outline"
+                  size={16}
+                  color={colors.inkMuted}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sheetPeopleLabel}>Dosen Pengampu</Text>
                   <Text style={styles.sheetPeopleValue}>
@@ -790,9 +845,15 @@ export function CalendarScreen({ navigation }: Props) {
                 </View>
               </View>
               <View style={styles.sheetPeopleItem}>
-                <Ionicons name="people-outline" size={16} color={colors.inkMuted} />
+                <Ionicons
+                  name="people-outline"
+                  size={16}
+                  color={colors.inkMuted}
+                />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.sheetPeopleLabel}>Asisten Pendamping</Text>
+                  <Text style={styles.sheetPeopleLabel}>
+                    Asisten Pendamping
+                  </Text>
                   <Text style={styles.sheetPeopleValue}>
                     {isAsisten ? 'Tim Asisten' : '—'}
                   </Text>
@@ -906,7 +967,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.lavender,
   },
-  todayChipText: { ...typography.caption, color: colors.violet, fontWeight: '700' },
+  todayChipText: {
+    ...typography.caption,
+    color: colors.violet,
+    fontWeight: '700',
+  },
 
   viewBar: {
     flexDirection: 'row',
@@ -929,7 +994,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
-  viewPillLabel: { ...typography.caption, color: colors.inkMuted, fontWeight: '600' },
+  viewPillLabel: {
+    ...typography.caption,
+    color: colors.inkMuted,
+    fontWeight: '600',
+  },
   viewPillLabelActive: { color: colors.violet, fontWeight: '700' },
 
   kpiGrid: { flexDirection: 'row', gap: 8 },
@@ -944,7 +1013,11 @@ const styles = StyleSheet.create({
     color: colors.lime,
     fontSize: 9,
   },
-  kpiLabelMuted: { ...typography.overline, color: colors.inkMuted, fontSize: 9 },
+  kpiLabelMuted: {
+    ...typography.overline,
+    color: colors.inkMuted,
+    fontSize: 9,
+  },
   kpiValue: {
     ...typography.display,
     color: colors.ink,
@@ -1003,7 +1076,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   dayHeaderNumberToday: { color: colors.onPrimary, fontSize: 18 },
-  dayHeaderCount: { ...typography.caption, color: colors.inkMuted, fontSize: 9 },
+  dayHeaderCount: {
+    ...typography.caption,
+    color: colors.inkMuted,
+    fontSize: 9,
+  },
   dayHeaderCountToday: { color: 'rgba(255,255,255,0.75)' },
 
   bodyRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
@@ -1083,7 +1160,11 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   eventLab: { ...typography.caption, color: colors.inkMuted, fontSize: 9 },
-  eventActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 2 },
+  eventActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 2,
+  },
   eventActionPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1145,7 +1226,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   dayViewTitle: { alignItems: 'center', gap: 0 },
-  dayViewLabel: { ...typography.overline, color: colors.inkMuted, fontSize: 10 },
+  dayViewLabel: {
+    ...typography.overline,
+    color: colors.inkMuted,
+    fontSize: 10,
+  },
   dayViewNumber: { ...typography.label, color: colors.ink, fontWeight: '700' },
 
   legend: {
@@ -1215,8 +1300,16 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   sheetDetail: { flex: 1, gap: 3 },
-  sheetDetailLabel: { ...typography.overline, color: colors.inkMuted, fontSize: 8 },
-  sheetDetailValue: { ...typography.label, color: colors.ink, fontWeight: '600' },
+  sheetDetailLabel: {
+    ...typography.overline,
+    color: colors.inkMuted,
+    fontSize: 8,
+  },
+  sheetDetailValue: {
+    ...typography.label,
+    color: colors.ink,
+    fontWeight: '600',
+  },
 
   sheetPeople: {
     marginTop: 2,
@@ -1235,7 +1328,11 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     fontSize: 8,
   },
-  sheetPeopleValue: { ...typography.label, color: colors.ink, fontWeight: '600' },
+  sheetPeopleValue: {
+    ...typography.label,
+    color: colors.ink,
+    fontWeight: '600',
+  },
 
   sheetActions: {
     flexDirection: 'row',

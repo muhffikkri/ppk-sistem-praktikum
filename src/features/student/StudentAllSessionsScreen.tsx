@@ -2,12 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import {
-  colors,
-  radius,
-  Screen,
-  typography,
-} from '../../shared/ui';
+import { colors, radius, Screen, typography } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatSessionDate, formatTimeRange } from './formatters';
 
@@ -104,16 +99,16 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
                 </View>
               </View>
               <View style={styles.metaRow}>
-                <Text style={styles.meta}>{formatSessionDate(session.startsAt)}</Text>
+                <Text style={styles.meta}>
+                  {formatSessionDate(session.startsAt)}
+                </Text>
                 <Text style={styles.meta}>
                   {formatTimeRange(session.startsAt, session.endsAt)}
                 </Text>
               </View>
               <View style={styles.footer}>
                 <Text style={styles.footerText}>
-                  {record
-                    ? `Sudah presensi`
-                    : 'Belum presensi'}
+                  {record ? `Sudah presensi` : 'Belum presensi'}
                 </Text>
                 <Text style={styles.chevron}>Detail ›</Text>
               </View>

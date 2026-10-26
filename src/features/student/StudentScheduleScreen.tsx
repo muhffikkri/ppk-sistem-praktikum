@@ -47,7 +47,9 @@ export function StudentScheduleScreen({ navigation }: Props) {
         </Text>
       </View>
 
-      <CardOverline><Text>KELAS KAMU</Text></CardOverline>
+      <CardOverline>
+        <Text>KELAS KAMU</Text>
+      </CardOverline>
       <View style={styles.heroBlock}>
         <Text style={styles.heroTitle}>Kelas 3SE1 — Kelompok Praktikan</Text>
         <Text style={styles.heroMeta}>

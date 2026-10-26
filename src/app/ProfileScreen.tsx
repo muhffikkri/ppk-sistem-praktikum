@@ -31,10 +31,7 @@ const DEMO_IDENTITY = {
  * static dummy targets.
  */
 type MenuRoute =
-  | 'Schedule'
-  | 'Attendance'
-  | 'AssistantModuleList'
-  | 'AssistantSettings';
+  'Schedule' | 'Attendance' | 'AssistantModuleList' | 'AssistantSettings';
 
 const MENU_ITEMS: {
   label: string;
@@ -42,10 +39,30 @@ const MENU_ITEMS: {
   glyph: string;
   route: MenuRoute;
 }[] = [
-  { label: 'Jadwal Praktikum', sub: '4 sesi minggu ini', glyph: '▦', route: 'Schedule' },
-  { label: 'Riwayat Presensi', sub: '12 sesi tercatat', glyph: '✦', route: 'Attendance' },
-  { label: 'Modul & Materi', sub: '8 modul tersedia', glyph: '≡', route: 'AssistantModuleList' },
-  { label: 'Pengaturan', sub: 'Notifikasi & preferensi', glyph: '⚙', route: 'AssistantSettings' },
+  {
+    label: 'Jadwal Praktikum',
+    sub: '4 sesi minggu ini',
+    glyph: '▦',
+    route: 'Schedule',
+  },
+  {
+    label: 'Riwayat Presensi',
+    sub: '12 sesi tercatat',
+    glyph: '✦',
+    route: 'Attendance',
+  },
+  {
+    label: 'Modul & Materi',
+    sub: '8 modul tersedia',
+    glyph: '≡',
+    route: 'AssistantModuleList',
+  },
+  {
+    label: 'Pengaturan',
+    sub: 'Notifikasi & preferensi',
+    glyph: '⚙',
+    route: 'AssistantSettings',
+  },
 ];
 
 export function ProfileScreen({ navigation }: Props) {

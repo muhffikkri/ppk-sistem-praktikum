@@ -114,7 +114,9 @@ export function AssistantScheduleScreen({ navigation }: Props) {
         <View style={styles.panel}>
           <Card variant="panel" interactive={false}>
             <CardContent>
-              <CardOverline><Text>BERIKUTNYA</Text></CardOverline>
+              <CardOverline>
+                <Text>BERIKUTNYA</Text>
+              </CardOverline>
               <Text style={styles.panelTitle}>{nextSession.courseName}</Text>
               <Text style={styles.panelMeta}>
                 {formatTimeRange(nextSession.startsAt, nextSession.endsAt)} •{' '}

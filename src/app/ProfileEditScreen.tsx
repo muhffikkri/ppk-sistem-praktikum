@@ -51,7 +51,9 @@ export function ProfileEditScreen({ navigation }: Props) {
 
       <Card variant="surface" interactive={false}>
         <CardContent>
-          <CardOverline><Text>Identitas</Text></CardOverline>
+          <CardOverline>
+            <Text>Identitas</Text>
+          </CardOverline>
           <View style={styles.fieldGroup}>
             <Field label="Nama Lengkap" value={name} onChange={setName} />
             <Field
@@ -60,7 +62,11 @@ export function ProfileEditScreen({ navigation }: Props) {
               onChange={setNim}
               keyboardType="number-pad"
             />
-            <Field label="Program Studi" value={program} onChange={setProgram} />
+            <Field
+              label="Program Studi"
+              value={program}
+              onChange={setProgram}
+            />
             <Field
               label="Fakultas"
               value={department}
@@ -127,9 +133,7 @@ function Field({
   label: string;
   value: string;
   onChange: (text: string) => void;
-  keyboardType?: Parameters<
-    typeof TextInput
-  >[0]['keyboardType'];
+  keyboardType?: Parameters<typeof TextInput>[0]['keyboardType'];
 }) {
   return (
     <View style={styles.field}>

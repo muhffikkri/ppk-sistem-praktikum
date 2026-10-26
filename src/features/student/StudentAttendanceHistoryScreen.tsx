@@ -29,7 +29,8 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
   );
 
   const total = sorted.length;
-  const rate = sessions.length > 0 ? Math.round((total / sessions.length) * 100) : 0;
+  const rate =
+    sessions.length > 0 ? Math.round((total / sessions.length) * 100) : 0;
 
   return (
     <Screen>

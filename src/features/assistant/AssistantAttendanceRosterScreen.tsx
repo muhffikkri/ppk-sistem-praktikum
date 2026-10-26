@@ -117,9 +117,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
                   <Text style={styles.name} numberOfLines={1}>
                     {record.studentName}
                   </Text>
-                  <Text style={styles.meta}>
-                    NIM {record.studentId}
-                  </Text>
+                  <Text style={styles.meta}>NIM {record.studentId}</Text>
                 </View>
                 <View style={styles.rowRight}>
                   <Text style={styles.time}>

@@ -64,10 +64,7 @@ export function AssistantSettingsScreen({ navigation }: Props) {
                 accessibilityRole="switch"
                 accessibilityState={{ checked: on }}
                 accessibilityLabel={meta.label}
-                style={[
-                  styles.row,
-                  index < keys.length - 1 && styles.divider,
-                ]}
+                style={[styles.row, index < keys.length - 1 && styles.divider]}
               >
                 <View style={styles.rowText}>
                   <Text style={styles.rowLabel}>{meta.label}</Text>

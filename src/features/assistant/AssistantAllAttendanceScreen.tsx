@@ -18,8 +18,7 @@ type Props = NativeStackScreenProps<
 >;
 
 export function AssistantAllAttendanceScreen({ navigation }: Props) {
-  const { sessions, getAttendanceForSession } =
-    useAssistantSessionsViewModel();
+  const { sessions, getAttendanceForSession } = useAssistantSessionsViewModel();
 
   // Flatten all attendance records across every session, newest first.
   const allRecords = sessions.flatMap((s) =>
@@ -105,7 +104,8 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
                     {record.studentName}
                   </Text>
                   <Text style={styles.meta}>
-                    {record.session.courseName} · {formatSessionDate(record.session.startsAt)}
+                    {record.session.courseName} ·{' '}
+                    {formatSessionDate(record.session.startsAt)}
                   </Text>
                 </View>
               </View>
