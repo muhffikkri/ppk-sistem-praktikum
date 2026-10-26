@@ -1,11 +1,10 @@
 // Keep route names and params aligned with docs/shared-contract.md.
 export type RootStackParamList = {
-  RoleSelect: undefined;
+  Home: undefined;
   StudentSchedule: undefined;
   StudentSessionDetail: { sessionId: string };
   StudentAttendanceHistory: undefined;
   AssistantSchedule: undefined;
-  AssistantDashboard: undefined;
   AssistantSessionDetail: { sessionId: string };
   AssistantAttendanceRoster: { sessionId: string };
   Profile: undefined;

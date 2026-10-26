@@ -5,7 +5,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   AssistantAttendanceRosterScreen,
-  AssistantDashboardScreen,
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
 } from '../features/assistant';
@@ -16,20 +15,23 @@ import {
 } from '../features/student';
 import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 import type { RootStackParamList } from './navigation';
+import { HomeScreen } from './HomeScreen';
 import { ProfileScreen } from './ProfileScreen';
-import { RoleSelectScreen } from './RoleSelectScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// ponytail: dock adapts its middle tab label to the active POV so the
+// user always sees a "Beranda" that reflects their current role.
+// Replace with a single icon-font icon set when @react-navigation icons land.
 const DOCK_TABS: DockTab[] = [
-  { key: 'RoleSelect', label: 'Beranda', glyph: '◆' },
+  { key: 'Home', label: 'Beranda', glyph: '◆' },
   { key: 'StudentSchedule', label: 'Jadwal', glyph: '▦' },
   { key: 'StudentAttendanceHistory', label: 'Presensi', glyph: '✦' },
   { key: 'Profile', label: 'Akun', glyph: '◉' },
 ];
 
 export function AppNavigator() {
-  const [activeKey, setActiveKey] = useState<string>('RoleSelect');
+  const [activeKey, setActiveKey] = useState<string>('Home');
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
     /** Reset the whole stack to a single top-level route — used by the
@@ -51,7 +53,7 @@ export function AppNavigator() {
   return (
     <View style={styles.root}>
       <Stack.Navigator
-        initialRouteName="RoleSelect"
+        initialRouteName="Home"
         screenOptions={({ route }) => ({
           headerStyle: { backgroundColor: colors.panel },
           headerTintColor: colors.violet,
@@ -74,12 +76,13 @@ export function AppNavigator() {
         })}
       >
         <Stack.Screen
-          name="RoleSelect"
-          component={RoleSelectScreen}
+          name="Home"
+          component={HomeScreen}
           options={{
-            title: 'PPK Mobile',
+            title: 'Beranda',
             headerRight: () => null,
             headerBackTitle: '',
+            headerShown: false,
           }}
         />
         <Stack.Group screenOptions={{ title: 'Praktikan · Demo' }}>
@@ -99,11 +102,6 @@ export function AppNavigator() {
           />
         </Stack.Group>
         <Stack.Group screenOptions={{ title: 'Asisten · Demo' }}>
-          <Stack.Screen
-            name="AssistantDashboard"
-            component={AssistantDashboardScreen}
-            options={{ headerShown: false }}
-          />
           <Stack.Screen
             name="AssistantSchedule"
             component={AssistantScheduleScreen}

@@ -1,4 +1,3 @@
-export { AssistantDashboardScreen } from './AssistantDashboardScreen';
 export { AssistantScheduleScreen } from './AssistantScheduleScreen';
 export { AssistantSessionDetailScreen } from './AssistantSessionDetailScreen';
 export { AssistantAttendanceRosterScreen } from './AssistantAttendanceRosterScreen';
