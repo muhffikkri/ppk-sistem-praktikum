@@ -97,20 +97,36 @@ export function HomeScreen({ navigation }: Props) {
     }
   };
 
-  // View toggle: 'home' = beranda utama, 'tanggal' = tampilan tanggal di beranda.
-  // Tekan tombol tanggal di beranda beralihalah ke tampilan tanggal; buka
-  // kalender penuh (CalendarScreen) hanya lewat halaman Jadwal.
+  // Radio button: hari yang dipilih di bar hari bawah.
+  // Nilai awal = activeDayIndex dari sesi yang sedang berjalan.
+  const [selectedDayIndex, setSelectedDayIndex] = useState<
+    number | undefined
+  >(
+    active
+      ? (new Date(active.startsAt).getDay() + 6) % 7
+      : undefined,
+  );
+
+  // Tampilan utama: 'home' = beranda biasa, 'tanggal' = tampilan detail hari terpilih.
   const [view, setView] = useState<'home' | 'tanggal'>('home');
 
-  const activeDayIndex = active
-    ? (new Date(active.startsAt).getDay() + 6) % 7
-    : 0;
-  const onDayPress = () => {
+  const onDayPress = (index: number) => {
+    setSelectedDayIndex(index);
     setView('tanggal');
   };
   const onBackToHome = () => setView('home');
 
   const isAsisten = pov === 'asisten';
+
+  // Menghari hari dalam bentuk nama lengkap saat view 'tanggal'
+  const selectedDayName = selectedDayIndex !== undefined
+    ? WEEKDAY_LABELS[selectedDayIndex]
+    : '';
+
+  // Menghari tanggal: gunakan format active session jika ada, else "-"
+  const selectedDayDate = selectedDayIndex !== undefined && active
+    ? formatSessionDate(active.startsAt)
+    : '-';
 
   return (
     <Screen>
@@ -129,8 +145,8 @@ export function HomeScreen({ navigation }: Props) {
           </View>
           <View style={styles.tanggalContent}>
             <Text style={styles.tanggalDate}>
-              {WEEKDAY_LABELS[activeDayIndex]},{' '}
-              {active ? formatSessionDate(active.startsAt) : '-'}
+              {selectedDayName},{' '}
+              {selectedDayDate}
             </Text>
           </View>
         </View>
@@ -181,22 +197,22 @@ export function HomeScreen({ navigation }: Props) {
             ))}
           </View>
 
-          {/* Day strip — press switches to tanggal view on home */}
+          {/* Day strip — radio buttons that switch to tanggal view */}
           <View style={styles.dayStrip}>
             {WEEKDAY_LABELS.map((label, index) => {
-              const isActive = active ? index === activeDayIndex : false;
+              const isSelected = selectedDayIndex === index;
               return (
                 <Pressable
                   key={label}
                   accessibilityRole="button"
-                  accessibilityState={{ selected: isActive }}
-                  onPress={onDayPress}
-                  style={[styles.dayItem, isActive && styles.dayItemActive]}
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => onDayPress(index)}
+                  style={[styles.dayItem, isSelected && styles.dayItemActive]}
                 >
                   <Text
                     style={[
                       styles.dayLabel,
-                      isActive ? styles.dayLabelActive : undefined,
+                      isSelected ? styles.dayLabelActive : undefined,
                     ]}
                   >
                     {label.toUpperCase()}
@@ -204,7 +220,7 @@ export function HomeScreen({ navigation }: Props) {
                   <Text
                     style={[
                       styles.dayNumber,
-                      isActive ? styles.dayNumberActive : undefined,
+                      isSelected ? styles.dayNumberActive : undefined,
                     ]}
                   >
                     {index + 16}
@@ -619,7 +635,7 @@ const styles = StyleSheet.create({
   dayNumber: { ...typography.label, color: colors.ink, fontSize: 12 },
   dayNumberActive: { color: colors.lime },
 
-  // Tampilan tanggal di beranda (diakses via tombol tanggal di day strip).
+  // Tampilan tanggal di beranda (diakses via tombol radio di day strip).
   tanggalView: { flex: 1, padding: 16 },
   tanggalHeader: {
     flexDirection: 'row',
