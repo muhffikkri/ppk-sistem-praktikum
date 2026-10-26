@@ -37,7 +37,7 @@ const DAY_START = 7; // 07:00
 const DAY_END = 18; // hingga 18:00
 const PX_PER_HOUR = 56;
 
-type ViewMode = 'day' | 'week';
+type ViewMode = 'day' | 'week' | 'agenda';
 
 const WEEKDAY_SHORT = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const WEEKDAY_FULL = [
@@ -394,7 +394,7 @@ export function CalendarScreen({ navigation }: Props) {
         />
       </View>
 
-      {/* Week navigator + view switcher */}
+      {/* Bar 1: Navigasi minggu — < >, Minggu ke-X + Tanggal, Hari Ini */}
       <View style={styles.navBar}>
         <View style={styles.navArrows}>
           <Pressable
@@ -441,38 +441,40 @@ export function CalendarScreen({ navigation }: Props) {
             <Text style={styles.todayChipText}>Hari Ini</Text>
           </Pressable>
         </View>
-        <View style={styles.viewSwitcher}>
-          {(['day', 'week'] as const).map((mode) => (
-            <Pressable
-              key={mode}
-              accessibilityRole="button"
-              accessibilityState={{ selected: viewMode === mode }}
-              onPress={() => {
-                setViewMode(mode);
-                if (mode === 'day') {
-                  const openDay = weekSessions
-                    .map((s) => sessionMinutes(s).day)
-                    .find((d) => sameDay(d, new Date()));
-                  if (openDay) setSelectedDay(openDay);
-                }
-              }}
-              style={({ pressed }) => [
-                styles.viewPill,
-                viewMode === mode && styles.viewPillActive,
-                pressed && { opacity: 0.8 },
+      </View>
+
+      {/* Bar 2: Pilihan tampilan — Hari / Minggu / Agenda */}
+      <View style={styles.viewBar}>
+        {(['day', 'week', 'agenda'] as const).map((mode) => (
+          <Pressable
+            key={mode}
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === mode }}
+            onPress={() => {
+              setViewMode(mode);
+              if (mode === 'day') {
+                const openDay = weekSessions
+                  .map((s) => sessionMinutes(s).day)
+                  .find((d) => sameDay(d, new Date()));
+                if (openDay) setSelectedDay(openDay);
+              }
+            }}
+            style={({ pressed }) => [
+              styles.viewPill,
+              viewMode === mode && styles.viewPillActive,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Text
+              style={[
+                styles.viewPillLabel,
+                viewMode === mode && styles.viewPillLabelActive,
               ]}
             >
-              <Text
-                style={[
-                  styles.viewPillLabel,
-                  viewMode === mode && styles.viewPillLabelActive,
-                ]}
-              >
-                {mode === 'day' ? 'Hari' : 'Minggu'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+              {mode === 'day' ? 'Hari' : mode === 'week' ? 'Minggu' : 'Agenda'}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {/* KPI strip */}
@@ -897,6 +899,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     padding: 8,
     marginHorizontal: 4,
+    marginBottom: 8,
   },
   navArrows: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   navArrow: {
@@ -918,11 +921,13 @@ const styles = StyleSheet.create({
   },
   todayChipText: { ...typography.caption, color: colors.violet, fontWeight: '700' },
 
-  viewSwitcher: {
+  viewBar: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 2,
+    marginHorizontal: 4,
+    marginBottom: 12,
   },
   viewPill: {
     paddingHorizontal: 12,
