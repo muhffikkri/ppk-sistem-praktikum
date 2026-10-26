@@ -25,12 +25,28 @@ const DEMO_IDENTITY = {
   department: 'Fakultas Teknik Informatika',
 };
 
-const MENU_ITEMS = [
-  { label: 'Jadwal Praktikum', sub: '4 sesi minggu ini', glyph: '▦' },
-  { label: 'Riwayat Presensi', sub: '12 sesi tercatat', glyph: '✦' },
-  { label: 'Modul & Materi', sub: '8 modul tersedia', glyph: '≡' },
-  { label: 'Pengaturan', sub: 'Notifikasi & preferensi', glyph: '⚙' },
-] as const;
+/**
+ * Menu rows. `Schedule` and `Attendance` resolve to the active-POV route
+ * (see DOCK_ROUTE_FOR_POV in AppNavigator). `Modul` and `Pengaturan` are
+ * static dummy targets.
+ */
+type MenuRoute =
+  | 'Schedule'
+  | 'Attendance'
+  | 'AssistantModuleList'
+  | 'AssistantSettings';
+
+const MENU_ITEMS: {
+  label: string;
+  sub: string;
+  glyph: string;
+  route: MenuRoute;
+}[] = [
+  { label: 'Jadwal Praktikum', sub: '4 sesi minggu ini', glyph: '▦', route: 'Schedule' },
+  { label: 'Riwayat Presensi', sub: '12 sesi tercatat', glyph: '✦', route: 'Attendance' },
+  { label: 'Modul & Materi', sub: '8 modul tersedia', glyph: '≡', route: 'AssistantModuleList' },
+  { label: 'Pengaturan', sub: 'Notifikasi & preferensi', glyph: '⚙', route: 'AssistantSettings' },
+];
 
 export function ProfileScreen({ navigation }: Props) {
   const { pov, setPov } = usePov();
@@ -154,11 +170,29 @@ export function ProfileScreen({ navigation }: Props) {
         </Text>
         <View style={styles.menuList}>
           {MENU_ITEMS.map((item, index) => (
-            <View
+            <Pressable
               key={item.label}
-              style={[
+              accessibilityRole="button"
+              onPress={() => {
+                switch (item.route) {
+                  case 'Schedule':
+                    navigation.navigate('StudentSchedule');
+                    break;
+                  case 'Attendance':
+                    navigation.navigate('StudentAttendanceHistory');
+                    break;
+                  case 'AssistantModuleList':
+                    navigation.navigate('AssistantModuleList');
+                    break;
+                  case 'AssistantSettings':
+                    navigation.navigate('AssistantSettings');
+                    break;
+                }
+              }}
+              style={({ pressed }) => [
                 styles.menuRow,
                 index < MENU_ITEMS.length - 1 && styles.menuRowDivider,
+                pressed && styles.menuRowPressed,
               ]}
             >
               <View style={styles.menuGlyph}>{item.glyph}</View>
@@ -169,7 +203,7 @@ export function ProfileScreen({ navigation }: Props) {
               <Text style={styles.menuChevron} accessible={false}>
                 ›
               </Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -292,4 +326,5 @@ const styles = StyleSheet.create({
   menuLabel: { ...typography.bodyStrong, color: colors.ink },
   menuSub: { ...typography.caption, color: colors.inkMuted },
   menuChevron: { ...typography.bodyStrong, color: colors.inkMuted },
+  menuRowPressed: { backgroundColor: colors.lavenderSubtle },
 });
