@@ -9,9 +9,13 @@ import {
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
 } from '../features/assistant';
+import {
+  StudentAttendanceHistoryScreen,
+  StudentScheduleScreen,
+  StudentSessionDetailScreen,
+} from '../features/student';
 import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 import type { RootStackParamList } from './navigation';
-import { PlaceholderScreen } from './placeholders/PlaceholderScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { RoleSelectScreen } from './RoleSelectScreen';
 
@@ -81,16 +85,16 @@ export function AppNavigator() {
         <Stack.Group screenOptions={{ title: 'Praktikan · Demo' }}>
           <Stack.Screen
             name="StudentSchedule"
-            component={PlaceholderScreen}
+            component={StudentScheduleScreen}
             options={{ headerShown: false }}
           />
           <Stack.Screen
             name="StudentSessionDetail"
-            component={PlaceholderScreen}
+            component={StudentSessionDetailScreen}
           />
           <Stack.Screen
             name="StudentAttendanceHistory"
-            component={PlaceholderScreen}
+            component={StudentAttendanceHistoryScreen}
             options={{ headerShown: false }}
           />
         </Stack.Group>
