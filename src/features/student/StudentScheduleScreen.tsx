@@ -47,7 +47,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
         </Text>
       </View>
 
-      <CardOverline>KELAS KAMU</CardOverline>
+      <CardOverline><Text>KELAS KAMU</Text></CardOverline>
       <View style={styles.heroBlock}>
         <Text style={styles.heroTitle}>Kelas 3SE1 — Kelompok Praktikan</Text>
         <Text style={styles.heroMeta}>
@@ -59,7 +59,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
               label="Lihat Kalender"
               variant="accent"
               icon="calendar"
-              onPress={() => navigation.navigate('StudentAllSessions')}
+              onPress={() => navigation.navigate('Calendar')}
               accessibilityHint="Membuka halaman kalender semua jadwal"
             />
           </View>

@@ -13,6 +13,7 @@ export type RootStackParamList = {
   AssistantAllAttendance: undefined;
   StudentAllSessions: undefined;
   StudentAllAttendance: undefined;
+  Calendar: undefined;
   Profile: undefined;
   ProfileEdit: undefined;
 };

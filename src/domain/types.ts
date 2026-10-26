@@ -16,6 +16,8 @@ export type Session = {
   status: SessionStatus;
   openedAt: string | null; // ISO 8601 UTC
   closedAt: string | null; // ISO 8601 UTC
+  /** Label lokasi lab untuk tampilan kalender. */
+  lab?: string;
 };
 
 export type DemoStudent = {

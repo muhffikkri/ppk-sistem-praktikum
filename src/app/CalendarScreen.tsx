@@ -97,11 +97,6 @@ function sessionMinutes(session: Session): { day: Date; startMin: number; endMin
   return { day: start, startMin, endMin };
 }
 
-function weekLabel(monday: Date): string {
-  const sunday = addDays(monday, 6);
-  const w = weekNumber(monday);
-  return `Minggu ${w} · ${monday.getDate()} ${MONTHS_SHORT[monday.getMonth()]} – ${sunday.getDate()} ${MONTHS_SHORT[sunday.getMonth()]} ${sunday.getFullYear()}`;
-}
 
 /**
  * Kalender interaktif (grid hari × jam, gaya Google Calendar) — dipakai
@@ -362,14 +357,6 @@ export function CalendarScreen({ navigation }: Props) {
     );
   };
 
-  const drawerStatusLabel = drawerSession
-    ? drawerSession.status === 'open'
-      ? 'Sedang Berlangsung'
-      : drawerSession.status === 'scheduled'
-        ? 'Terjadwal'
-        : 'Selesai'
-    : '';
-
   const drawerBadgeLabel = drawerSession
     ? drawerSession.status === 'open'
       ? 'Shift Aktif Kamu'
@@ -382,7 +369,7 @@ export function CalendarScreen({ navigation }: Props) {
     <Screen>
       <View style={styles.headRow}>
         <View style={styles.headText}>
-          <CardOverline>KALENDER &amp; JADWAL LAB</CardOverline>
+          <CardOverline><Text>KALENDER &amp; JADWAL LAB</Text></CardOverline>
           <Text style={styles.title} accessibilityRole="header">
             Kalender
           </Text>

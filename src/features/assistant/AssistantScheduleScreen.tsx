@@ -114,7 +114,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
         <View style={styles.panel}>
           <Card variant="panel" interactive={false}>
             <CardContent>
-              <CardOverline>BERIKUTNYA</CardOverline>
+              <CardOverline><Text>BERIKUTNYA</Text></CardOverline>
               <Text style={styles.panelTitle}>{nextSession.courseName}</Text>
               <Text style={styles.panelMeta}>
                 {formatTimeRange(nextSession.startsAt, nextSession.endsAt)} •{' '}
@@ -133,7 +133,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
           label="Lihat Kalender"
           variant="soft"
           icon="calendar"
-          onPress={() => navigation.navigate('AssistantAllSessions')}
+          onPress={() => navigation.navigate('Calendar')}
           accessibilityHint="Membuka halaman kalender semua sesi"
         />
       </View>

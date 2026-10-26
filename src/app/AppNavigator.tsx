@@ -23,6 +23,7 @@ import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 import { usePov } from '../state';
 import type { RootStackParamList } from './navigation';
 import { HomeScreen } from './HomeScreen';
+import { CalendarScreen } from './CalendarScreen';
 import { ProfileEditScreen } from './ProfileEditScreen';
 import { ProfileScreen } from './ProfileScreen';
 
@@ -194,6 +195,15 @@ export function AppNavigator() {
             component={AssistantAllAttendanceScreen}
           />
         </Stack.Group>
+        <Stack.Screen
+          name="Calendar"
+          component={CalendarScreen}
+          options={{
+            headerTintColor: colors.inkMuted,
+            headerStyle: { backgroundColor: colors.surface },
+            title: 'Kalender',
+          }}
+        />
         <Stack.Screen
           name="Profile"
           component={ProfileScreen}

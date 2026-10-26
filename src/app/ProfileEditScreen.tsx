@@ -51,7 +51,7 @@ export function ProfileEditScreen({ navigation }: Props) {
 
       <Card variant="surface" interactive={false}>
         <CardContent>
-          <CardOverline>Identitas</CardOverline>
+          <CardOverline><Text>Identitas</Text></CardOverline>
           <View style={styles.fieldGroup}>
             <Field label="Nama Lengkap" value={name} onChange={setName} />
             <Field
