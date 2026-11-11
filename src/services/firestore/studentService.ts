@@ -1,15 +1,15 @@
 import {
-    collection,
-    doc,
-    getDoc,
-    onSnapshot,
-    query,
-    setDoc,
-    Timestamp,
-    where
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  setDoc,
+  Timestamp,
+  where,
 } from 'firebase/firestore';
-// Sesuaikan path import firestore db Anda (misal dari '../../config/firebase' atau sejenisnya)
-// import { db } from '../../config/firebase'; 
+
+import { db } from '../firebase';
 
 export interface Session {
   id: string;
@@ -28,27 +28,28 @@ export interface AttendanceRecord {
 
 // 1. Mendapatkan daftar sesi secara real-time yang hanya diikuti oleh studentId tertentu
 export function subscribeStudentSessions(
-  studentId: string, 
+  studentId: string,
   onUpdate: (sessions: Session[]) => void,
-  onError: (error: Error) => void
+  onError: (error: Error) => void,
 ) {
   // Query ke koleksi classes/sessions di Firestore berdasarkan participantIds
   const q = query(
     collection(db, 'sessions'),
-    where('participantIds', 'array-contains', studentId)
+    where('participantIds', 'array-contains', studentId),
   );
 
-  return onSnapshot(q, 
+  return onSnapshot(
+    q,
     (snapshot) => {
-      const sessions: Session[] = snapshot.docs.map(doc => ({
+      const sessions: Session[] = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as Session[];
       onUpdate(sessions);
-    }, 
+    },
     (error) => {
       onError(error);
-    }
+    },
   );
 }
 
@@ -56,29 +57,33 @@ export function subscribeStudentSessions(
 export function subscribeStudentAttendance(
   studentId: string,
   onUpdate: (records: AttendanceRecord[]) => void,
-  onError: (error: Error) => void
+  onError: (error: Error) => void,
 ) {
   const q = query(
     collection(db, 'attendance'),
-    where('studentId', '==', studentId)
+    where('studentId', '==', studentId),
   );
 
-  return onSnapshot(q,
+  return onSnapshot(
+    q,
     (snapshot) => {
-      const records: AttendanceRecord[] = snapshot.docs.map(doc => ({
+      const records: AttendanceRecord[] = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as AttendanceRecord[];
       onUpdate(records);
     },
     (error) => {
       onError(error);
-    }
+    },
   );
 }
 
 // 3. Aksi Check-In Presensi Terintegrasi
-export async function checkInStudent(sessionId: string, studentId: string): Promise<{ ok: boolean; reason?: string }> {
+export async function checkInStudent(
+  sessionId: string,
+  studentId: string,
+): Promise<{ ok: boolean; reason?: string }> {
   try {
     const sessionRef = doc(db, 'sessions', sessionId);
     const sessionSnap = await getDoc(sessionRef);
@@ -112,7 +117,10 @@ export async function checkInStudent(sessionId: string, studentId: string): Prom
     });
 
     return { ok: true };
-  } catch (error: any) {
-    return { ok: false, reason: error.message || 'network_error' };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      reason: error instanceof Error ? error.message : 'network_error',
+    };
   }
 }

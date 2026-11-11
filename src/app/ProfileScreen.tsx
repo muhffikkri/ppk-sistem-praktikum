@@ -52,6 +52,18 @@ export function ProfileScreen({ navigation }: Props) {
           onPress: () => navigation.navigate('AssistantSchedule'),
         },
         {
+          label: 'Kelola Kelas & Peserta',
+          sub: 'CRUD kelas, peserta, dan jadwal',
+          glyph: '⌘',
+          onPress: () => navigation.navigate('AssistantClassList'),
+        },
+        {
+          label: 'Pemeriksaan Izin',
+          sub: 'Tinjau pengajuan izin & prediksi AI',
+          glyph: '✉',
+          onPress: () => navigation.navigate('AssistantLeaveReviewList'),
+        },
+        {
           label: 'Rekap Presensi',
           sub: 'Daftar kehadiran sesi praktikum',
           glyph: '✦',
@@ -76,6 +88,12 @@ export function ProfileScreen({ navigation }: Props) {
           sub: 'Lihat jadwal dan status sesi',
           glyph: '▦',
           onPress: () => navigation.navigate('StudentSchedule'),
+        },
+        {
+          label: 'Pengajuan Izin',
+          sub: 'Ajukan & pantau status izin praktikum',
+          glyph: '✉',
+          onPress: () => navigation.navigate('StudentLeaveList'),
         },
         {
           label: 'Riwayat Presensi',

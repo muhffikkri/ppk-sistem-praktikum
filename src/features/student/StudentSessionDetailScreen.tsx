@@ -137,6 +137,15 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
           </Text>
         )}
         <Button
+          label="Ajukan Izin"
+          variant="soft"
+          onPress={() =>
+            navigation.navigate('StudentLeaveRequestForm', {
+              sessionId: session.id,
+            })
+          }
+        />
+        <Button
           label="Lihat riwayat kehadiran"
           variant="outline"
           onPress={() => navigation.navigate('StudentAttendanceHistory')}
