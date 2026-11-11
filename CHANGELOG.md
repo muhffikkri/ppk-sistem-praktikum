@@ -2,7 +2,7 @@
 
 Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletakkan paling atas.
 
-## [Unreleased]
+## [1.2.0] - 2026-11-11
 
 ### Implementasi Sprint 2 — Data Dinamis dengan Firebase
 

@@ -5,7 +5,8 @@ Aplikasi mobile praktikum: jadwal sesi, buka/tutup sesi, presensi, dan rekap keh
 ## Fitur Utama (Sprint 2)
 
 - **Autentikasi**: Login/Register dengan email & password, serta **Google Authentication** (login sekali klik).
-- **Role**: Praktikan, Asisten praktikum, dan Admin — tiap role memiliki akses dan tampilan yang berbeda.
+- **Account Linking**: Satu email mengakses user yang sama dengan role yang sama, terlepas dari metode login (email atau Google).
+- **Role**: Praktikan, Asisten praktikum, dan Admin — tiap role memiliki akses dan tampilan yang berbeda. Admin hanya dapat dibuat melalui `EXPO_PUBLIC_ADMIN_EMAIL` di `.env`.
 - **CRUD Admin/Asisten**: Kelola kelas, peserta, dan sesi praktikum.
 - **Presensi Real-Time**: Praktikan check-in saat sesi `open`, data tersimpan ke Firestore secara real-time.
 - **Pengajuan Izin**: Praktikan ajukan izin dengan klasifikasi AI pendukung; Asisten meninjau dan memberikan keputusan Terima/Tolak.
@@ -56,7 +57,7 @@ src/app/                navigator & screens (Home, Calendar, Profile, dll.)
 src/app/navigation.ts   tipe route (AuthStackParamList, RootStackParamList)
 src/domain/             tipe domain & aturan sesi/presensi/auth
 src/features/           fitur per modul (assistant, auth, leave, student)
-src/features/auth/      LoginScreen, RegisterScreen
+src/features/auth/      LandingScreen, LoginScreen, RegisterScreen, RoleSelectionScreen
 src/features/assistant/ AssistantClassList, ClassForm, SessionForm, dll.
 src/features/leave/     StudentLeaveRequestForm, StudentLeaveList, AssistantLeaveReviewList
 src/features/student/   StudentSchedule, SessionDetail, AttendanceHistory, dll.
@@ -69,6 +70,14 @@ scripts/seed-firestore.ts seeder data dummy ke Firestore
 docs/                   PRD, kontrak bersama, skema database
 spec/                   system spec
 ```
+
+## Alur Autentikasi
+
+1. **LandingScreen** — halaman pertama kali, tersedia tombol Login Email, Login Google, dan Register.
+2. **LoginScreen** — login dengan email & password atau tombol "Masuk dengan Akun Google".
+3. **RegisterScreen** — daftar baru sebagai Praktikan atau Asisten (Admin hanya via `.env`).
+4. **RoleSelectionScreen** — setelah login Google pertama kali (belum ada profil Firestore), user memilih peran Praktikan atau Asisten.
+5. **Auth Gate** — pengguna yang belum login tidak dapat mengakses data praktikum.
 
 ## CI
 
@@ -86,16 +95,16 @@ Semua build berjalan di EAS (cloud), jadi tidak perlu Android SDK/emulator di me
 
 ```bash
 # development build (APK, bisa langsung di-install)
-git tag dev-1.1.0
-git push origin dev-1.1.0
+git tag dev-1.2.0
+git push origin dev-1.2.0
 
 # production build (AAB untuk Play Store)
 git tag v1.2.0
 git push origin v1.2.0
 
 # OTA preview untuk build channel preview
-git tag preview-1.1.1
-git push origin preview-1.1.1
+git tag preview-1.2.0
+git push origin preview-1.2.0
 ```
 
 Prasyarat sekali setup:
@@ -115,7 +124,7 @@ Update hanya diterima build yang `runtimeVersion` dan channel-nya cocok. Perubah
 
 ## Seeder Data Dummy (Opsional)
 
-Untuk mengisi Firestore dengan data demo (kelas, sesi, praktikan, asisten, admin):
+Untuk mengisi Firestore dengan data demo (kelas, sesi, praktikan, asisten):
 
 ```bash
 # Pastikan .env sudah diisi konfigurasi Firebase
@@ -130,7 +139,8 @@ Akun demo yang di-generate:
 | Praktikan | siti@kampus.ac.id |
 | Praktikan | dimas@kampus.ac.id |
 | Asisten | asisten.rpl@kampus.ac.id |
-| Admin | admin@kampus.ac.id |
+
+> Admin dibuat manual melalui `EXPO_PUBLIC_ADMIN_EMAIL` di `.env`, tidak melalui seeder.
 
 ## Dokumentasi
 
