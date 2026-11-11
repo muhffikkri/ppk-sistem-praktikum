@@ -42,15 +42,15 @@ export function AssistantSessionFormScreen({ navigation }: Props) {
 
   // Extract route params
   const route = navigation.getCurrentRoute();
-  const { classId, sessionId } = route?.params ?? {};
+  const { classId: routeClassId, sessionId } = route?.params ?? {};
 
   // Initial state
   const [state, setState] = React.useState<SessionFormState>({
-    classId: classId || '',
+    classId: routeClassId || '',
     title: '',
     lab: '',
     startsAt: new Date().toISOString(),
-    endsAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
+    endsAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
     status: 'scheduled',
     submitting: false,
     error: null,
@@ -59,19 +59,17 @@ export function AssistantSessionFormScreen({ navigation }: Props) {
 
   // Fetch class data for validation/defaults
   React.useEffect(() => {
-    if (classId && getClassById) {
-      const cls = getClassById(classId);
+    if (state.classId && getClassById) {
+      const cls = getClassById(state.classId);
       if (cls) {
         // Class exists, can use its data
       }
     }
-  }, [classId, getClassById]);
+  }, [state.classId, getClassById]);
 
   // If editing, fetch existing session data
   React.useEffect(() => {
     if (sessionId && isEditing) {
-      // Note: we don't have a getSessionById in the hook yet from initial fetch
-      // In a full implementation, we'd fetch from Firestore
       const now = new Date();
       setState({
         ...state,
@@ -201,7 +199,6 @@ export function AssistantSessionFormScreen({ navigation }: Props) {
             <TextInput
               value={formatDate(state.startsAt)}
               style={styles.inputReadonly}
-              onFocus={ () => setState({ ...state, startsAtPrompt: true }) }
               disabled
             />
             <Text style={styles.timeLabel}>{formatTime(state.startsAt)}</Text>
@@ -212,7 +209,6 @@ export function AssistantSessionFormScreen({ navigation }: Props) {
             <TextInput
               value={formatDate(state.endsAt)}
               style={styles.inputReadonly}
-              onFocus={ () => setState({ ...state, endsAtPrompt: true }) }
               disabled
             />
             <Text style={styles.timeLabel}>{formatTime(state.endsAt)}</Text>
@@ -247,46 +243,44 @@ export function AssistantSessionFormScreen({ navigation }: Props) {
               </View>
             </View>
           )}
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            {state.isEditing ? (
+              <>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={onCloseSession}
+                  accessibilityLabel="Tutup sesi"
+                >
+                  <Text style={styles.buttonText}>Tutup Sesi</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={onOpenSession}
+                  accessibilityLabel="Buka sesi"
+                >
+                  <Text style={styles.buttonText}>Buka Sesi</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleSubmit}
+                  accessibilityLabel="Simpan perubahan sesi"
+                >
+                  <Text style={styles.buttonText}>{state.submitting ? 'Menyimpan...' : 'Simpan Sesi'}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleSubmit}
+                accessibilityLabel="Buat sesi baru"
+              >
+                <Text style={styles.buttonText}>{state.submitting ? 'Menyimpan...' : 'Buat Sesi'}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-
-        {/* Action Buttons (only for editing) */}
-        {state.isEditing && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onCloseSession}
-              accessibilityLabel="Tutup sesi"
-            >
-              <Text style={styles.buttonText}>Tutup Sesi</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onOpenSession}
-              accessibilityLabel="Buka sesi"
-            >
-              <Text style={styles.buttonText}>Buka Sesi</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSubmit}
-              accessibilityLabel="Simpan perubahan sesi"
-            >
-              <Text style={styles.buttonText}>{state.submitting ? 'Menyimpan...' : 'Simpan Sesi'}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Create Button (only for new)}</Processing={!state.isEditing}>(!state.isEditing && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSubmit}
-              accessibilityLabel="Buat sesi baru"
-            >
-              <Text style={styles.buttonText}>{state.submitting ? 'Menyimpan...' : 'Buat Sesi'}</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
       </ScrollView>
     </Screen>
   );
