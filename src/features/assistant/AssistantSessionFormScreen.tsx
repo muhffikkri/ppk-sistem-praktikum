@@ -1,144 +1,122 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, TextInput, View, TouchableOpacity, Text } from 'react-native';
-import { ScrollView } from 'react-native';
+import { useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Banner,
+  Button,
   colors,
   radius,
   Screen,
-  Button,
-  StatusBadge,
   typography,
 } from '../../shared/ui';
-import { useAssistantSessionsViewModel } from '../../state';
-import { SessionInput } from '../../domain/types';
-import { createSession, updateSession, openSession, closeSession } from '../../services/firestore/assistantService';
+import { useAssistantSessionsV2 } from '../../state';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSessionForm'>;
 
-type SessionFormState = {
-  classId: string;
-  title?: string;
-  lab?: string;
-  startsAt: string;
-  endsAt: string;
-  status: 'scheduled' | 'open' | 'closed';
-  submitting: boolean;
-  error: string | null;
-  isEditing: boolean;
-  sessionId?: string;
-};
-
-export function AssistantSessionFormScreen({ navigation }: Props) {
+export function AssistantSessionFormScreen({ route, navigation }: Props) {
   const {
     classes,
-    getClassById,
+    getSessionById,
     createSession,
     updateSession,
     openSession,
     closeSession,
-  } = useAssistantSessionsViewModel();
+  } = useAssistantSessionsV2();
 
-  // Extract route params
-  const route = navigation.getCurrentRoute();
-  const { classId, sessionId } = route?.params ?? {};
+  const { classId: paramClassId, sessionId } = route.params ?? {};
+  const isEditing = Boolean(sessionId);
+  const existingSession = sessionId ? getSessionById(sessionId) : undefined;
 
-  // Initial state
-  const [state, setState] = React.useState<SessionFormState>({
-    classId: classId || '',
-    title: '',
-    lab: '',
-    startsAt: new Date().toISOString(),
-    endsAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours later
-    status: 'scheduled',
-    submitting: false,
-    error: null,
-    isEditing: !!sessionId,
-  });
+  const [classId, setClassId] = useState(
+    existingSession?.classId ?? paramClassId ?? classes[0]?.id ?? '',
+  );
+  const [title, setTitle] = useState(existingSession?.title ?? '');
+  const [lab, setLab] = useState(existingSession?.lab ?? '');
+  const [startsAt, setStartsAt] = useState(
+    () => existingSession?.startsAt ?? new Date().toISOString(),
+  );
+  const [endsAt, setEndsAt] = useState(
+    () =>
+      existingSession?.endsAt ??
+      new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+  );
+  const [status, setStatus] = useState<'scheduled' | 'open' | 'closed'>(
+    existingSession?.status ?? 'scheduled',
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch class data for validation/defaults
-  React.useEffect(() => {
-    if (classId && getClassById) {
-      const cls = getClassById(classId);
-      if (cls) {
-        // Class exists, can use its data
-      }
-    }
-  }, [classId, getClassById]);
-
-  // If editing, fetch existing session data
-  React.useEffect(() => {
-    if (sessionId && isEditing) {
-      // Note: we don't have a getSessionById in the hook yet from initial fetch
-      // In a full implementation, we'd fetch from Firestore
-      const now = new Date();
-      setState({
-        ...state,
-        startsAt: now.toISOString(),
-        endsAt: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-      });
-    }
-  }, [sessionId, isEditing]);
+  const selectedClass = classes.find((c) => c.id === classId);
 
   const handleSubmit = async () => {
-    setState({ ...state, submitting: true, error: null });
+    setError(null);
+    if (!classId) {
+      setError('Pilih kelas tujuan terlebih dahulu.');
+      return;
+    }
 
+    setSubmitting(true);
     try {
-      if (state.isEditing && state.sessionId) {
-        await updateSession(state.sessionId, {
-          classId: state.classId,
-          title: state.title,
-          lab: state.lab,
-          startsAt: state.startsAt,
-          endsAt: state.endsAt,
-        });
-      } else {
-        await createSession({
-          classId: state.classId,
-          title: state.title,
-          lab: state.lab,
-          startsAt: state.startsAt,
-          endsAt: state.endsAt,
-        });
+      const payload = { classId, title, lab, startsAt, endsAt };
+      const result =
+        isEditing && sessionId
+          ? await updateSession(sessionId, payload)
+          : await createSession(payload);
+
+      if (!result.ok) {
+        setError(result.message);
+        return;
       }
       navigation.goBack();
-    } catch (e: any) {
-      setState({ ...state, error: e.message || 'Gagal menyimpan sesi' });
     } finally {
-      setState({ ...state, submitting: false });
+      setSubmitting(false);
     }
   };
 
   const onOpenSession = async () => {
-    if (state.status === 'scheduled') {
-      const result = await openSession(state.sessionId || '');
-      if (!result.ok) {
-        setState({ ...state, error: result.message || 'Gagal membuka sesi' });
-      }
+    if (!sessionId || status !== 'scheduled') return;
+    setError(null);
+    const result = await openSession(sessionId);
+    if (!result.ok) {
+      setError(result.message);
+      return;
     }
+    setStatus('open');
   };
 
   const onCloseSession = async () => {
-    if (state.status === 'open') {
-      const result = await closeSession(state.sessionId || '');
-      if (!result.ok) {
-        setState({ ...state, error: result.message || 'Gagal menutup sesi' });
-      }
+    if (!sessionId || status !== 'open') return;
+    setError(null);
+    const result = await closeSession(sessionId);
+    if (!result.ok) {
+      setError(result.message);
+      return;
     }
+    setStatus('closed');
   };
 
-  // Date helpers
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('id-ID', {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-  const formatTime = (dateString: string) => new Date(dateString).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('id-ID', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
   return (
     <Screen>
@@ -146,10 +124,9 @@ export function AssistantSessionFormScreen({ navigation }: Props) {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
-            {state.isEditing ? 'Edit Sesi' : 'Buat Sesi Baru'}
+            {isEditing ? 'Edit Sesi' : 'Buat Sesi Baru'}
           </Text>
           <Button
             label="Batal"
@@ -159,134 +136,190 @@ export function AssistantSessionFormScreen({ navigation }: Props) {
           />
         </View>
 
-        {/* Form Section */}
+        {error ? (
+          <View style={styles.bannerWrap}>
+            <Banner
+              title="Gagal memproses sesi"
+              message={error}
+              tone="danger"
+              onDismiss={() => setError(null)}
+            />
+          </View>
+        ) : null}
+
         <View style={styles.formSection}>
-          {/* Class Selection */}
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Kelas</Text>
             <Text style={styles.formValue}>
-              {classes?.length > 0
-                ? classes
-                    .filter((c: any) => c.id === state.classId)
-                    .map((c: any) => c.courseName + ' - ' + c.groupName)[0]
-                  : 'Pilih kelas'}
+              {selectedClass
+                ? `${selectedClass.courseName} - ${selectedClass.groupName}`
+                : 'Pilih kelas'}
+            </Text>
+            {classes.length > 0 ? (
+              <View style={styles.classOptions}>
+                {classes.map((cls) => {
+                  const active = cls.id === classId;
+                  return (
+                    <TouchableOpacity
+                      key={cls.id}
+                      onPress={() => setClassId(cls.id)}
+                      style={[
+                        styles.classChip,
+                        active && styles.classChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.classChipText,
+                          active && styles.classChipTextActive,
+                        ]}
+                      >
+                        {cls.courseCode} · {cls.groupName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.formLabel}>Judul/Sesi</Text>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Mis. Pertemuan 1: Pengenalan Firestore"
+              placeholderTextColor={colors.inkMuted}
+              style={styles.textInput}
+              editable={!submitting}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.formLabel}>Lokasi Lab</Text>
+            <TextInput
+              value={lab}
+              onChangeText={setLab}
+              placeholder="Mis. Lab 3.2 RPL · Gedung B"
+              placeholderTextColor={colors.inkMuted}
+              style={styles.textInput}
+              editable={!submitting}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.formLabel}>Waktu Mulai (ISO 8601)</Text>
+            <TextInput
+              value={startsAt}
+              onChangeText={setStartsAt}
+              style={styles.textInput}
+              editable={!submitting}
+            />
+            <Text style={styles.timeLabel}>
+              {formatDate(startsAt)} · {formatTime(startsAt)}
             </Text>
           </View>
 
-          {/* Title */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Judul/Sesi</Text>
-            <Input
-              value={state.title ?? ''}
-              onChangeText={ (text: string) => setState({ ...state, title: text }) }
-              placeholder="Mis. Pertemuan 1: Pengenalan Firestore"
-              clearButtonMode="while-editing"
-            />
-          </View>
-
-          {/* Lab */}
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Lokasi Lab</Text>
-            <Input
-              value={state.lab ?? ''}
-              onChangeText={ (text: string) => setState({ ...state, lab: text }) }
-              placeholder="Mis. Lab 3.2 RPL · Gedung B"
-              clearButtonMode="while-editing"
-            />
-          </View>
-
-          {/* Waktu Sesi */}
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Waktu Mulai</Text>
+            <Text style={styles.formLabel}>Waktu Selesai (ISO 8601)</Text>
             <TextInput
-              value={formatDate(state.startsAt)}
-              style={styles.inputReadonly}
-              onFocus={ () => setState({ ...state, startsAtPrompt: true }) }
-              disabled
+              value={endsAt}
+              onChangeText={setEndsAt}
+              style={styles.textInput}
+              editable={!submitting}
             />
-            <Text style={styles.timeLabel}>{formatTime(state.startsAt)}</Text>
+            <Text style={styles.timeLabel}>
+              {formatDate(endsAt)} · {formatTime(endsAt)}
+            </Text>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Waktu Selesai</Text>
-            <TextInput
-              value={formatDate(state.endsAt)}
-              style={styles.inputReadonly}
-              onFocus={ () => setState({ ...state, endsAtPrompt: true }) }
-              disabled
-            />
-            <Text style={styles.timeLabel}>{formatTime(state.endsAt)}</Text>
-          </View>
-
-          {/* Status */}
-          {state.isEditing && (
+          {isEditing ? (
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Status</Text>
               <View style={styles.statusButtons}>
-                <TouchableOpacity
-                  style={[{ ...styles.statusButton, backgroundColor: state.status === 'scheduled' ? colors.violet : colors.surface }]}
-                  onPress={() => setState({ ...state, status: 'scheduled' })}
-                  accessibilityLabel="Status terjadwal"
+                <View
+                  style={[
+                    styles.statusButton,
+                    {
+                      backgroundColor:
+                        status === 'scheduled'
+                          ? colors.lavender
+                          : colors.surface,
+                    },
+                  ]}
                 >
                   <Text style={styles.statusLabel}>Terjadwal</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[{ ...styles.statusButton, backgroundColor: state.status === 'open' ? colors.green : colors.surface }]}
-                  onPress={() => setState({ ...state, status: 'open' })}
-                  accessibilityLabel="Status terbuka"
+                </View>
+                <View
+                  style={[
+                    styles.statusButton,
+                    {
+                      backgroundColor:
+                        status === 'open' ? colors.successSoft : colors.surface,
+                    },
+                  ]}
                 >
                   <Text style={styles.statusLabel}>Terbuka</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[{ ...styles.statusButton, backgroundColor: state.status === 'closed' ? colors.gray : colors.surface }]}
-                  onPress={() => setState({ ...state, status: 'closed' })}
-                  accessibilityLabel="Status tertutup"
+                </View>
+                <View
+                  style={[
+                    styles.statusButton,
+                    {
+                      backgroundColor:
+                        status === 'closed' ? colors.disabled : colors.surface,
+                    },
+                  ]}
                 >
                   <Text style={styles.statusLabel}>Tertutup</Text>
-                </TouchableOpacity>
+                </View>
               </View>
             </View>
-          )}
+          ) : null}
         </View>
 
-        {/* Action Buttons (only for editing) */}
-        {state.isEditing && (
+        {isEditing ? (
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onCloseSession}
-              accessibilityLabel="Tutup sesi"
-            >
-              <Text style={styles.buttonText}>Tutup Sesi</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onOpenSession}
-              accessibilityLabel="Buka sesi"
-            >
-              <Text style={styles.buttonText}>Buka Sesi</Text>
-            </TouchableOpacity>
+            {status === 'open' ? (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onCloseSession}
+                accessibilityLabel="Tutup sesi"
+              >
+                <Text style={styles.buttonText}>Tutup Sesi</Text>
+              </TouchableOpacity>
+            ) : null}
+            {status === 'scheduled' ? (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onOpenSession}
+                accessibilityLabel="Buka sesi"
+              >
+                <Text style={styles.buttonText}>Buka Sesi</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               style={styles.button}
               onPress={handleSubmit}
               accessibilityLabel="Simpan perubahan sesi"
             >
-              <Text style={styles.buttonText}>{state.submitting ? 'Menyimpan...' : 'Simpan Sesi'}</Text>
+              <Text style={styles.buttonText}>
+                {submitting ? 'Menyimpan...' : 'Simpan Sesi'}
+              </Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        {/* Create Button (only for new)}</Processing={!state.isEditing}>(!state.isEditing && (
+        ) : (
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={styles.button}
               onPress={handleSubmit}
               accessibilityLabel="Buat sesi baru"
             >
-              <Text style={styles.buttonText}>{state.submitting ? 'Menyimpan...' : 'Buat Sesi'}</Text>
+              <Text style={styles.buttonText}>
+                {submitting ? 'Menyimpan...' : 'Buat Sesi'}
+              </Text>
             </TouchableOpacity>
           </View>
-        ))}
+        )}
       </ScrollView>
     </Screen>
   );
@@ -308,6 +341,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
     letterSpacing: -1,
   },
+  bannerWrap: {
+    marginBottom: 16,
+  },
   formSection: {
     gap: 20,
   },
@@ -325,19 +361,45 @@ const styles = StyleSheet.create({
     ...typography.body,
     marginTop: 4,
   },
-  inputReadonly: {
-    backgroundColor: colors.surface,
+  classOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  classChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  classChipActive: {
+    backgroundColor: colors.violet,
+    borderColor: colors.violet,
+  },
+  classChipText: {
+    ...typography.caption,
+    color: colors.ink,
+  },
+  classChipTextActive: {
+    color: colors.onPrimary,
+  },
+  textInput: {
+    ...typography.body,
+    backgroundColor: colors.panel,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
     color: colors.ink,
   },
   timeLabel: {
     ...typography.caption,
     color: colors.inkMuted,
-    marginLeft: 8,
+    marginLeft: 4,
   },
   statusButtons: {
     flexDirection: 'row',
@@ -354,6 +416,7 @@ const styles = StyleSheet.create({
   statusLabel: { ...typography.caption, color: colors.ink },
   actionButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginTop: 24,
     alignItems: 'center',
@@ -366,7 +429,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   buttonText: {
-    color: colors.onViolet,
+    color: colors.onPrimary,
     ...typography.label,
   },
 });

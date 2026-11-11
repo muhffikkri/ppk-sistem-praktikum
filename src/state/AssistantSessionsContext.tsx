@@ -1,177 +1,178 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import {
-  fetchClasses,
-  createClass,
-  updateClass,
-  deleteClass,
-  addParticipantByEmail,
-  removeParticipant,
-  createSession,
-  updateSession,
-  deleteSession,
-  openSession,
-  closeSession,
-  subscribeClasses,
-  subscribeSessions,
-  subscribeAttendanceForSession,
-  subscribeLeaveRequestsForStudent,
-  initializeAssistantState,
-} from '../services/firestore/assistantService';
-import {
-  ClassInput,
-  SessionInput,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import type {
+  AssistantSessionsViewModelV2,
   PracticalClass,
   Session,
   UserProfile,
-  AttendanceRecord,
 } from '../domain/types';
-import { AsyncActionResult } from '../domain/types';
+import {
+  addParticipantByEmail,
+  closeSession,
+  createClass,
+  createSession,
+  deleteClass,
+  deleteSession,
+  initializeAssistantState,
+  openSession,
+  removeParticipant,
+  subscribeAttendanceForSession,
+  subscribeClasses,
+  subscribeSessions,
+  updateClass,
+  updateSession,
+} from '../services/firestore/assistantService';
+import { useAuth } from './AuthContext';
 
-// ============================================================
-// Reducer Actions
-// ============================================================
+export type AssistantSessionsContextValue = AssistantSessionsViewModelV2;
 
-type AssistantAction =
-  | { type: 'SET_CLASSES'; classes: PracticalClass[] }
-  | { type: 'SET_SESSIONS'; sessions: Session[] }
-  | { type: 'SET_STUDENTS'; students: UserProfile[] }
-  | { type: 'SET_LOADING'; loading: boolean }
-  | { type: 'SET_ERROR'; error: string | null }
-  | { type: 'SET_RETRY' };
+const AssistantSessionsContext = createContext<
+  AssistantSessionsContextValue | undefined
+>(undefined);
 
-type AssistantSessionsContextValue = {
-  classes: PracticalClass[];
-  sessions: Session[];
-  studentsDirectory: UserProfile[];
-  loading: boolean;
-  error: string | null;
-  getClassById: (classId: string) => PracticalClass | undefined;
-  getSessionById: (sessionId: string) => Session | undefined;
-  subscribeAttendanceForSession: (
-    sessionId: string,
-    onData: (records: AttendanceRecord[]) => void,
-    onError: (msg: string) => void,
-  ) => () => void;
-  createClass: (input: ClassInput) => Promise<AsyncActionResult<string>>;
-  updateClass: (classId: string, input: ClassInput) => Promise<AsyncActionResult>;
-  deleteClass: (classId: string) => Promise<AsyncActionResult>;
-  addParticipantByEmail: (classId: string, email: string) => Promise<AsyncActionResult>;
-  removeParticipant: (classId: string, studentUid: string) => Promise<AsyncActionResult>;
-  createSession: (input: SessionInput) => Promise<AsyncActionResult<string>>;
-  updateSession: (sessionId: string, input: SessionInput) => Promise<AsyncActionResult>;
-  deleteSession: (sessionId: string) => Promise<AsyncActionResult>;
-  openSession: (sessionId: string) => Promise<AsyncActionResult>;
-  closeSession: (sessionId: string) => Promise<AsyncActionResult>;
-  retry: () => void;
-};
-
-const initialState: AssistantSessionsContextValue = {
-  classes: [],
-  sessions: [],
-  studentsDirectory: [],
-  loading: true,
-  error: null,
-  getClassById: () => undefined,
-  getSessionById: () => undefined,
-  subscribeAttendanceForSession: (_sessionId, _onData, _onError) => () => {},
-  createClass: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  updateClass: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  deleteClass: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  addParticipantByEmail: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  removeParticipant: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  createSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  updateSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  deleteSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  openSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  closeSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  retry: () => {},
-};
-
-function assistantReducer(
-  state: AssistantSessionsContextValue,
-  action: AssistantAction,
-): AssistantSessionsContextValue {
-  switch (action.type) {
-    case 'SET_CLASSES':
-      return { ...state, classes: action.classes, loading: false };
-    case 'SET_SESSIONS':
-      return { ...state, sessions: action.sessions, loading: false };
-    case 'SET_STUDENTS':
-      return { ...state, studentsDirectory: action.students };
-    case 'SET_LOADING':
-      return { ...state, loading: action.loading };
-    case 'SET_ERROR':
-      return { ...state, error: action.error };
-    case 'SET_RETRY':
-      return initialState;
-    default:
-      return state;
-  }
-}
-
-// ============================================================
-// Context
-// ============================================================
-
-const AssistantSessionsContext = createContext<AssistantSessionsContextValue | undefined>(
-  undefined,
-);
-
-export const AssistantSessionsProvider = ({
+export function AssistantSessionsProvider({
   children,
 }: {
   children: ReactNode;
-}) => {
-  const [state, dispatch] = useReducer(assistantReducer, initialState);
+}) {
+  const { authStatus, user } = useAuth();
+  const isAssistant =
+    authStatus === 'authenticated' && user?.role === 'assistant';
 
-  // Initialize state from Firestore on mount
-  useEffect(() => {
-    initializeAssistantState().then((ctx) => {
-      dispatch({ type: 'SET_CLASSES', classes: ctx.classes });
-      dispatch({ type: 'SET_SESSIONS', sessions: ctx.sessions });
-      dispatch({ type: 'SET_STUDENTS', students: ctx.studentsDirectory });
-    }).catch((e) => {
-      dispatch({ type: 'SET_ERROR', error: e.message || 'Gagal inisialisasi context asisten' });
-    });
-  }, []);
+  const [classes, setClasses] = useState<PracticalClass[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [studentsDirectory, setStudentsDirectory] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(isAssistant);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Set up real-time listeners
   useEffect(() => {
-    // Subscribe to classes real-time
-    const classesUnsubscribe = subscribeClasses(
-      (classes) => dispatch({ type: 'SET_CLASSES', classes }),
-      (msg) => dispatch({ type: 'SET_ERROR', error: msg }),
+    if (!isAssistant) {
+      return;
+    }
+
+    let cancelled = false;
+
+    initializeAssistantState()
+      .then((initial) => {
+        if (cancelled) return;
+        setClasses(initial.classes);
+        setSessions(initial.sessions);
+        setStudentsDirectory(initial.studentsDirectory);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Gagal inisialisasi context asisten',
+        );
+        setLoading(false);
+      });
+
+    const unsubClasses = subscribeClasses(
+      (nextClasses) => {
+        setClasses(nextClasses);
+        setLoading(false);
+      },
+      (msg) => {
+        setError(msg);
+        setLoading(false);
+      },
     );
 
-    // Subscribe to sessions real-time
-    const sessionsUnsubscribe = subscribeSessions(
-      (sessions) => dispatch({ type: 'SET_SESSIONS', sessions }),
-      (msg) => dispatch({ type: 'SET_ERROR', error: msg }),
+    const unsubSessions = subscribeSessions(
+      (nextSessions) => {
+        setSessions(nextSessions);
+        setLoading(false);
+      },
+      (msg) => {
+        setError(msg);
+        setLoading(false);
+      },
     );
 
     return () => {
-      classesUnsubscribe();
-      sessionsUnsubscribe();
+      cancelled = true;
+      unsubClasses();
+      unsubSessions();
     };
+  }, [isAssistant, reloadKey]);
+
+  const retry = useCallback(() => {
+    setError(null);
+    setLoading(true);
+    setReloadKey((k) => k + 1);
   }, []);
 
+  const getClassById = useCallback(
+    (classId: string) => classes.find((c) => c.id === classId),
+    [classes],
+  );
+
+  const getSessionById = useCallback(
+    (sessionId: string) => sessions.find((s) => s.id === sessionId),
+    [sessions],
+  );
+
+  const value = useMemo<AssistantSessionsContextValue>(
+    () => ({
+      classes: isAssistant ? classes : [],
+      sessions: isAssistant ? sessions : [],
+      studentsDirectory: isAssistant ? studentsDirectory : [],
+      loading: isAssistant ? loading : false,
+      error: isAssistant ? error : null,
+      getClassById,
+      getSessionById,
+      subscribeAttendanceForSession,
+      createClass,
+      updateClass,
+      deleteClass,
+      addParticipantByEmail,
+      removeParticipant,
+      createSession,
+      updateSession,
+      deleteSession,
+      openSession,
+      closeSession,
+      retry,
+    }),
+    [
+      isAssistant,
+      classes,
+      sessions,
+      studentsDirectory,
+      loading,
+      error,
+      getClassById,
+      getSessionById,
+      retry,
+    ],
+  );
+
   return (
-    <AssistantSessionsContext.Provider value={state}>
+    <AssistantSessionsContext.Provider value={value}>
       {children}
     </AssistantSessionsContext.Provider>
   );
-};
+}
 
-export { AssistantSessionsContextValue };
-
-export function useAssistantSessionsViewModel(): AssistantSessionsContextValue {
+export function useAssistantSessionsV2(): AssistantSessionsContextValue {
   const context = useContext(AssistantSessionsContext);
-
   if (!context) {
     throw new Error(
-      'useAssistantSessionsViewModel must be used within an AssistantSessionsProvider',
+      'useAssistantSessionsV2 must be used within an AssistantSessionsProvider',
     );
   }
-
   return context;
 }

@@ -1,22 +1,27 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Button,
   colors,
   radius,
   Screen,
-  Button,
   StatusBadge,
   typography,
 } from '../../shared/ui';
-import { useAssistantSessionsViewModel } from '../../state';
-import { formatSessionDate } from './formatters';
+import { useAssistantSessionsV2 } from '../../state';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantClassList'>;
 
 export function AssistantClassListScreen({ navigation }: Props) {
-  const { classes, loading, error } = useAssistantSessionsViewModel();
+  const { classes, loading, error, retry } = useAssistantSessionsV2();
 
   if (loading) {
     return (
@@ -30,7 +35,7 @@ export function AssistantClassListScreen({ navigation }: Props) {
     return (
       <Screen>
         <Text style={styles.errorText}>Gagal memuat kelas: {error}</Text>
-        <Button label="Coba Lagi" onPress={() => window.location.reload()} />
+        <Button label="Coba Lagi" onPress={retry} />
       </Screen>
     );
   }
@@ -51,13 +56,13 @@ export function AssistantClassListScreen({ navigation }: Props) {
           </Text>
           <Button
             label="Tambah Kelas"
-            onPress={() => navigation.navigate('AssistantClassForm')}
+            onPress={() => navigation.navigate('AssistantClassForm', {})}
             variant="accent"
           />
         </View>
       ) : (
         <View style={styles.list}>
-          {classes.map((cls, index) => (
+          {classes.map((cls) => (
             <Pressable
               key={cls.id}
               accessibilityRole="button"
@@ -69,16 +74,10 @@ export function AssistantClassListScreen({ navigation }: Props) {
             >
               <View style={styles.cardTop}>
                 <Text style={styles.courseNumberLines}>{cls.courseName}</Text>
-                <StatusBadge
-                  label={cls.groupName}
-                  tone="violet"
-                  dot
-                />
+                <StatusBadge label={cls.groupName} tone="violet" dot />
               </View>
               <View style={styles.cardBottom}>
-                <Text style={styles.meta}>
-                  {cls.groupName}
-                </Text>
+                <Text style={styles.meta}>{cls.groupName}</Text>
                 <Text style={styles.metaMuted}>
                   {cls.participantIds?.length || 0} peserta
                 </Text>
@@ -91,7 +90,7 @@ export function AssistantClassListScreen({ navigation }: Props) {
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={styles.fabButton}
-          onPress={() => navigation.navigate('AssistantClassForm')}
+          onPress={() => navigation.navigate('AssistantClassForm', {})}
           accessibilityLabel="Tambah kelas baru"
         >
           <Text style={styles.fabText}>+</Text>
@@ -109,6 +108,14 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: 32,
     letterSpacing: -1,
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.inkMuted,
+  },
+  errorText: {
+    ...typography.body,
+    color: colors.dangerInk,
   },
   emptyBlock: {
     backgroundColor: colors.panel,
@@ -135,6 +142,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
+  },
+  pressed: {
+    backgroundColor: colors.lavenderSubtle,
   },
   cardTop: {
     flexDirection: 'row',
@@ -175,7 +185,7 @@ const styles = StyleSheet.create({
   },
   fabText: {
     ...typography.display,
-    color: colors.onViolet,
+    color: colors.onPrimary,
     fontSize: 28,
   },
 });

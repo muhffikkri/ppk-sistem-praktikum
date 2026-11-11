@@ -14,13 +14,13 @@ import {
   AssistantAllAttendanceScreen,
   AssistantAllSessionsScreen,
   AssistantAttendanceRosterScreen,
+  AssistantClassFormScreen,
+  AssistantClassListScreen,
   AssistantModuleListScreen,
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
-  AssistantSettingsScreen,
-  AssistantClassListScreen,
-  AssistantClassFormScreen,
   AssistantSessionFormScreen,
+  AssistantSettingsScreen,
 } from '../features/assistant';
 import { LoginScreen, RegisterScreen } from '../features/auth';
 import {
@@ -30,11 +30,20 @@ import {
   StudentScheduleScreen,
   StudentSessionDetailScreen,
 } from '../features/student';
-import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
-import { usePov } from '../state';
-import { AssistantSessionsProvider, useAssistantSessionsViewModel } from '../state/AssistantSessionsContext';
-import type { RootStackParamList } from './navigation';
-import { HomeScreen } from './HomeScreen';
+import {
+  Banner,
+  BottomDock,
+  colors,
+  spacing,
+  typography,
+  type DockTab,
+} from '../shared/ui';
+import { useAuth } from '../state';
+import {
+  AssistantSessionsProvider,
+  useAssistantSessionsV2,
+} from '../state/AssistantSessionsContext';
+import type { AuthStackParamList, RootStackParamList } from './navigation';
 import { CalendarScreen } from './CalendarScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProfileEditScreen } from './ProfileEditScreen';
@@ -101,7 +110,7 @@ function AuthNavigator() {
 
 function AuthenticatedNavigator({ user }: { user: UserProfile }) {
   const { error, clearError } = useAuth();
-  const { sessions: assistantSessions } = useAssistantSessionsViewModel();
+  const { sessions: assistantSessions } = useAssistantSessionsV2();
   const [activeKey, setActiveKey] = useState<string>('Home');
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
@@ -152,8 +161,18 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
   };
 
   return (
-    <AssistantSessionsProvider>
-      <View style={styles.root}>
+    <View style={styles.root}>
+      {error ? (
+        <View style={styles.shellBanner}>
+          <Banner
+            title="Gangguan akun"
+            message={error}
+            tone="danger"
+            onDismiss={clearError}
+          />
+        </View>
+      ) : null}
+
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
@@ -230,6 +249,21 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="AssistantClassList"
+              component={AssistantClassListScreen}
+              options={{ title: 'Kelola Kelas' }}
+            />
+            <Stack.Screen
+              name="AssistantClassForm"
+              component={AssistantClassFormScreen}
+              options={{ title: 'Form Kelas' }}
+            />
+            <Stack.Screen
+              name="AssistantSessionForm"
+              component={AssistantSessionFormScreen}
+              options={{ title: 'Form Sesi' }}
+            />
+            <Stack.Screen
               name="AssistantModuleList"
               component={AssistantModuleListScreen}
             />
@@ -297,7 +331,11 @@ export function AppNavigator() {
     return <AuthNavigator />;
   }
 
-  return <AuthenticatedNavigator key={user.uid} user={user} />;
+  return (
+    <AssistantSessionsProvider>
+      <AuthenticatedNavigator key={user.uid} user={user} />
+    </AssistantSessionsProvider>
+  );
 }
 
 const styles = StyleSheet.create({
