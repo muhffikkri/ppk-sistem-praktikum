@@ -5,14 +5,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/app/AppNavigator';
 import {
   AssistantDemoProvider,
-  PovProvider,
+  AuthProvider,
   StudentDemoProvider,
 } from './src/state';
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <PovProvider>
+      <AuthProvider>
         <StudentDemoProvider>
           <AssistantDemoProvider>
             <NavigationContainer>
@@ -21,7 +21,7 @@ export default function App() {
             </NavigationContainer>
           </AssistantDemoProvider>
         </StudentDemoProvider>
-      </PovProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
