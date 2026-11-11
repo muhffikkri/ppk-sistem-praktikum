@@ -24,12 +24,19 @@ import {
 } from '../features/assistant';
 import { LoginScreen, RegisterScreen } from '../features/auth';
 import {
+  AssistantLeaveReviewListScreen,
+  LeaveProvider,
+  StudentLeaveListScreen,
+  StudentLeaveRequestFormScreen,
+} from '../features/leave';
+import {
   StudentAllAttendanceScreen,
   StudentAllSessionsScreen,
   StudentAttendanceHistoryScreen,
   StudentScheduleScreen,
   StudentSessionDetailScreen,
 } from '../features/student';
+import { db } from '../services/firebase';
 import {
   Banner,
   BottomDock,
@@ -231,6 +238,16 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
               name="StudentAllAttendance"
               component={StudentAllAttendanceScreen}
             />
+            <Stack.Screen
+              name="StudentLeaveList"
+              component={StudentLeaveListScreen}
+              options={{ title: 'Daftar Izin' }}
+            />
+            <Stack.Screen
+              name="StudentLeaveRequestForm"
+              component={StudentLeaveRequestFormScreen}
+              options={{ title: 'Ajukan Izin' }}
+            />
           </Stack.Group>
         ) : (
           <Stack.Group screenOptions={{ title: 'Asisten' }}>
@@ -262,6 +279,11 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
               name="AssistantSessionForm"
               component={AssistantSessionFormScreen}
               options={{ title: 'Form Sesi' }}
+            />
+            <Stack.Screen
+              name="AssistantLeaveReviewList"
+              component={AssistantLeaveReviewListScreen}
+              options={{ title: 'Pemeriksaan Izin' }}
             />
             <Stack.Screen
               name="AssistantModuleList"
@@ -317,7 +339,6 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
         onTabPress={onTabPress}
       />
     </View>
-  </AssistantSessionsProvider>
   );
 }
 
@@ -334,26 +355,10 @@ export function AppNavigator() {
 
   return (
     <AssistantSessionsProvider>
-      <AuthenticatedNavigator key={user.uid} user={user} />
+      <LeaveProvider db={db} user={user}>
+        <AuthenticatedNavigator key={user.uid} user={user} />
+      </LeaveProvider>
     </AssistantSessionsProvider>
-  );
-}
-
-export function AppNavigator() {
-  const { authStatus, user } = useAuth();
-
-  if (authStatus === 'loading') {
-    return <AuthLoadingView />;
-  }
-
-  if (authStatus === 'unauthenticated' || !user) {
-    return <AuthNavigator />;
-  }
-
-  return (
-    <LeaveProvider db={db} user={user}>
-      <AuthenticatedNavigator key={user.uid} user={user} />
-    </LeaveProvider>
   );
 }
 

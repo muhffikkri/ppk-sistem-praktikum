@@ -1,254 +1,359 @@
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { View, Text, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import type { RootStackParamList } from '../../app/navigation';
+import type { AuthStackParamList } from '../../app/navigation';
+import type { UserRole } from '../../domain/types';
+import { isFirebaseConfigured } from '../../services/firebase';
+import {
+  Banner,
+  Button,
+  Card,
+  CardContent,
+  CardOverline,
+  colors,
+  radius,
+  Screen,
+  spacing,
+  typography,
+} from '../../shared/ui';
 import { useAuth } from '../../state';
-import { Button } from '../shared/ui';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+
+const ROLE_OPTIONS: {
+  value: UserRole;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'student',
+    label: 'Praktikan',
+    description: 'Lihat jadwal, presensi, & ajukan izin',
+  },
+  {
+    value: 'assistant',
+    label: 'Asisten',
+    description: 'Kelola kelas/sesi, rekap, & periksa izin',
+  },
+];
 
 export function RegisterScreen({ navigation }: Props) {
-  const { register, authStatus, user, error } = useAuth();
-  const [isGoogleSignIn, setIsGoogleSignIn] = useState(false);
+  const { register, error, clearError } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'student' | 'assistant'>('student');
+  const [role, setRole] = useState<UserRole>('student');
+  const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleSignIn(true);
+  const activeError = localError ?? error;
+
+  const handleRegister = async () => {
+    setLocalError(null);
+    clearError();
+
+    if (displayName.trim().length < 2) {
+      setLocalError('Nama lengkap minimal 2 karakter.');
+      return;
+    }
+    if (!email.trim()) {
+      setLocalError('Email wajib diisi.');
+      return;
+    }
+    if (password.length < 6) {
+      setLocalError('Password minimal 6 karakter.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await register({
-        displayName: '',
-        email: '',
-        password: '',
-        role: 'student',
+      const res = await register({
+        displayName,
+        email,
+        password,
+        role,
       });
-      // After Google sign-in, navigate based on role
-      navigation.replace(
-        role === 'assistant'
-          ? 'AssistantSchedule'
-          : 'StudentSchedule',
-      );
-    } catch (e) {
-      console.error('Google registration failed:', e);
+      if (!res.ok) {
+        setLocalError(res.message);
+      }
     } finally {
-      setIsGoogleSignIn(false);
+      setSubmitting(false);
     }
   };
 
-  if (authStatus === 'loading') {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  if (authStatus === 'unauthenticated') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title>Aplikasi PPK</Text>
-        <Text style={styles.subtitle>Daftar Akun Baru</Text>
-        <View style={styles.divider} />
-        <Button
-          label="Daftar dengan Google"
-          variant="primary"
-          onPress={handleGoogleSignIn}
-          loading={isGoogleSignIn}
-          accessibilityLabel="Daftar dengan akun Google"
-        />
-        <Text style={styles.dividerText}>atau</Text>
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel>Nama Lengkap</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nama lengkap"
-            value={displayName}
-            onChangeText={setDisplayName}
-            autoCapitalize="words"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="email@universitas.edu"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="emailAddress"
-            autoCapitalize="none"
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Minimal 6 karakter"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel>Peran</Text>
-          <Button
-            label="Mahasiswa"
-            variant={role === 'student' ? 'primary' : 'soft'}
-            onPress={() => setRole('student')}
-            accessibilityLabel="Pilih peran Mahasiswa"
-          />
-          <Button
-            label="Asisten"
-            variant={role === 'assistant' ? 'primary' : 'soft'}
-            onPress={() => setRole('assistant')}
-            accessibilityLabel="Pilih peran Asisten"
-          />
-        </View>
-        <Button
-          label="Daftar"
-          variant="primary"
-          onPress={handleGoogleSignIn}
-          loading={isGoogleSignIn}
-          accessibilityLabel="Daftar akun baru"
-          disabled={isGoogleSignIn}
-        />
-      </View>
-    );
-  }
-
-  // authenticated state - redirect to appropriate role screen
-  if (user) {
-    navigation.replace(
-      user.role === 'assistant' ? 'AssistantSchedule' : 'StudentSchedule',
-    );
-    return null;
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title>Aplikasi PPK</Text>
-      <Text style={styles.subtitle>Daftar Akun Baru</Text>
-      <View style={styles.divider} />
+    <Screen>
+      <View style={styles.heroHeader}>
+        <CardOverline>
+          <Text>REGISTRASI AKUN</Text>
+        </CardOverline>
+        <Text accessibilityRole="header" style={styles.title}>
+          Buat Akun Baru
+        </Text>
+        <Text style={styles.subtitle}>
+          Pilih peran Anda dengan benar. Peran menentukan akses fitur dan data
+          di aplikasi.
+        </Text>
+      </View>
+
+      {!isFirebaseConfigured ? (
+        <Banner
+          title="Konfigurasi Firebase belum diisi"
+          message="Salin .env.example menjadi .env dan isi EXPO_PUBLIC_FIREBASE_* sebelum mendaftar."
+          tone="warning"
+        />
+      ) : null}
+
+      {activeError ? (
+        <Banner
+          title="Gagal mendaftar"
+          message={activeError}
+          tone="danger"
+          onDismiss={() => {
+            setLocalError(null);
+            clearError();
+          }}
+        />
+      ) : null}
+
+      <Card variant="panel" interactive={false}>
+        <CardContent>
+          <CardOverline>
+            <Text>IDENTITAS &amp; PERAN</Text>
+          </CardOverline>
+
+          <View style={styles.fieldGroup}>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Nama Lengkap</Text>
+              <TextInput
+                value={displayName}
+                onChangeText={(val) => {
+                  setDisplayName(val);
+                  if (localError) setLocalError(null);
+                }}
+                placeholder="Contoh: Saburo Ardiansyah"
+                placeholderTextColor={colors.inkMuted}
+                editable={!submitting}
+                style={styles.input}
+                accessibilityLabel="Nama Lengkap"
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <TextInput
+                value={email}
+                onChangeText={(val) => {
+                  setEmail(val);
+                  if (localError) setLocalError(null);
+                }}
+                placeholder="nama@kampus.ac.id"
+                placeholderTextColor={colors.inkMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!submitting}
+                style={styles.input}
+                accessibilityLabel="Email"
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Password</Text>
+              <View style={styles.passwordWrap}>
+                <TextInput
+                  value={password}
+                  onChangeText={(val) => {
+                    setPassword(val);
+                    if (localError) setLocalError(null);
+                  }}
+                  placeholder="Minimal 6 karakter"
+                  placeholderTextColor={colors.inkMuted}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!submitting}
+                  style={styles.passwordInput}
+                  accessibilityLabel="Password"
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showPassword ? 'Sembunyikan password' : 'Tampilkan password'
+                  }
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.inkMuted}
+                  />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Daftar Sebagai</Text>
+              <View style={styles.roleRow}>
+                {ROLE_OPTIONS.map((option) => {
+                  const selected = role === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      disabled={submitting}
+                      onPress={() => setRole(option.value)}
+                      style={({ pressed }) => [
+                        styles.roleCard,
+                        selected && styles.roleCardActive,
+                        pressed && styles.roleCardPressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.roleTitle,
+                          selected && styles.roleTitleActive,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.roleDesc,
+                          selected && styles.roleDescActive,
+                        ]}
+                      >
+                        {option.description}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.submitWrap}>
+            <Button
+              label={submitting ? 'Mendaftarkan...' : 'Daftar Akun'}
+              variant="accent"
+              icon="checkmark-circle-outline"
+              loading={submitting}
+              onPress={handleRegister}
+            />
+          </View>
+        </CardContent>
+      </Card>
+
       <Button
-        label="Daftar dengan Google"
-        variant="primary"
-        onPress={handleGoogleSignIn}
-        loading={isGoogleSignIn}
-        accessibilityLabel="Daftar dengan akun Google"
+        label="Sudah punya akun? Masuk"
+        variant="outline"
+        disabled={submitting}
+        onPress={() => {
+          setLocalError(null);
+          clearError();
+          navigation.goBack();
+        }}
       />
-      <Text style={styles.dividerText}>atau</Text>
-      <View style={styles.formGroup}>
-        <Text style={styles.formLabel>Nama Lengkap</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Nama lengkap"
-          value={displayName}
-          onChangeText={setDisplayName}
-          autoCapitalize="words"
-        />
-      </View>
-      <View style={styles.formGroup}>
-        <Text style={styles.formLabel>Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="email@universitas.edu"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="emailAddress"
-          autoCapitalize="none"
-        />
-      </View>
-      <View style={styles.formGroup}>
-        <Text style={styles.formLabel>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Minimal 6 karakter"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-      </View>
-      <View style={styles.formGroup}>
-        <Text style={styles.formLabel>Peran</Text>
-        <Button
-          label="Mahasiswa"
-          variant={role === 'student' ? 'primary' : 'soft'}
-          onPress={() => setRole('student')}
-          accessibilityLabel="Pilih peran Mahasiswa"
-        />
-        <Button
-          label="Asisten"
-          variant={role === 'assistant' ? 'primary' : 'soft'}
-          onPress={() => setRole('assistant')}
-          accessibilityLabel="Pilih peran Asisten"
-        />
-      </View>
-      <Button
-        label="Daftar"
-        variant="primary"
-        onPress={handleGoogleSignIn}
-        loading={isGoogleSignIn}
-        accessibilityLabel="Daftar akun baru"
-        disabled={isGoogleSignIn}
-      />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    padding: 24,
+  heroHeader: {
+    gap: spacing.xs,
+    paddingTop: spacing.xs,
   },
   title: {
     ...typography.display,
     color: colors.ink,
-    letterSpacing: -1,
-    textAlign: 'center',
-    marginBottom: 4,
   },
   subtitle: {
+    ...typography.body,
+    color: colors.inkMuted,
+  },
+  fieldGroup: {
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  field: {
+    gap: spacing.xs,
+  },
+  fieldLabel: {
     ...typography.label,
-    color: colors.inkMuted,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  divider: {
-    height: 1,
-    width: '100%',
-    backgroundColor: colors.border,
-    marginVertical: 16,
-  },
-  dividerText: {
-    textAlign: 'center',
-    color: colors.inkMuted,
-    marginVertical: 8,
-    fontStyle: 'italic',
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  formLabel: {
-    ...typography.caption,
-    color: colors.inkMuted,
-    marginBottom: 4,
-    textAlign: 'center',
+    color: colors.ink,
   },
   input: {
-    width: '100%',
-    height: 50,
+    ...typography.body,
+    color: colors.ink,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    minHeight: 48,
+  },
+  passwordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    minHeight: 48,
+  },
+  passwordInput: {
+    ...typography.body,
     color: colors.ink,
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  eyeButton: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  roleCard: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: radius['2xl'],
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.xs,
+  },
+  roleCardActive: {
+    backgroundColor: colors.violet,
+    borderColor: colors.violet,
+  },
+  roleCardPressed: {
+    opacity: 0.9,
+  },
+  roleTitle: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  roleTitleActive: {
+    color: colors.onPrimary,
+  },
+  roleDesc: {
+    ...typography.caption,
+    color: colors.inkMuted,
+  },
+  roleDescActive: {
+    color: colors.lavender,
+  },
+  submitWrap: {
+    marginTop: spacing.md,
   },
 });

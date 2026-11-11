@@ -1,168 +1,258 @@
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import type { RootStackParamList } from '../../app/navigation';
+import type { AuthStackParamList } from '../../app/navigation';
+import { isFirebaseConfigured } from '../../services/firebase';
+import {
+  Banner,
+  Button,
+  Card,
+  CardContent,
+  CardOverline,
+  colors,
+  radius,
+  Screen,
+  spacing,
+  typography,
+} from '../../shared/ui';
 import { useAuth } from '../../state';
-import { Button, StatusBadge } from '../shared/ui';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
-  const { login, authStatus, user, error } = useAuth();
-  const [isGoogleSignIn, setIsGoogleSignIn] = useState(false);
+  const { login, error, clearError } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleSignIn(true);
+  const activeError = localError ?? error;
+
+  const handleLogin = async () => {
+    setLocalError(null);
+    clearError();
+
+    if (!email.trim()) {
+      setLocalError('Email wajib diisi.');
+      return;
+    }
+    if (!password) {
+      setLocalError('Password wajib diisi.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await login({
-        email: '',
-        password: '',
-        // Google auth will be handled natively
-      });
-      // After Google sign-in, navigate based on role
-      navigation.replace(
-        user?.role === 'assistant'
-          ? 'AssistantSchedule'
-          : 'StudentSchedule',
-      );
-    } catch (e) {
-      console.error('Google sign-in failed:', e);
+      const res = await login(email, password);
+      if (!res.ok) {
+        setLocalError(res.message);
+      }
     } finally {
-      setIsGoogleSignIn(false);
+      setSubmitting(false);
     }
   };
 
-  if (authStatus === 'loading') {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  if (authStatus === 'unauthenticated') {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Aplikasi PPK</Text>
-        <Text style={styles.subtitle}>Sistem Praktikum Kelas</Text>
-        <View style={styles.divider} />
-        <Button
-          label="Masuk dengan Google"
-          variant="primary"
-          onPress={handleGoogleSignIn}
-          loading={isGoogleSignIn}
-          accessibilityLabel="Masuk dengan akun Google"
-        />
-        <Text style={styles.dividerText}>atau</Text>
-        <Button
-          label="Masuk dengan Email"
-          variant="soft"
-          onPress={() => navigation.navigate('Login')}
-          accessibilityLabel="Masuk dengan email dan password"
-        />
-        <Text style={styles.forgotText}>Lupa password?</Text>
-        <StatusBadge
-          label="Belum memiliki akun?"
-          tone="info"
-          hidden
-        />
-      </View>
-    );
-  }
-
-  // authenticated state - redirect to appropriate role screen
-  if (user) {
-    navigation.replace(
-      user.role === 'assistant' ? 'AssistantSchedule' : 'StudentSchedule',
-    );
-    return null;
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Aplikasi PPK</Text>
-      <Text style={styles.subtitle}>Sistem Praktikum Kelas</Text>
-      <View style={styles.divider} />
-      <Button
-        label="Masuk dengan Google"
-        variant="primary"
-        onPress={handleGoogleSignIn}
-        loading={isGoogleSignIn}
-        accessibilityLabel="Masuk dengan akun Google"
-      />
-      <Text style={styles.dividerText}>atau</Text>
-      <View style={styles.emailInputWrapper}>
-        <Text style={styles.emailLabel}}>Email</Text>
-        <Text style={styles.emailPlaceholder}}>masuk@email.edu</Text>
+    <Screen>
+      <View style={styles.heroHeader}>
+        <CardOverline>
+          <Text>LABPRESENSI · SPRINT 2</Text>
+        </CardOverline>
+        <Text accessibilityRole="header" style={styles.title}>
+          Masuk ke Akun
+        </Text>
+        <Text style={styles.subtitle}>
+          Gunakan akun praktikan atau asisten untuk mengakses jadwal, presensi,
+          dan pengajuan izin secara real-time.
+        </Text>
       </View>
-      <Button
-        label="Masuk dengan Email & Password"
-        variant="soft"
-        onPress={() => navigation.navigate('Login')}
-        accessibilityLabel="Masuk dengan email dan password"
-      />
-      <Text style={styles.forgotText}>Lupa password?</Text>
-    </View>
+
+      {!isFirebaseConfigured ? (
+        <Banner
+          title="Konfigurasi Firebase belum diisi"
+          message="Salin .env.example menjadi .env dan isi EXPO_PUBLIC_FIREBASE_* sebelum login."
+          tone="warning"
+        />
+      ) : null}
+
+      {activeError ? (
+        <Banner
+          title="Gagal masuk"
+          message={activeError}
+          tone="danger"
+          onDismiss={() => {
+            setLocalError(null);
+            clearError();
+          }}
+        />
+      ) : null}
+
+      <Card variant="panel" interactive={false}>
+        <CardContent>
+          <CardOverline>
+            <Text>KREDENSIAL</Text>
+          </CardOverline>
+
+          <View style={styles.fieldGroup}>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <TextInput
+                value={email}
+                onChangeText={(val) => {
+                  setEmail(val);
+                  if (localError) setLocalError(null);
+                }}
+                placeholder="nama@kampus.ac.id"
+                placeholderTextColor={colors.inkMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!submitting}
+                style={styles.input}
+                accessibilityLabel="Email"
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Password</Text>
+              <View style={styles.passwordWrap}>
+                <TextInput
+                  value={password}
+                  onChangeText={(val) => {
+                    setPassword(val);
+                    if (localError) setLocalError(null);
+                  }}
+                  placeholder="Minimal 6 karakter"
+                  placeholderTextColor={colors.inkMuted}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!submitting}
+                  style={styles.passwordInput}
+                  accessibilityLabel="Password"
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showPassword ? 'Sembunyikan password' : 'Tampilkan password'
+                  }
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.inkMuted}
+                  />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.submitWrap}>
+            <Button
+              label={submitting ? 'Memproses...' : 'Masuk'}
+              variant="primary"
+              icon="log-in-outline"
+              loading={submitting}
+              onPress={handleLogin}
+            />
+          </View>
+        </CardContent>
+      </Card>
+
+      <Card variant="surface" interactive={false}>
+        <CardContent>
+          <Text style={styles.switchTitle}>Belum memiliki akun?</Text>
+          <Text style={styles.switchCaption}>
+            Daftarkan akun baru sebagai Praktikan atau Asisten praktikum.
+          </Text>
+          <Button
+            label="Daftar Akun Baru"
+            variant="soft"
+            icon="person-add-outline"
+            disabled={submitting}
+            onPress={() => {
+              setLocalError(null);
+              clearError();
+              navigation.navigate('Register');
+            }}
+          />
+        </CardContent>
+      </Card>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    padding: 24,
+  heroHeader: {
+    gap: spacing.xs,
+    paddingTop: spacing.md,
   },
   title: {
     ...typography.display,
     color: colors.ink,
-    letterSpacing: -1,
-    textAlign: 'center',
-    marginBottom: 4,
   },
   subtitle: {
-    ...typography.label,
-    color: colors.inkMuted,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  divider: {
-    height: 1,
-    width: '100%',
-    backgroundColor: colors.border,
-    marginVertical: 16,
-  },
-  dividerText: {
-    textAlign: 'center',
-    color: colors.inkMuted,
-    marginVertical: 8,
-    fontStyle: 'italic',
-  },
-  forgotText: {
-    ...typography.caption,
-    color: colors.inkMuted,
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  emailInputWrapper: {
-    marginBottom: 16,
-  },
-  emailLabel: {
-    ...typography.caption,
-    color: colors.inkMuted,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  emailPlaceholder: {
     ...typography.body,
     color: colors.inkMuted,
-    textAlign: 'center',
-    padding: 12,
+  },
+  fieldGroup: {
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  field: {
+    gap: spacing.xs,
+  },
+  fieldLabel: {
+    ...typography.label,
+    color: colors.ink,
+  },
+  input: {
+    ...typography.body,
+    color: colors.ink,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    minHeight: 48,
+  },
+  passwordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    minHeight: 48,
+  },
+  passwordInput: {
+    ...typography.body,
+    color: colors.ink,
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  eyeButton: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitWrap: {
+    marginTop: spacing.md,
+  },
+  switchTitle: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  switchCaption: {
+    ...typography.caption,
+    color: colors.inkMuted,
+    marginBottom: spacing.xs,
   },
 });
