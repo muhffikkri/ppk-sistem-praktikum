@@ -4,6 +4,18 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+### Implementasi Sprint 2 — Data Dinamis dengan Firebase
+
+- **Autentikasi (SRS R1)**: `LoginScreen` dan `RegisterScreen` di `src/features/auth/` dengan email/password dan Google Authentication. Role: `student`, `assistant`, `admin`.
+- **Auth Gate (SRS R1, R8)**: `App.tsx` dan `src/app/AppNavigator.tsx` — pengguna yang belum login diarahkan ke halaman Login/Register; tidak ada akses data praktikum tanpa login.
+- **Google Auth (SRS R1)**: `loginWithGoogle()` di `AuthContext.tsx` menggunakan `GoogleAuthProvider` + `signInWithPopup`; tombol "Masuk dengan Google" di `LoginScreen`.
+- **CRUD Asisten (SRS R2)**: `AssistantClassListScreen`, `AssistantClassFormScreen`, `AssistantSessionFormScreen` di `src/features/assistant/` — CRUD kelas, peserta, dan sesi di Firestore.
+- **Firestore Service**: `src/services/firestore/assistantService.ts`, `studentService.ts`, `leaveService.ts` — CRUD + real-time `onSnapshot`.
+- **Security Rules**: `firestore.rules` — pembatasan akses per role, ID deterministik presensi `{sessionId}_{studentId}`, pencegahan presensi ganda, validasi status izin.
+- **Seeder**: `scripts/seed-firestore.ts` — generate data dummy (5 user, 3 kelas, 4 sesi) ke Firestore.
+- **Role Admin**: `UserRole` diperluas menjadi `'student' | 'assistant' | 'admin'`; Admin dapat mengelola kelas dan sesi.
+- **Pembersihan**: Dihapus 20 file komponen lama yang tidak digunakan (themed-text, themed-view, app-tabs, animated-icon, dll.) dan 2 file state kosong.
+
 ### Dokumentasi & Persiapan Tahap 0 Sprint 2
 
 - Menambahkan [`docs/sprint-2-prd.md`](docs/sprint-2-prd.md) berisi ruang lingkup ketat berbasis SRS Sprint 2, 8 kebutuhan fungsional, kondisi wajib, batas anti-scope-creep, dan 2 skenario demo akhir.

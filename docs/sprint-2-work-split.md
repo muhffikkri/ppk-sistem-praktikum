@@ -19,8 +19,8 @@ Agar tidak terjadi tumpang tindih pada kebutuhan SRS yang lintas peran (seperti 
 
 | Peran | Fokus Modul / Fitur | Butir SRS yang Dikerjakan | Batasan Ruang Lingkup Spesifik |
 | --- | --- | --- | --- |
-| **Developer 1** | **Autentikasi, Peran Akun, & Auth Navigation Gate** | **SRS 1** (penuh), **SRS 4** (persistensi sesi login), **SRS 8** (kondisi belum login & error auth) | Mengelola Firebase Auth (register, login, logout), penyimpanan profil & role (`student`/`assistant`) di `users/{uid}`, penguncian navigasi/tindakan sesuai peran, serta tampilan loading & error autentikasi. |
-| **Developer 2** | **CRUD Data Praktikum (Asisten), Sesi Real-Time, & Security Rules** | **SRS 2** (sisi Asisten), **SRS 3** (rekap Asisten & rules server), **SRS 4** (`onSnapshot` Asisten), **SRS 8** (`firestore.rules` & validasi CRUD) | Mengelola CRUD kelas, peserta kelas, jadwal, dan sesi di Firestore; kontrol buka/tutup sesi & rekap kehadiran real-time untuk asisten; validasi input form CRUD; serta penegakan pembatasan akses & anti-duplikasi di `firestore.rules`. |
+| **Developer 1** | **Autentikasi, Peran Akun, & Auth Navigation Gate** | **SRS 1** (penuh), **SRS 4** (persistensi sesi login), **SRS 8** (kondisi belum login & error auth) | Mengelola Firebase Auth (register, login, logout, Google Auth), penyimpanan profil & role (`student`/`assistant`/`admin`) di `users/{uid}`, penguncian navigasi/tindakan sesuai peran, serta tampilan loading & error autentikasi. |
+| **Developer 2** | **CRUD Data Praktikum (Asisten/Admin), Sesi Real-Time, & Security Rules** | **SRS 2** (sisi Asisten/Admin), **SRS 3** (rekap Asisten & rules server), **SRS 4** (`onSnapshot` Asisten), **SRS 8** (`firestore.rules` & validasi CRUD) | Mengelola CRUD kelas, peserta kelas, jadwal, dan sesi di Firestore; kontrol buka/tutup sesi & rekap kehadiran real-time untuk asisten; validasi input form CRUD; serta penegakan pembatasan akses & anti-duplikasi di `firestore.rules`. |
 | **Developer 3** | **Jadwal Terkait & Presensi Terintegrasi (Praktikan)** | **SRS 2** (sisi Praktikan), **SRS 3** (sisi Praktikan), **SRS 4** (`onSnapshot` Praktikan), **SRS 8** (validasi, loading, empty, error Praktikan) | Menampilkan jadwal & detail sesi yang terfilter khusus kelas yang diikuti praktikan; mencatat presensi saat sesi `open`; mencegah presensi ganda di UI/ViewModel; menampilkan riwayat kehadiran real-time & persisten; serta menyediakan tombol menuju form izin. |
 | **Developer 4** | **Pengajuan Izin, Integrasi API AI Pengajar, & Pemeriksaan Izin** | **SRS 5** (penuh), **SRS 6** (penuh), **SRS 7** (penuh), **SRS 4** (`onSnapshot` izin), **SRS 8** (error API AI & validasi izin) | Membangun form pengajuan izin praktikan & pemantauan statusnya; memanggil API model AI pengajar untuk klasifikasi alasan (hanya sebagai info pendukung, tidak boleh auto-approve/reject, dan tetap aman bila AI tidak merespons); serta membangun daftar pemeriksaan & keputusan (`approved`/`rejected`) oleh asisten secara real-time. |
 | **PM / Lead Developer** | **Kontrak Bersama, Persiapan Fondasi, Integrasi, & Uji End-to-End** | **Seluruh SRS 1–8** (koordinasi, merge, & verifikasi Alur Demo 1 & 2) | Mengunci kontrak tipe & route (`Tahap 0`), memasang dependensi & konfigurasi `.env.example`, menggabungkan PR dari 4 developer tanpa konflik, serta memverifikasi 2 alur demo utama dan seluruh kondisi error/offline/AI-down. |
@@ -29,8 +29,8 @@ Agar tidak terjadi tumpang tindih pada kebutuhan SRS yang lintas peran (seperti 
 
 | No. SRS | Kebutuhan di SRS | Pemilik Utama | Pembagian Detail Antar-Developer |
 | --- | --- | --- | --- |
-| **1** | **Autentikasi pengguna** | **Developer 1** | **Dev 1:** Register, login, logout Firebase Auth, simpan/baca `role` (`student`/`assistant`), tampilkan aksi sesuai role. |
-| **2** | **Pengelolaan data praktikum** | **Developer 2** & **Developer 3** | **Dev 2:** CRUD kelas, peserta, jadwal, dan sesi untuk Asisten di Firestore.<br>**Dev 3:** Lihat jadwal & info sesi Praktikan (terfilter hanya kelas yang diikuti). |
+| **1** | **Autentikasi pengguna** | **Developer 1** | **Dev 1:** Register, login, logout Firebase Auth, login Google, simpan/baca `role` (`student`/`assistant`/`admin`), tampilkan aksi sesuai role. |
+| **2** | **Pengelolaan data praktikum** | **Developer 2** & **Developer 3** | **Dev 2:** CRUD kelas, peserta, jadwal, dan sesi untuk Asisten/Admin di Firestore.<br>**Dev 3:** Lihat jadwal & info sesi Praktikan (terfilter hanya kelas yang diikuti). |
 | **3** | **Presensi terintegrasi** | **Developer 3** & **Developer 2** | **Dev 3:** Aksi presensi Praktikan saat sesi `open`, simpan per `uid` + `sessionId`, cegah check-in ganda.<br>**Dev 2:** Aturan server `firestore.rules` (hanya `open`, peserta sah, ID deterministik `{sessionId}_{studentId}`) + rekap Asisten. |
 | **4** | **Sinkronisasi data real-time** | **Dev 1, 2, 3, 4** (sesuai modul) | **Dev 1:** Persistensi sesi login setelah tutup/buka aplikasi.<br>**Dev 2:** Listener `onSnapshot` sesi & rekap Asisten.<br>**Dev 3:** Listener `onSnapshot` status sesi, presensi, & riwayat Praktikan.<br>**Dev 4:** Listener `onSnapshot` daftar & status pengajuan izin. |
 | **5** | **Pengajuan izin** | **Developer 4** | **Dev 4:** Form pengajuan izin sesi tertentu + alasan ketidakhadiran, simpan ke Firestore, dan daftar pantau status izin Praktikan.<br>**Dev 3:** Menyediakan tombol masuk dari `StudentSessionDetail`. |
@@ -60,11 +60,11 @@ Sebelum 4 branch fitur dibuat dari `main`:
 
 **Tanggung jawab**
 - Mengimplementasikan inisialisasi Firebase (`src/services/firebase.ts`) dengan persistensi Auth agar pengguna tetap login saat aplikasi ditutup dan dibuka kembali.
-- Membangun `AuthContext` (`useAuth`) yang mengelola registrasi (`displayName`, `email`, `password`, `role: 'student' | 'assistant'`), login, logout, sinkronisasi profil dari `users/{uid}`, serta validasi input & mapping pesan error Firebase Auth yang ramah pengguna.
+- Membangun `AuthContext` (`useAuth`) yang mengelola registrasi (`displayName`, `email`, `password`, `role: 'student' | 'assistant' | 'admin'`), login, logout, login Google, sinkronisasi profil dari `users/{uid}`, serta validasi input & mapping pesan error Firebase Auth yang ramah pengguna.
 - Membangun layar `LoginScreen` dan `RegisterScreen` di `src/features/auth/`.
 - Menggantikan `PovProvider` (mode demo Sprint 1) dengan `AuthGate` pada `App.tsx`, `AppNavigator.tsx`, `HomeScreen.tsx`, `CalendarScreen.tsx`, `ProfileScreen.tsx`, dan `ProfileEditScreen.tsx`:
   - Belum login → hanya tampilkan `Login` / `Register`.
-  - Sudah login → kunci UI dan navigasi sesuai `user.role` (`student` atau `assistant`), tampilkan identitas akun nyata, dan sediakan tombol **Logout**.
+  - Sudah login → kunci UI dan navigasi sesuai `user.role` (`student` atau `assistant` atau `admin`), tampilkan identitas akun nyata, dan sediakan tombol **Logout**.
 - Menambahkan indikator loading autentikasi dan banner error koneksi pada level shell/profil.
 
 **Area file yang dimiliki**
@@ -74,15 +74,15 @@ Sebelum 4 branch fitur dibuat dari `main`:
 - `App.tsx`, `src/app/AppNavigator.tsx`, `src/app/HomeScreen.tsx`, `src/app/CalendarScreen.tsx`, `src/app/ProfileScreen.tsx`, `src/app/ProfileEditScreen.tsx`
 
 **Selesai bila**
-- Registrasi praktikan/asisten berhasil membuat akun Firebase Auth + dokumen `users/{uid}` di Firestore.
-- Login, logout, dan persistensi sesi setelah aplikasi ditutup/dibuka kembali berfungsi.
+- Registrasi praktikan/asisten/admin berhasil membuat akun Firebase Auth + dokumen `users/{uid}` di Firestore.
+- Login (email/password & Google), logout, dan persistensi sesi setelah aplikasi ditutup/dibuka kembali berfungsi.
 - Pengguna yang belum login tidak bisa mengakses layar praktikum.
 - Error input kosong, format email salah, password salah/lemah, dan email sudah terdaftar tertangani dengan pesan jelas.
 - Tidak ada lagi tombol switch role demo lokal Sprint 1.
 
 ---
 
-## Developer 2 — Pengelolaan Data Praktikum (CRUD Asisten), Sesi Real-Time, & Security Rules
+## Developer 2 — Pengelolaan Data Praktikum (CRUD Asisten/Admin), Sesi Real-Time, & Security Rules
 
 **Mencakup SRS:** R2 (CRUD kelas, peserta, jadwal, sesi), R4 (sinkronisasi real-time sesi & rekap asisten), R8 (validasi form CRUD & Firebase Security Rules).
 
@@ -108,7 +108,7 @@ Sebelum 4 branch fitur dibuat dari `main`:
 - `src/features/assistant/` (screen CRUD baru & pembaruan screen asisten)
 
 **Selesai bila**
-- Asisten dapat melakukan CRUD penuh untuk kelas, peserta, jadwal, dan sesi di Firestore.
+- Asisten/Admin dapat melakukan CRUD penuh untuk kelas, peserta, jadwal, dan sesi di Firestore.
 - Asisten dapat membuka dan menutup sesi serta melihat daftar hadir peserta secara real-time tanpa restart aplikasi.
 - Seluruh operasi CRUD dan rekap menangani kondisi loading, data kosong, input tidak valid, dan gangguan koneksi.
 - `firestore.rules` memblokir akses lintas peran (mis. praktikan tidak bisa membuat/mengubah kelas atau membuka sesi).
@@ -185,17 +185,20 @@ Sebelum 4 branch fitur dibuat dari `main`:
 | `src/services/firestore/studentService.ts`, `src/state/StudentAttendanceContext.tsx`, `src/features/student/` | **Developer 3** | Fokus penuh jadwal & presensi praktikan. |
 | `src/services/ai/leaveClassifier.ts`, `src/services/firestore/leaveService.ts`, `src/features/leave/` | **Developer 4** | Terisolasi di folder `leave/` dan `services/ai/`. |
 | `src/shared/ui/`, `src/theme/tokens.ts` | **Bersama (Read-only default)** | Tambahan primitif baru wajib dikoordinasikan ke PM agar tidak bentrok. |
+| `scripts/seed-firestore.ts` | **PM / Developer 2** | Seeder data dummy ke Firestore untuk testing & demo. |
 
 ---
 
 ## Urutan Kerja & Strategi Penggabungan (PM/Lead Developer)
 
 ### Tahap 0 — Persiapan (PM / Lead Developer)
+
 - Commit setup `firebase`, `@react-native-async-storage/async-storage`, `.env.example`, `firestore.rules`, `firestore.indexes.json`, `src/domain/types.ts`, dan `src/app/navigation.ts` ke `main`.
 - Selama masa transisi sebelum `AssistantDemoContext` dan `StudentDemoContext` dihapus oleh Dev 2 & Dev 3, `src/domain/types.ts` mengekspor tipe Sprint 2 dengan nama `AssistantSessionsViewModelV2` dan `StudentAttendanceViewModelV2` agar build Sprint 1 tetap hijau (`tsc --noEmit` lolos). Saat mengganti DemoContext masing-masing, Dev 2 dan Dev 3 dapat mengadopsi kontrak baru tersebut (lalu membersihkan tipe transisi Sprint 1 saat Tahap 2).
 - Pastikan seluruh tim sepakat dengan kontrak di [`sprint-2-shared-contract.md`](sprint-2-shared-contract.md).
 
 ### Tahap 1 — Pengembangan Paralel (4 Branch Terpisah dari `main`)
+
 - `feat/s2-auth-navigation` (Developer 1)
 - `feat/s2-assistant-crud-rules` (Developer 2)
 - `feat/s2-student-realtime-attendance` (Developer 3)
@@ -204,12 +207,14 @@ Sebelum 4 branch fitur dibuat dari `main`:
 > Tips kerja paralel saat auth dari Developer 1 belum merge: Developer 2, 3, dan 4 cukup membaca `useAuth().user` sesuai kontrak `AuthContextValue` (atau memakai mock `AuthContext` sementara di branch lokal tanpa mengedit file milik Developer 1).
 
 ### Tahap 2 — Penggabungan Bertahap oleh PM/Lead Developer
+
 1. **Merge PR Developer 1** (`auth-navigation` + `firebase.ts`) → uji register/login/logout & auth gate.
 2. **Merge PR Developer 2** (`assistant-crud` + `firestore.rules`) → deploy rules/indexes ke Firebase project tim, uji CRUD kelas/peserta/sesi.
 3. **Merge PR Developer 3** (`student-realtime-attendance`) → sambungkan provider praktikan di `App.tsx` dan uji **Alur Demo 1** end-to-end.
 4. **Merge PR Developer 4** (`leave-ai-review`) → sambungkan route `StudentLeaveRequestForm`, `StudentLeaveList`, dan `AssistantLeaveReviewList` di `AppNavigator.tsx`, tambah shortcut navigasi di `HomeScreen` / `StudentSessionDetail` / `AssistantSchedule`, lalu uji **Alur Demo 2** end-to-end.
 
 ### Tahap 3 — Checklist Verifikasi Akhir Sebelum Rilis
+
 - [ ] `npm run typecheck` (`tsc --noEmit`) lolos tanpa error.
 - [ ] `npm run lint` (`eslint .`) lolos tanpa error.
 - [ ] `firestore.rules` terpasang di Firebase Console / emulator dan teruji menolak aksi ilegal lintas peran serta presensi ganda.
@@ -217,4 +222,3 @@ Sebelum 4 branch fitur dibuat dari `main`:
 - [ ] **Demo Alur 2** berjalan lengkap dengan API AI pengajar, keputusan manual asisten, dan pembaruan status real-time ke praktikan.
 - [ ] Seluruh kondisi wajib terverifikasi: belum login, loading, daftar kosong, koneksi terganggu, dan layanan AI tidak merespons.
 - [ ] Tutup dan buka kembali aplikasi → sesi login dan seluruh data Firestore tetap persisten.
-

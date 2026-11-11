@@ -18,11 +18,12 @@ Dokumen ini menjadi **sumber tunggal (single source of truth)** untuk nama route
 ## 2. Route & Navigasi (`src/app/navigation.ts`)
 
 Aplikasi menggunakan **Auth Gate** di level navigator:
-1. Saat `authStatus === 'loading'`: tampilkan loading screen penuh.
-2. Saat `authStatus === 'unauthenticated'`: hanya stack autentikasi (`Login`, `Register`) yang dirender.
-3. Saat `authStatus === 'authenticated'`:
+
+1. Saat `authStatus === 'loading'` atau `authStatus === 'unauthenticated'`: hanya stack autentikasi (`Login`, `Register`) yang dirender.
+2. Saat `authStatus === 'authenticated'`:
    - Role `'student'`: hanya rute milik praktikan + rute umum (`Home`, `Calendar`, `Profile`, `ProfileEdit`).
    - Role `'assistant'`: hanya rute milik asisten + rute umum (`Home`, `Calendar`, `Profile`, `ProfileEdit`).
+   - Role `'admin'`: dapat mengakses rute asisten + rute umum untuk manajemen kelas dan sesi.
 
 ```ts
 export type AuthStackParamList = {
@@ -46,7 +47,7 @@ export type RootStackParamList = {
   StudentLeaveRequestForm: { sessionId: string };
   StudentLeaveList: undefined;
 
-  // Rute Asisten (role === 'assistant')
+  // Rute Asisten & Admin (role === 'assistant' | 'admin')
   AssistantSchedule: undefined;
   AssistantSessionDetail: { sessionId: string };
   AssistantAttendanceRoster: { sessionId?: string };
@@ -57,16 +58,24 @@ export type RootStackParamList = {
   AssistantSessionForm: { classId?: string; sessionId?: string };
   AssistantLeaveReviewList: undefined;
 };
+
+export type ActorPov = 'praktikan' | 'asisten' | 'admin';
+
+export const POVLABEL: Record<ActorPov, string> = {
+  praktikan: 'Praktikan',
+  asisten: 'Asisten',
+  admin: 'Admin',
+};
 ```
 
-> Catatan: Tombol tengah QR Scanner (`BottomDock` FAB) pada Sprint 1 hanyalah placeholder no-op; pada Sprint 2 jangan menampilkan aksi QR palsu karena QR tidak termasuk requirement SRS Sprint 2 (dapat diarahkan ke shortcut sesuai peran, misalnya `StudentLeaveList` / `AssistantLeaveReviewList`, atau dihilangkan dari `BottomDock`).
+> Catatan: Tombol tengah QR Scanner (`BottomDock` FAF) pada Sprint 1 hanyalah placeholder no-op; pada Sprint 2 jangan menampilkan aksi QR palsu karena QR tidak termasuk requirement SRS Sprint 2 (dapat diarahkan ke shortcut sesuai peran, misalnya `StudentLeaveList` / `AssistantLeaveReviewList`, atau dihilangkan dari `BottomDock`).
 
 ---
 
 ## 3. Tipe Domain (`src/domain/types.ts`)
 
 ```ts
-export type UserRole = 'student' | 'assistant';
+export type UserRole = 'student' | 'assistant' | 'admin';
 
 export type UserProfile = {
   uid: string;
@@ -86,8 +95,8 @@ export type PracticalClass = {
   assistantIds: string[];
   participantIds: string[];
   createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string; // ISO 8601 UTC
+  updatedAt: string; // ISO 8601 UTC
 };
 
 export type SessionStatus = 'scheduled' | 'open' | 'closed';
@@ -98,20 +107,21 @@ export type Session = {
   courseName: string;
   groupName: string;
   title?: string;
+  /** Label lokasi lab untuk tampilan kalender & detail sesi. */
   lab?: string;
-  participantIds: string[];
-  assistantIds: string[];
+  participantIds?: string[];
+  assistantIds?: string[];
   startsAt: string; // ISO 8601 UTC
   endsAt: string;   // ISO 8601 UTC
   status: SessionStatus;
-  openedAt: string | null;
-  closedAt: string | null;
-  createdBy: string;
-  createdAt: string;
+  openedAt: string | null; // ISO 8601 UTC
+  closedAt: string | null; // ISO 8601 UTC
+  createdBy?: string;
+  createdAt?: string; // ISO 8601 UTC
 };
 
 export type AttendanceRecord = {
-  id: string; // "{sessionId}_{studentId}"
+  id: string; // "{sessionId}_{studentId}" pada Sprint 2
   sessionId: string;
   classId: string;
   studentId: string;
@@ -134,7 +144,7 @@ export type LeaveRequest = {
   classId: string;
   courseName: string;
   groupName: string;
-  sessionStartsAt: string;
+  sessionStartsAt: string; // ISO 8601 UTC
   studentId: string;
   studentName: string;
   reason: string;
@@ -142,8 +152,8 @@ export type LeaveRequest = {
   status: LeaveStatus;
   decisionNote: string | null;
   reviewedBy: string | null;
-  reviewedAt: string | null;
-  createdAt: string;
+  reviewedAt: string | null; // ISO 8601 UTC
+  createdAt: string; // ISO 8601 UTC
 };
 
 export type ActionFailureReason =
@@ -163,6 +173,23 @@ export type ActionFailureReason =
 export type AsyncActionResult<T = void> =
   | (T extends void ? { ok: true } : { ok: true; data: T })
   | { ok: false; reason: ActionFailureReason; message: string };
+
+export type AuthContextValue = {
+  authStatus: AuthStatus;
+  user: UserProfile | null;
+  error: string | null;
+  login: (email: string, password: string) => Promise<AsyncActionResult>;
+  register: (input: {
+    displayName: string;
+    email: string;
+    password: string;
+    role: UserRole;
+  }) => Promise<AsyncActionResult>;
+  loginWithGoogle: () => Promise<AsyncActionResult>;
+  logout: () => Promise<AsyncActionResult>;
+  updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
+  clearError: () => void;
+};
 ```
 
 ---
@@ -172,14 +199,15 @@ export type AsyncActionResult<T = void> =
 | Domain | Aksi | Prasyarat Valid | Hasil Sukses | Kegagalan |
 | --- | --- | --- | --- | --- |
 | **Auth** | `register` | Nama tidak kosong, email valid, password >= 6 karakter, role valid | Akun Firebase Auth + dokumen `users/{uid}` terbuat | `validation_error` / `network_error` / `unknown_error` |
-| **Kelas** | `createClass` / `updateClass` | Role `assistant`, `courseCode`, `courseName`, `groupName` tidak kosong | Dokumen `classes` tersimpan (`updatedAt` diperbarui) | `forbidden` / `validation_error` |
-| **Peserta** | `addParticipant` / `removeParticipant` | Role `assistant`, target user ber-role `student` ditemukan | `participantIds` pada `classes` & semua `sessions` kelas tersebut diperbarui via `writeBatch` | `user_not_found` / `forbidden` |
-| **Sesi** | `createSession` / `updateSession` | Role `assistant`, `classId` valid, `endsAt > startsAt` | Dokumen `sessions` tersimpan dengan `participantIds` kelas | `validation_error` / `class_not_found` |
-| **Sesi** | `openSession` | Role `assistant`, `session.status === 'scheduled'` | `status = 'open'`, `openedAt = now` | `invalid_status` / `session_not_found` |
-| **Sesi** | `closeSession` | Role `assistant`, `session.status === 'open'` | `status = 'closed'`, `closedAt = now` | `invalid_status` / `session_not_found` |
+| **Auth** | `loginWithGoogle` | Firebase terkonfigurasi, akun Google valid | Akun Firebase Auth + dokumen `users/{uid}` (jika belum ada) | `network_error` / `unknown_error` |
+| **Kelas** | `createClass` / `updateClass` | Role `assistant` atau `admin`, `courseCode`, `courseName`, `groupName` tidak kosong | Dokumen `classes` tersimpan (`updatedAt` diperbarui) | `forbidden` / `validation_error` |
+| **Peserta** | `addParticipant` / `removeParticipant` | Role `assistant` atau `admin`, target user ber-role `student` ditemukan | `participantIds` pada `classes` & semua `sessions` kelas tersebut diperbarui via `writeBatch` | `user_not_found` / `forbidden` |
+| **Sesi** | `createSession` / `updateSession` | Role `assistant` atau `admin`, `classId` valid, `endsAt > startsAt` | Dokumen `sessions` tersimpan dengan `participantIds` kelas | `validation_error` / `class_not_found` |
+| **Sesi** | `openSession` | Role `assistant` atau `admin`, `session.status === 'scheduled'` | `status = 'open'`, `openedAt = now` | `invalid_status` / `session_not_found` |
+| **Sesi** | `closeSession` | Role `assistant` atau `admin`, `session.status === 'open'` | `status = 'closed'`, `closedAt = now` | `invalid_status` / `session_not_found` |
 | **Presensi** | `checkIn` | Role `student`, terdaftar di `session.participantIds`, `session.status === 'open'`, belum ada `attendance/{sessionId}_{studentId}` | Dokumen `attendance/{sessionId}_{studentId}` terbuat | `invalid_status` / `already_checked_in` / `forbidden` |
 | **Izin** | `submitLeaveRequest` | Role `student`, terdaftar di sesi, alasan non-kosong (min. 5 karakter), belum ada izin `pending`/`approved` untuk sesi sama | Panggil `classifyLeaveReason(reason)` (fallback `'unavailable'` jika gagal) → simpan ke `leave_requests` dengan `status: 'pending'` | `validation_error` / `duplicate_leave_request` |
-| **Izin** | `reviewLeaveRequest` | Role `assistant`, `leave.status === 'pending'`, keputusan `'approved' \| 'rejected'` | Update `status`, `reviewedBy`, `reviewedAt`, `decisionNote` | `invalid_status` / `leave_not_found` / `forbidden` |
+| **Izin** | `reviewLeaveRequest` | Role `assistant` atau `admin`, `leave.status === 'pending'`, keputusan `'approved' \| 'rejected'` | Update `status`, `reviewedBy`, `reviewedAt`, `decisionNote` | `invalid_status` / `leave_not_found` / `forbidden` |
 
 ---
 
@@ -201,6 +229,7 @@ export type AuthContextValue = {
     password: string;
     role: UserRole;
   }) => Promise<AsyncActionResult>;
+  loginWithGoogle: () => Promise<AsyncActionResult>;
   logout: () => Promise<AsyncActionResult>;
   updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
   clearError: () => void;
@@ -315,4 +344,4 @@ Semua screen fitur dari Developer 1–4 wajib mengikuti pola komponen bersama (`
 - **Error / Koneksi Terganggu:** tampilkan `Banner` (`tone="danger"`) berisi pesan yang ramah pengguna + tombol aksi `Coba Lagi` (`retry`).
 - **Kosong (`Empty`):** tampilkan `EmptyState` dengan judul dan deskripsi kontekstual.
 - **Layanan AI Tidak Merespons:** tampilkan `Banner` (`tone="warning"`) di form/detail izin: *"Klasifikasi AI tidak tersedia saat ini. Pengajuan tetap tersimpan untuk diperiksa asisten."*
-
+- **Belum Login:** tampilkan layar Login/Register; tidak memuat atau menampilkan data praktikum.
