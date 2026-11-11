@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -12,61 +13,91 @@ import {
   StatusBadge,
   typography,
 } from '../shared/ui';
-import { usePov } from '../state';
+import { useAuth } from '../state';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
-/** Dummy profile data — swap with real user profile when API lands. */
-const DEMO_IDENTITY = {
-  name: 'Saburo Ardiansyah',
-  nim: '2301010123',
-  program: 'Teknik Informatika',
-  department: 'Fakultas Teknik Informatika',
-};
-
-/**
- * Menu rows. `Schedule` and `Attendance` resolve to the active-POV route
- * (see DOCK_ROUTE_FOR_POV in AppNavigator). `Modul` and `Pengaturan` are
- * static dummy targets.
- */
-type MenuRoute =
-  'Schedule' | 'Attendance' | 'AssistantModuleList' | 'AssistantSettings';
-
-const MENU_ITEMS: {
+type ProfileMenuItem = {
   label: string;
   sub: string;
   glyph: string;
-  route: MenuRoute;
-}[] = [
-  {
-    label: 'Jadwal Praktikum',
-    sub: '4 sesi minggu ini',
-    glyph: '▦',
-    route: 'Schedule',
-  },
-  {
-    label: 'Riwayat Presensi',
-    sub: '12 sesi tercatat',
-    glyph: '✦',
-    route: 'Attendance',
-  },
-  {
-    label: 'Modul & Materi',
-    sub: '8 modul tersedia',
-    glyph: '≡',
-    route: 'AssistantModuleList',
-  },
-  {
-    label: 'Pengaturan',
-    sub: 'Notifikasi & preferensi',
-    glyph: '⚙',
-    route: 'AssistantSettings',
-  },
-];
+  onPress: () => void;
+};
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase();
+}
 
 export function ProfileScreen({ navigation }: Props) {
-  const { pov, setPov } = usePov();
+  const { user, logout, error, clearError } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const isAssistant = user?.role === 'assistant';
+  const roleLabel = isAssistant ? 'Asisten' : 'Praktikan';
+  const displayName = user?.displayName ?? 'Pengguna';
+  const email = user?.email ?? '-';
+  const activeError = localError ?? error;
+
+  const menuItems: ProfileMenuItem[] = isAssistant
+    ? [
+        {
+          label: 'Jadwal & Sesi Asisten',
+          sub: 'Kelola sesi praktikum',
+          glyph: '▦',
+          onPress: () => navigation.navigate('AssistantSchedule'),
+        },
+        {
+          label: 'Rekap Presensi',
+          sub: 'Daftar kehadiran sesi praktikum',
+          glyph: '✦',
+          onPress: () => navigation.navigate('AssistantAllAttendance'),
+        },
+        {
+          label: 'Modul & Materi',
+          sub: 'Daftar modul praktikum',
+          glyph: '≡',
+          onPress: () => navigation.navigate('AssistantModuleList'),
+        },
+        {
+          label: 'Pengaturan',
+          sub: 'Preferensi akun & tampilan',
+          glyph: '⚙',
+          onPress: () => navigation.navigate('AssistantSettings'),
+        },
+      ]
+    : [
+        {
+          label: 'Jadwal Praktikum',
+          sub: 'Lihat jadwal dan status sesi',
+          glyph: '▦',
+          onPress: () => navigation.navigate('StudentSchedule'),
+        },
+        {
+          label: 'Riwayat Presensi',
+          sub: 'Rekap kehadiran praktikan',
+          glyph: '✦',
+          onPress: () => navigation.navigate('StudentAttendanceHistory'),
+        },
+      ];
+
+  const handleLogout = async () => {
+    setLocalError(null);
+    clearError();
+    setLoggingOut(true);
+    try {
+      const res = await logout();
+      if (!res.ok) {
+        setLocalError(res.message);
+      }
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <Screen>
@@ -74,24 +105,39 @@ export function ProfileScreen({ navigation }: Props) {
         <Text accessibilityRole="header" style={styles.title}>
           Profil
         </Text>
-        <StatusBadge label="DEMO" tone="violet" dot live />
+        <StatusBadge
+          label={roleLabel}
+          tone={isAssistant ? 'violet' : 'success'}
+          dot
+          live={isAssistant}
+        />
       </View>
 
-      {/* Avatar + identity card — with edit-profile action */}
+      {activeError ? (
+        <Banner
+          title="Gagal memproses akun"
+          message={activeError}
+          tone="danger"
+          onDismiss={() => {
+            setLocalError(null);
+            clearError();
+          }}
+        />
+      ) : null}
+
+      {/* Avatar + real user identity card */}
       <Card variant="heroViolet" interactive={false}>
         <CardContent>
           <View style={styles.identityRow}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText} accessible={false}>
-                SA
+                {initialsOf(displayName)}
               </Text>
             </View>
             <View style={styles.identityText}>
-              <Text style={styles.identityName}>{DEMO_IDENTITY.name}</Text>
-              <Text style={styles.identitySub}>NIM {DEMO_IDENTITY.nim}</Text>
-              <Text style={styles.identitySub}>
-                {DEMO_IDENTITY.program} · {DEMO_IDENTITY.department}
-              </Text>
+              <Text style={styles.identityName}>{displayName}</Text>
+              <Text style={styles.identitySub}>{email}</Text>
+              <Text style={styles.identitySub}>Peran: {roleLabel}</Text>
             </View>
           </View>
           <View style={styles.editRow}>
@@ -108,118 +154,38 @@ export function ProfileScreen({ navigation }: Props) {
         </CardContent>
       </Card>
 
-      {/* Role selector */}
-      <View style={styles.roleSection}>
-        <Text style={styles.roleTitle} accessibilityRole="header">
-          Pilih Peran
-        </Text>
-        <Text style={styles.roleSubtitle}>
-          Beranda dan menu dock mengikuti peran aktif ini.
-        </Text>
-        <View style={styles.roleRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: pov === 'praktikan' }}
-            onPress={() => setPov('praktikan')}
-            style={({ pressed }) => [
-              styles.roleCard,
-              pov === 'praktikan' && styles.roleCardActive,
-              pressed && styles.roleCardPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.roleCardLabel,
-                pov === 'praktikan' && styles.roleCardLabelActive,
-              ]}
-            >
-              Praktikan
-            </Text>
-            <Text style={styles.roleCardCaption}>Presensi & riwayat</Text>
-            {pov === 'praktikan' ? (
-              <Text style={styles.roleCheck} accessible={false}>
-                ✓ Aktif
-              </Text>
-            ) : null}
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: pov === 'asisten' }}
-            onPress={() => setPov('asisten')}
-            style={({ pressed }) => [
-              styles.roleCard,
-              pov === 'asisten' && styles.roleCardActive,
-              pressed && styles.roleCardPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.roleCardLabel,
-                pov === 'asisten' && styles.roleCardLabelActive,
-              ]}
-            >
-              Asisten
-            </Text>
-            <Text style={styles.roleCardCaption}>Kelola sesi & rekap</Text>
-            {pov === 'asisten' ? (
-              <Text style={styles.roleCheck} accessible={false}>
-                ✓ Aktif
-              </Text>
-            ) : null}
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Role + attendance summary — shrink to fill container */}
+      {/* Account info summary (role locked to registered account) */}
       <View style={styles.metricsGrid}>
         <Card variant="panel" interactive={false} style={styles.shrinkCard}>
           <CardContent>
-            <Text style={styles.metricLabel}>Peran Aktif</Text>
-            <Text style={styles.metricValue}>
-              {pov === 'asisten' ? 'Asisten' : 'Praktikan'}
-            </Text>
+            <Text style={styles.metricLabel}>Peran Akun</Text>
+            <Text style={styles.metricValue}>{roleLabel}</Text>
           </CardContent>
         </Card>
         <Card variant="panel" interactive={false} style={styles.shrinkCard}>
           <CardContent>
-            <Text style={styles.metricLabel}>Hadir</Text>
+            <Text style={styles.metricLabel}>Status Sesi</Text>
             <Text style={[styles.metricValue, { color: colors.successInk }]}>
-              92%
+              Terautentikasi
             </Text>
           </CardContent>
         </Card>
       </View>
 
-      {/* Menu */}
+      {/* Role-scoped menu */}
       <View style={styles.sectionBlock}>
         <Text style={styles.sectionTitle} accessibilityRole="header">
-          Menu
+          Menu {roleLabel}
         </Text>
         <View style={styles.menuList}>
-          {MENU_ITEMS.map((item, index) => (
+          {menuItems.map((item, index) => (
             <Pressable
               key={item.label}
               accessibilityRole="button"
-              onPress={() => {
-                switch (item.route) {
-                  case 'Schedule':
-                    navigation.navigate('StudentSchedule');
-                    break;
-                  case 'Attendance':
-                    navigation.navigate('StudentAttendanceHistory');
-                    break;
-                  case 'AssistantModuleList':
-                    navigation.navigate('AssistantModuleList');
-                    break;
-                  case 'AssistantSettings':
-                    navigation.navigate('AssistantSettings');
-                    break;
-                }
-              }}
+              onPress={item.onPress}
               style={({ pressed }) => [
                 styles.menuRow,
-                index < MENU_ITEMS.length - 1 && styles.menuRowDivider,
+                index < menuItems.length - 1 && styles.menuRowDivider,
                 pressed && styles.menuRowPressed,
               ]}
             >
@@ -246,10 +212,12 @@ export function ProfileScreen({ navigation }: Props) {
         onPress={() => navigation.navigate('Home')}
       />
 
-      <Banner
-        title="Profil demo"
-        message="Data di atas adalah dummy untuk uji tampilan. Ganti dengan profil riil saat API siap."
-        tone="warning"
+      <Button
+        label={loggingOut ? 'Keluar...' : 'Keluar (Logout)'}
+        variant="destructive"
+        icon="log-out-outline"
+        loading={loggingOut}
+        onPress={handleLogout}
       />
     </Screen>
   );
@@ -287,43 +255,12 @@ const styles = StyleSheet.create({
   identitySub: {
     ...typography.caption,
     color: colors.onPrimary,
-    opacity: 0.8,
+    opacity: 0.85,
   },
   editRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 4,
-  },
-
-  roleSection: { gap: 8 },
-  roleTitle: { ...typography.overline, color: colors.inkMuted },
-  roleSubtitle: { ...typography.caption, color: colors.inkMuted },
-  roleRow: { flexDirection: 'row', gap: 12 },
-  roleCard: {
-    flex: 1,
-    gap: 4,
-    padding: 14,
-    borderRadius: radius['2xl'],
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  roleCardActive: {
-    backgroundColor: colors.violet,
-    borderColor: colors.violet,
-  },
-  roleCardPressed: { opacity: 0.85 },
-  roleCardLabel: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-    fontSize: 14,
-  },
-  roleCardLabelActive: { color: colors.onPrimary },
-  roleCardCaption: { ...typography.caption, color: colors.inkMuted },
-  roleCheck: {
-    ...typography.label,
-    color: colors.onPrimary,
-    fontWeight: '700',
   },
 
   metricsGrid: { flexDirection: 'row', gap: 8 },

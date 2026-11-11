@@ -27,7 +27,7 @@ import {
 } from '../shared/ui';
 import {
   useAssistantSessionsViewModel,
-  usePov,
+  useAuth,
   useStudentAttendanceViewModel,
 } from '../state';
 
@@ -135,11 +135,11 @@ function sessionMinutes(session: Session): {
  * di event open + tombol aksi di drawer. Tap event membuka bottom sheet.
  */
 export function CalendarScreen({ navigation }: Props) {
-  const { pov } = usePov();
+  const { user } = useAuth();
   const { sessions: assistantSessions } = useAssistantSessionsViewModel();
   const { sessions: studentSessions } = useStudentAttendanceViewModel();
 
-  const isAsisten = pov === 'asisten';
+  const isAsisten = user?.role === 'assistant';
   const sessions = isAsisten ? assistantSessions : studentSessions;
 
   const [viewMode, setViewMode] = useState<ViewMode>('week');
