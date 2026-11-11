@@ -14,19 +14,15 @@ import {
   AssistantAllAttendanceScreen,
   AssistantAllSessionsScreen,
   AssistantAttendanceRosterScreen,
+  AssistantClassFormScreen,
+  AssistantClassListScreen,
   AssistantModuleListScreen,
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
+  AssistantSessionFormScreen,
   AssistantSettingsScreen,
 } from '../features/assistant';
 import { LoginScreen, RegisterScreen } from '../features/auth';
-import {
-  LeaveProvider,
-  StudentLeaveRequestFormScreen,
-  StudentLeaveListScreen,
-  AssistantLeaveReviewListScreen,
-} from '../features/leave';
-import { db } from '../services/firebase';
 import {
   StudentAllAttendanceScreen,
   StudentAllSessionsScreen,
@@ -42,7 +38,11 @@ import {
   typography,
   type DockTab,
 } from '../shared/ui';
-import { useAssistantSessionsViewModel, useAuth } from '../state';
+import { useAuth } from '../state';
+import {
+  AssistantSessionsProvider,
+  useAssistantSessionsV2,
+} from '../state/AssistantSessionsContext';
 import type { AuthStackParamList, RootStackParamList } from './navigation';
 import { CalendarScreen } from './CalendarScreen';
 import { HomeScreen } from './HomeScreen';
@@ -110,7 +110,7 @@ function AuthNavigator() {
 
 function AuthenticatedNavigator({ user }: { user: UserProfile }) {
   const { error, clearError } = useAuth();
-  const { sessions: assistantSessions } = useAssistantSessionsViewModel();
+  const { sessions: assistantSessions } = useAssistantSessionsV2();
   const [activeKey, setActiveKey] = useState<string>('Home');
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
@@ -210,16 +210,6 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
         {user.role === 'student' ? (
           <Stack.Group screenOptions={{ title: 'Praktikan' }}>
             <Stack.Screen
-              name="StudentLeaveRequestForm"
-              component={StudentLeaveRequestFormScreen}
-              options={{ title: 'Ajukan Izin' }}
-            />
-            <Stack.Screen
-              name="StudentLeaveList"
-              component={StudentLeaveListScreen}
-              options={{ title: 'Pengajuan Izin' }}
-            />
-            <Stack.Screen
               name="StudentSchedule"
               component={StudentScheduleScreen}
               options={{ headerShown: false }}
@@ -245,11 +235,6 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
         ) : (
           <Stack.Group screenOptions={{ title: 'Asisten' }}>
             <Stack.Screen
-              name="AssistantLeaveReviewList"
-              component={AssistantLeaveReviewListScreen}
-              options={{ title: 'Pemeriksaan Izin' }}
-            />
-            <Stack.Screen
               name="AssistantSchedule"
               component={AssistantScheduleScreen}
               options={{ headerShown: false }}
@@ -262,6 +247,21 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
               name="AssistantAttendanceRoster"
               component={AssistantAttendanceRosterScreen}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="AssistantClassList"
+              component={AssistantClassListScreen}
+              options={{ title: 'Kelola Kelas' }}
+            />
+            <Stack.Screen
+              name="AssistantClassForm"
+              component={AssistantClassFormScreen}
+              options={{ title: 'Form Kelas' }}
+            />
+            <Stack.Screen
+              name="AssistantSessionForm"
+              component={AssistantSessionFormScreen}
+              options={{ title: 'Form Sesi' }}
             />
             <Stack.Screen
               name="AssistantModuleList"
@@ -315,16 +315,27 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
         tabs={DOCK_TABS}
         activeKey={activeKey}
         onTabPress={onTabPress}
-        fab={{
-          glyph: 'document-text-outline',
-          label: isAssistant ? 'Periksa izin' : 'Pengajuan izin saya',
-          onPress: () =>
-            navigation.navigate(
-              isAssistant ? 'AssistantLeaveReviewList' : 'StudentLeaveList',
-            ),
-        }}
       />
     </View>
+  </AssistantSessionsProvider>
+  );
+}
+
+export function AppNavigator() {
+  const { authStatus, user } = useAuth();
+
+  if (authStatus === 'loading') {
+    return <AuthLoadingView />;
+  }
+
+  if (authStatus === 'unauthenticated' || !user) {
+    return <AuthNavigator />;
+  }
+
+  return (
+    <AssistantSessionsProvider>
+      <AuthenticatedNavigator key={user.uid} user={user} />
+    </AssistantSessionsProvider>
   );
 }
 

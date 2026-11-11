@@ -165,16 +165,6 @@ export function HomeScreen({ navigation }: Props) {
             />
           </View>
 
-          <Button
-            label={isAsisten ? 'Periksa Pengajuan Izin' : 'Pengajuan Izin Saya'}
-            variant="soft"
-            onPress={() =>
-              navigation.navigate(
-                isAsisten ? 'AssistantLeaveReviewList' : 'StudentLeaveList',
-              )
-            }
-          />
-
           {/* Day strip — radio buttons that switch to tanggal view */}
           <View style={styles.dayStrip}>
             {WEEKDAY_LABELS.map((label, index) => {
