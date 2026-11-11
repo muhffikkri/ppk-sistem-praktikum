@@ -34,8 +34,13 @@ const ROLE_OPTIONS: {
   },
   {
     value: 'assistant',
-    label: 'Asisten',
+    label: 'Asisten praktikum',
     description: 'Kelola kelas/sesi, rekap, & periksa izin',
+  },
+  {
+    value: 'admin',
+    label: 'Admin',
+    description: 'Manajemen kelas, sesi, & pengguna',
   },
 ];
 
@@ -122,7 +127,7 @@ export function RegisterScreen({ navigation }: Props) {
       <Card variant="panel" interactive={false}>
         <CardContent>
           <CardOverline>
-            <Text>IDENTITAS &amp; PERAN</Text>
+            <Text>IDENTITAS & PERAN</Text>
           </CardOverline>
 
           <View style={styles.fieldGroup}>

@@ -1,7 +1,9 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
 } from 'firebase/auth';
@@ -171,6 +173,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const loginWithGoogle = useCallback(async (): Promise<AsyncActionResult> => {
+    setError(null);
+
+    if (!isFirebaseConfigured) {
+      const message = 'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+      setError(message);
+      return { ok: false, reason: 'unknown_error', message };
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+      return { ok: true };
+    } catch (err) {
+      const mapped = mapFirebaseAuthError(err);
+      setError(mapped.message);
+      return { ok: false, reason: mapped.reason, message: mapped.message };
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -335,6 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error,
       login,
       register,
+      loginWithGoogle,
       logout,
       updateDisplayName,
       clearError,
@@ -345,6 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error,
       login,
       register,
+      loginWithGoogle,
       logout,
       updateDisplayName,
       clearError,

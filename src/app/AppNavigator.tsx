@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LoginScreen, RegisterScreen } from '../features/auth';
 import {
   AssistantAllAttendanceScreen,
   AssistantAllSessionsScreen,
@@ -29,7 +30,8 @@ import {
 
 import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 
-import { usePov } from '../state';
+import { useAuth, usePov, type Pov } from '../state';
+import type { UserRole } from '../domain/types';
 
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
 
@@ -50,7 +52,6 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 // Uses Ionicons from @expo/vector-icons.
 
 // The Jadwal / Presensi keys are stable; their target routes depend on
-
 // the active POV (see DOCK_ROUTE_FOR_POV below).
 
 const DOCK_TABS: DockTab[] = [
@@ -64,7 +65,7 @@ const DOCK_TABS: DockTab[] = [
 ];
 
 const DOCK_ROUTE_FOR_POV: Record<
-  'praktikan' | 'asisten',
+  'praktikan' | 'asisten' | 'admin',
   { Schedule: keyof RootStackParamList; Attendance: keyof RootStackParamList }
 > = {
   praktikan: {
@@ -78,42 +79,57 @@ const DOCK_ROUTE_FOR_POV: Record<
 
     Attendance: 'AssistantAttendanceRoster',
   },
+
+  admin: {
+    Schedule: 'AssistantClassList',
+
+    Attendance: 'AssistantAllAttendance',
+  },
 };
 
+const AuthStack = createNativeStackNavigator<{
+  Login: undefined;
+  Register: undefined;
+}>();
+
 export function AppNavigator() {
-  const { pov } = usePov();
+  const { authStatus, user, logout } = useAuth();
+  const { pov, setPov } = usePov();
 
   const [activeKey, setActiveKey] = useState<string>('Home');
 
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
 
-    /** Reset the whole stack to a single top-level route 뿯ν뿯½뿯½ used by the
-
+    /** Reset the whole stack to a single top-level route used by the
      *  bottom dock so it never surfaces a "back" chevron. */
-
     reset: (state: {
       index: number;
-
       routes: { name: string; params?: Record<string, unknown> }[];
     }) => void;
   };
 
-  // Resolve the stable dock keys to the route matching the active POV.
+  useEffect(() => {
+    // When user logs in, set POV based on role
+    if (user) {
+      const roleMap: Record<UserRole, Pov> = {
+        student: 'praktikan',
+        assistant: 'asisten',
+        admin: 'asisten',
+      };
+      setPov(roleMap[user.role]);
+    }
+  }, [user, setPov]);
 
+  // Resolve the stable dock keys to the route matching the active POV.
   const resolveRoute = (key: string): keyof RootStackParamList => {
+    const currentPov = pov ?? 'praktikan';
     switch (key) {
       case 'Schedule':
-        return DOCK_ROUTE_FOR_POV[pov].Schedule;
+        return DOCK_ROUTE_FOR_POV[currentPov].Schedule;
 
       case 'Attendance':
-        // Assistant roster needs a sessionId; pass the first open session
-
-        // so the screen renders. ponytail: use 'session-ast-01' when no
-
-        // session is open 뿯ν뿯½뿯½ replace with real selector when that lands.
-
-        return DOCK_ROUTE_FOR_POV[pov].Attendance;
+        return DOCK_ROUTE_FOR_POV[currentPov].Attendance;
 
       case 'Home':
         return 'Home';
@@ -133,10 +149,8 @@ export function AppNavigator() {
 
     if (key === 'Attendance' && pov === 'asisten') {
       // Attendance roster for asisten requires a sessionId param.
-
       navigation.reset({
         index: 0,
-
         routes: [{ name: route, params: { sessionId: 'session-ast-02' } }],
       });
     } else {
@@ -144,9 +158,17 @@ export function AppNavigator() {
     }
   };
 
-  useEffect(() => {
-    // No-op placeholder reserved for active-route sync hooks.
-  }, [activeKey]);
+  // When unauthenticated, show auth stack (Login/Register)
+  if (authStatus === 'unauthenticated' || authStatus === 'loading') {
+    return (
+      <AssistantSessionsProvider>
+        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+          <AuthStack.Screen name="Login" component={LoginScreen} />
+          <AuthStack.Screen name="Register" component={RegisterScreen} />
+        </AuthStack.Navigator>
+      </AssistantSessionsProvider>
+    );
+  }
 
   return (
     <AssistantSessionsProvider>

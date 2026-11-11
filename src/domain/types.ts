@@ -3,7 +3,7 @@
  * Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
  */
 
-export type UserRole = 'student' | 'assistant';
+export type UserRole = 'student' | 'assistant' | 'admin';
 
 export type UserProfile = {
   uid: string;
@@ -120,6 +120,7 @@ export type AuthContextValue = {
     password: string;
     role: UserRole;
   }) => Promise<AsyncActionResult>;
+  loginWithGoogle: () => Promise<AsyncActionResult>;
   logout: () => Promise<AsyncActionResult>;
   updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
   clearError: () => void;

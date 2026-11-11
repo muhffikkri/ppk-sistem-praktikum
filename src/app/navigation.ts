@@ -29,9 +29,10 @@ export type RootStackParamList = {
   ProfileEdit: undefined;
 };
 
-export type ActorPov = 'praktikan' | 'asisten';
+export type ActorPov = 'praktikan' | 'asisten' | 'admin';
 
 export const POVLABEL: Record<ActorPov, string> = {
   praktikan: 'Praktikan',
   asisten: 'Asisten',
+  admin: 'Admin',
 };

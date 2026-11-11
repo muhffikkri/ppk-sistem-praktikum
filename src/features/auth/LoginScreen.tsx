@@ -22,7 +22,7 @@ import { useAuth } from '../../state';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
-  const { login, error, clearError } = useAuth();
+  const { login, loginWithGoogle, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -159,6 +159,15 @@ export function LoginScreen({ navigation }: Props) {
               loading={submitting}
               onPress={handleLogin}
             />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Masuk dengan Google"
+              onPress={loginWithGoogle}
+              style={({ pressed }) => [styles.googleButton, pressed && styles.googleButtonPressed]}
+            >
+              <Ionicons name="logo-google" size={20} color={colors.inkMuted} />
+              <Text style={styles.googleButtonText}>Google</Text>
+            </Pressable>
           </View>
         </CardContent>
       </Card>
@@ -254,5 +263,25 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkMuted,
     marginBottom: spacing.xs,
+  },
+  googleButton: {
+    width: '100%',
+    marginTop: spacing.md,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleButtonPressed: {
+    backgroundColor: colors.lavenderSubtle,
+  },
+  googleButtonText: {
+    marginLeft: spacing.xs,
+    ...typography.body,
+    color: colors.ink,
   },
 });

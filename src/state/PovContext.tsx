@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export type Pov = 'praktikan' | 'asisten';
+export type Pov = 'praktikan' | 'asisten' | 'admin';
 
 type PovContextValue = {
   pov: Pov;
