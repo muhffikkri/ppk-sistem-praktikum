@@ -11,6 +11,9 @@ import {
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
   AssistantSettingsScreen,
+  AssistantClassListScreen,
+  AssistantClassFormScreen,
+  AssistantSessionFormScreen,
 } from '../features/assistant';
 import {
   StudentAllAttendanceScreen,
@@ -21,6 +24,7 @@ import {
 } from '../features/student';
 import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 import { usePov } from '../state';
+import { AssistantSessionsProvider, useAssistantSessionsViewModel } from '../state/AssistantSessionsContext';
 import type { RootStackParamList } from './navigation';
 import { HomeScreen } from './HomeScreen';
 import { CalendarScreen } from './CalendarScreen';
@@ -105,7 +109,8 @@ export function AppNavigator() {
   }, [activeKey]);
 
   return (
-    <View style={styles.root}>
+    <AssistantSessionsProvider>
+      <View style={styles.root}>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={({ route }) => ({
