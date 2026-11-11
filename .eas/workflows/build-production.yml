@@ -1,0 +1,14 @@
+name: Build production
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build_android:
+    name: Build Android production
+    type: build
+    environment: production
+    params:
+      platform: android
+      profile: production

@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "praktikumppk-6",
   "version": "1.0.0",
   "main": "expo-router/entry",
@@ -29,15 +30,56 @@
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
+=======
+  "name": "ppk-mobile",
+  "version": "1.1.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/native": "^7.1.8",
+    "@react-navigation/native-stack": "^7.3.16",
+    "expo": "~58.0.0",
+    "expo-font": "~58.0.10",
+    "expo-status-bar": "~58.0.0",
+    "expo-updates": "~58.0.0",
+    "firebase": "^13.2.0",
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0"
+  },
+  "devDependencies": {
+    "@expo/cli": "^58.1.15",
+    "@types/react": "~19.3.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~58.0.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-native": "^5.0.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+>>>>>>> 1e30cb0b23bc7e10af688e49ec527c81bfb93f56
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
+<<<<<<< HEAD
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint"
+=======
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "verify:contracts": "tsx scripts/verify-contracts.ts"
+>>>>>>> 1e30cb0b23bc7e10af688e49ec527c81bfb93f56
   },
   "private": true
 }

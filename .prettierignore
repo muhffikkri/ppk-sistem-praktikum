@@ -1,0 +1,14 @@
+node_modules
+package-lock.json
+.expo
+dist
+assets
+
+# Synced project docs: do not reformat
+AGENTS.md
+README.md
+design.md
+CHANGELOG.md
+docs/
+spec/
+.opencode/

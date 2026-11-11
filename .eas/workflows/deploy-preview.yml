@@ -1,0 +1,13 @@
+name: Deploy preview update
+
+on:
+  push:
+    tags: ['preview-*']
+
+jobs:
+  publish_preview_update:
+    name: Publish preview update
+    type: update
+    environment: preview
+    params:
+      branch: preview

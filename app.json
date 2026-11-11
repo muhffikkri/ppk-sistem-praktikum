@@ -1,5 +1,6 @@
 {
   "expo": {
+<<<<<<< HEAD
     "name": "PraktikumPPK-6",
     "slug": "PraktikumPPK-6",
     "version": "1.0.0",
@@ -16,10 +17,30 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
+=======
+    "name": "PPK Mobile",
+    "slug": "ppk-mobile",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.muhffikkris.ppkmobile",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+>>>>>>> 1e30cb0b23bc7e10af688e49ec527c81bfb93f56
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
+<<<<<<< HEAD
       "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
@@ -40,3 +61,25 @@
     }
   }
 }
+=======
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "736d7efd-ad41-4fa4-a147-57e6bf106ce6"
+      }
+    },
+    "owner": "muhffikkris-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/736d7efd-ad41-4fa4-a147-57e6bf106ce6"
+    },
+    "plugins": [
+      "expo-status-bar",
+      "expo-font"
+    ]
+  }
+}
+>>>>>>> 1e30cb0b23bc7e10af688e49ec527c81bfb93f56
