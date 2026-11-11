@@ -31,15 +31,16 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
 
 ### R1 — Autentikasi Pengguna
 
-- [ ] Pengguna dapat melakukan **registrasi** dengan nama lengkap, email, password, dan pemilihan peran (`Praktikan`, `Asisten`, atau `Admin`).
+- [ ] Pengguna dapat melakukan **registrasi** dengan nama lengkap, email, password, dan pemilihan peran (`Praktikan` atau `Asisten`).
 - [ ] Pengguna dapat melakukan **login** dengan email dan password.
-- [ ] Pengguna dapat melakukan **login dengan Google Authentication** (tombol "Masuk dengan Google").
+- [ ] Pengguna dapat melakukan **login dengan Google Authentication** (tombol "Masuk dengan Akun Google").
+- [ ] **Satu email, satu user, satu role:** Login dengan email/password atau Google pada email yang sama akan mengakses user yang sama dengan role yang sama (dijamin oleh Firebase account linking + profil Firestore tunggal per `uid`).
 - [ ] Pengguna dapat melakukan **logout** dari halaman profil/akun.
 - [ ] Profil pengguna (`uid`, `displayName`, `email`, `role`, `createdAt`) tersimpan di Firestore saat registrasi dan dimuat saat login.
 - [ ] Aplikasi menampilkan informasi dan menyediakan tindakan hanya sesuai peran pengguna yang sedang login.
 - [ ] Pengguna yang belum login diarahkan ke alur autentikasi dan tidak dapat mengakses layar atau data praktikum.
 
-**Diterima bila:** pengguna baru bisa mendaftar sebagai praktikan, asisten, atau admin; login/logout berjalan dengan persistensi sesi; dan antarmuka terkunci sesuai peran akun.
+**Diterima bila:** pengguna baru bisa mendaftar sebagai praktikan atau asisten; login (email & Google) berjalan dengan persistensi sesi; login dengan email dan Google pada email yang sama menghasilkan user dan role yang identik; dan antarmuka terkunci sesuai peran akun.
 
 ### R2 — Pengelolaan Data Praktikum (CRUD Asisten & Tampilan Praktikan)
 

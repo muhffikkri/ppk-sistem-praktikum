@@ -199,7 +199,8 @@ export type AuthContextValue = {
 | Domain | Aksi | Prasyarat Valid | Hasil Sukses | Kegagalan |
 | --- | --- | --- | --- | --- |
 | **Auth** | `register` | Nama tidak kosong, email valid, password >= 6 karakter, role valid | Akun Firebase Auth + dokumen `users/{uid}` terbuat | `validation_error` / `network_error` / `unknown_error` |
-| **Auth** | `loginWithGoogle` | Firebase terkonfigurasi, akun Google valid | Akun Firebase Auth + dokumen `users/{uid}` (jika belum ada) | `network_error` / `unknown_error` |
+| **Auth** | `loginWithGoogle` | Firebase terkonfigurasi, akun Google valid | Jika email sudah terdaftar dengan email/password → akun sama (auto-link oleh Firebase), role diambil dari Firestore. Jika belum ada profil → diarahkan ke RoleSelectionScreen. | `network_error` / `unknown_error` / `validation_error` (credential-already-in-use) |
+| **Auth** | `login` (email/password) | Email valid, password tidak kosong | Jika email sudah terdaftar dengan Google → akun sama (auto-link oleh Firebase), role diambil dari Firestore. | `validation_error` / `network_error` / `unknown_error` |
 | **Kelas** | `createClass` / `updateClass` | Role `assistant` atau `admin`, `courseCode`, `courseName`, `groupName` tidak kosong | Dokumen `classes` tersimpan (`updatedAt` diperbarui) | `forbidden` / `validation_error` |
 | **Peserta** | `addParticipant` / `removeParticipant` | Role `assistant` atau `admin`, target user ber-role `student` ditemukan | `participantIds` pada `classes` & semua `sessions` kelas tersebut diperbarui via `writeBatch` | `user_not_found` / `forbidden` |
 | **Sesi** | `createSession` / `updateSession` | Role `assistant` atau `admin`, `classId` valid, `endsAt > startsAt` | Dokumen `sessions` tersimpan dengan `participantIds` kelas | `validation_error` / `class_not_found` |
@@ -208,6 +209,21 @@ export type AuthContextValue = {
 | **Presensi** | `checkIn` | Role `student`, terdaftar di `session.participantIds`, `session.status === 'open'`, belum ada `attendance/{sessionId}_{studentId}` | Dokumen `attendance/{sessionId}_{studentId}` terbuat | `invalid_status` / `already_checked_in` / `forbidden` |
 | **Izin** | `submitLeaveRequest` | Role `student`, terdaftar di sesi, alasan non-kosong (min. 5 karakter), belum ada izin `pending`/`approved` untuk sesi sama | Panggil `classifyLeaveReason(reason)` (fallback `'unavailable'` jika gagal) → simpan ke `leave_requests` dengan `status: 'pending'` | `validation_error` / `duplicate_leave_request` |
 | **Izin** | `reviewLeaveRequest` | Role `assistant` atau `admin`, `leave.status === 'pending'`, keputusan `'approved' \| 'rejected'` | Update `status`, `reviewedBy`, `reviewedAt`, `decisionNote` | `invalid_status` / `leave_not_found` / `forbidden` |
+
+---
+
+### Aturan Autentikasi Berganda (Email & Google)
+
+Satu email harus selalu mengakses user yang sama dengan role yang sama, terlepas dari metode login yang digunakan:
+
+| Skenario | Perilaku |
+| --- | --- |
+| Daftar email/password → Login Google (email sama) | Firebase auto-link account → sama `uid` → role diambil dari `users/{uid}` di Firestore |
+| Login Google → Daftar email/password (email sama) | Firebase auto-link account → sama `uid` → role diambil dari `users/{uid}` di Firestore |
+| Login Google → profil belum ada di Firestore | Diarahkan ke `RoleSelectionScreen` untuk memilih peran (Praktikan / Asisten) |
+| Role admin | Hanya dapat ditetapkan jika email cocok dengan `EXPO_PUBLIC_ADMIN_EMAIL` di `.env` |
+
+Jika Firebase dikonfigurasi dengan "Multiple accounts per email", login dengan metode berbeda pada email yang sama akan menghasilkan error `auth/credential-already-in-use`. Disarankan mengaktifkan "One account per email address" di Firebase Console agar auto-link berjalan otomatis.
 
 ---
 
