@@ -21,6 +21,13 @@ import {
 } from '../features/assistant';
 import { LoginScreen, RegisterScreen } from '../features/auth';
 import {
+  LeaveProvider,
+  StudentLeaveRequestFormScreen,
+  StudentLeaveListScreen,
+  AssistantLeaveReviewListScreen,
+} from '../features/leave';
+import { db } from '../services/firebase';
+import {
   StudentAllAttendanceScreen,
   StudentAllSessionsScreen,
   StudentAttendanceHistoryScreen,
@@ -203,6 +210,16 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
         {user.role === 'student' ? (
           <Stack.Group screenOptions={{ title: 'Praktikan' }}>
             <Stack.Screen
+              name="StudentLeaveRequestForm"
+              component={StudentLeaveRequestFormScreen}
+              options={{ title: 'Ajukan Izin' }}
+            />
+            <Stack.Screen
+              name="StudentLeaveList"
+              component={StudentLeaveListScreen}
+              options={{ title: 'Pengajuan Izin' }}
+            />
+            <Stack.Screen
               name="StudentSchedule"
               component={StudentScheduleScreen}
               options={{ headerShown: false }}
@@ -227,6 +244,11 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
           </Stack.Group>
         ) : (
           <Stack.Group screenOptions={{ title: 'Asisten' }}>
+            <Stack.Screen
+              name="AssistantLeaveReviewList"
+              component={AssistantLeaveReviewListScreen}
+              options={{ title: 'Pemeriksaan Izin' }}
+            />
             <Stack.Screen
               name="AssistantSchedule"
               component={AssistantScheduleScreen}
@@ -293,6 +315,14 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
         tabs={DOCK_TABS}
         activeKey={activeKey}
         onTabPress={onTabPress}
+        fab={{
+          glyph: 'document-text-outline',
+          label: isAssistant ? 'Periksa izin' : 'Pengajuan izin saya',
+          onPress: () =>
+            navigation.navigate(
+              isAssistant ? 'AssistantLeaveReviewList' : 'StudentLeaveList',
+            ),
+        }}
       />
     </View>
   );
@@ -309,7 +339,11 @@ export function AppNavigator() {
     return <AuthNavigator />;
   }
 
-  return <AuthenticatedNavigator key={user.uid} user={user} />;
+  return (
+    <LeaveProvider db={db} user={user}>
+      <AuthenticatedNavigator key={user.uid} user={user} />
+    </LeaveProvider>
+  );
 }
 
 const styles = StyleSheet.create({
