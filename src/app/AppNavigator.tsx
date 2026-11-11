@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { LoginScreen, RegisterScreen } from '../features/auth';
+import { LoginScreen, RegisterScreen, LandingScreen, RoleSelectionScreen } from '../features/auth';
 import {
   AssistantAllAttendanceScreen,
   AssistantAllSessionsScreen,
@@ -88,12 +88,14 @@ const DOCK_ROUTE_FOR_POV: Record<
 };
 
 const AuthStack = createNativeStackNavigator<{
+  Landing: undefined;
   Login: undefined;
   Register: undefined;
+  RoleSelection: undefined;
 }>();
 
 export function AppNavigator() {
-  const { authStatus, user, logout } = useAuth();
+  const { authStatus, user, logout, needsRoleSelection } = useAuth();
   const { pov, setPov } = usePov();
 
   const [activeKey, setActiveKey] = useState<string>('Home');
@@ -158,13 +160,27 @@ export function AppNavigator() {
     }
   };
 
-  // When unauthenticated, show auth stack (Login/Register)
+  // When unauthenticated or loading, show auth stack (Landing → Login/Register)
   if (authStatus === 'unauthenticated' || authStatus === 'loading') {
     return (
       <AssistantSessionsProvider>
         <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+          <AuthStack.Screen name="Landing" component={LandingScreen} />
           <AuthStack.Screen name="Login" component={LoginScreen} />
           <AuthStack.Screen name="Register" component={RegisterScreen} />
+          <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+        </AuthStack.Navigator>
+      </AssistantSessionsProvider>
+    );
+  }
+
+  // When authenticated but role not yet selected (Google first-time login),
+  // show RoleSelectionScreen before entering the app.
+  if (needsRoleSelection) {
+    return (
+      <AssistantSessionsProvider>
+        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+          <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
         </AuthStack.Navigator>
       </AssistantSessionsProvider>
     );

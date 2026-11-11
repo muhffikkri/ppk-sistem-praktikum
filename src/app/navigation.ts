@@ -1,7 +1,9 @@
 // Keep route names and params aligned with docs/sprint-2-shared-contract.md.
 export type AuthStackParamList = {
+  Landing: undefined;
   Login: undefined;
   Register: undefined;
+  RoleSelection: undefined;
 };
 
 export type RootStackParamList = {

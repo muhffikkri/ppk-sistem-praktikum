@@ -98,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [needsRoleSelection, setNeedsRoleSelection] = useState(false);
   const registeringRef = useRef(false);
 
   useEffect(() => {
@@ -149,12 +150,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          // Jika profil tidak ada di Firestore (mis. gagal penulisan sebelumnya), paksa unauthenticated.
+          // Jika profil tidak ada di Firestore (mis. login pertama kali dengan Google),
+          // arahkan ke layar pemilihan peran.
           setUser(null);
-          setError(
-            'Profil akun tidak ditemukan di database. Silakan masuk ulang atau daftar kembali.',
-          );
-          setAuthStatus('unauthenticated');
+          setNeedsRoleSelection(true);
+          setAuthStatus('authenticated');
         },
         (snapshotError) => {
           const mapped = mapFirebaseAuthError(snapshotError);
@@ -175,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = useCallback(async (): Promise<AsyncActionResult> => {
     setError(null);
+    setNeedsRoleSelection(false);
 
     if (!isFirebaseConfigured) {
       const message = 'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
@@ -267,7 +268,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(message);
         return { ok: false, reason: 'validation_error', message };
       }
-      if (input.role !== 'student' && input.role !== 'assistant') {
+      if (
+        input.role !== 'student' &&
+        input.role !== 'assistant' &&
+        input.role !== 'admin'
+      ) {
         const message = 'Peran akun tidak valid.';
         setError(message);
         return { ok: false, reason: 'validation_error', message };
@@ -301,6 +306,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, reason: mapped.reason, message: mapped.message };
       } finally {
         registeringRef.current = false;
+      }
+    },
+    [],
+  );
+
+  const setUserRole = useCallback(
+    async (role: UserRole): Promise<AsyncActionResult> => {
+      setError(null);
+
+      if (!isFirebaseConfigured) {
+        const message =
+          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+        setError(message);
+        return { ok: false, reason: 'unknown_error', message };
+      }
+
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        const message = 'Pengguna belum masuk. Silakan login kembali.';
+        setError(message);
+        return { ok: false, reason: 'unauthenticated', message };
+      }
+
+      try {
+        const profile: UserProfile = {
+          uid: currentUser.uid,
+          displayName:
+            currentUser.displayName || currentUser.email || 'Pengguna',
+          email: currentUser.email || '',
+          role,
+          createdAt: new Date().toISOString(),
+        };
+
+        await setDoc(doc(db, 'users', currentUser.uid), profile);
+        await updateProfile(currentUser, { displayName: profile.displayName });
+
+        setUser(profile);
+        setNeedsRoleSelection(false);
+        setAuthStatus('authenticated');
+        return { ok: true };
+      } catch (err) {
+        const mapped = mapFirebaseAuthError(err);
+        setError(mapped.message);
+        return { ok: false, reason: mapped.reason, message: mapped.message };
       }
     },
     [],
@@ -356,9 +405,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authStatus,
       user,
       error,
+      needsRoleSelection,
       login,
       register,
       loginWithGoogle,
+      setUserRole,
       logout,
       updateDisplayName,
       clearError,
@@ -367,9 +418,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authStatus,
       user,
       error,
+      needsRoleSelection,
       login,
       register,
       loginWithGoogle,
+      setUserRole,
       logout,
       updateDisplayName,
       clearError,

@@ -113,6 +113,7 @@ export type AuthContextValue = {
   authStatus: AuthStatus;
   user: UserProfile | null;
   error: string | null;
+  needsRoleSelection: boolean;
   login: (email: string, password: string) => Promise<AsyncActionResult>;
   register: (input: {
     displayName: string;
@@ -121,6 +122,7 @@ export type AuthContextValue = {
     role: UserRole;
   }) => Promise<AsyncActionResult>;
   loginWithGoogle: () => Promise<AsyncActionResult>;
+  setUserRole: (role: UserRole) => Promise<AsyncActionResult>;
   logout: () => Promise<AsyncActionResult>;
   updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
   clearError: () => void;
