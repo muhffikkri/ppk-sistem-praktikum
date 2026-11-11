@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signOut,
   updateProfile,
+  type UserCredential,
 } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import {
@@ -65,12 +66,19 @@ function mapFirebaseAuthError(err: unknown): {
     case 'auth/email-already-in-use':
       return {
         reason: 'validation_error',
-        message: 'Email sudah terdaftar. Silakan masuk dengan akun tersebut.',
+        message:
+          'Email sudah terdaftar. Silakan masuk dengan akun tersebut atau gunakan metode login yang sama.',
       };
     case 'auth/weak-password':
       return {
         reason: 'validation_error',
         message: 'Password terlalu lemah (minimal 6 karakter).',
+      };
+    case 'auth/credential-already-in-use':
+      return {
+        reason: 'validation_error',
+        message:
+          'Akun dengan email ini sudah terdaftar dengan metode login lain. Silakan gunakan metode login yang sama atau masuk dengan email dan password terlebih dahulu.',
       };
     case 'auth/too-many-requests':
       return {
@@ -126,8 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (snap) => {
           if (snap.exists()) {
             const data = snap.data() as Partial<UserProfile>;
-            // Admin role is assigned via .env email; role stored in Firestore
-            // takes precedence unless email matches ADMIN_EMAIL.
+            // Role disimpan di Firestore dan dipakai sebagai kebenaran tunggal.
+            // Admin role juga dapat ditetapkan melalui EXPO_PUBLIC_ADMIN_EMAIL.
             let role: UserRole = 'student';
             if (data.role === 'assistant') role = 'assistant';
             else if (data.role === 'admin') role = 'admin';
@@ -156,8 +164,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          // Jika profil tidak ada di Firestore (mis. login pertama kali dengan Google),
-          // arahkan ke layar pemilihan peran.
+          // Jika profil tidak ada di Firestore (mis. login pertama kali dengan Google
+          // atau email yang belum pernah daftar), arahkan ke layar pemilihan peran.
           setUser(null);
           setNeedsRoleSelection(true);
           setAuthStatus('authenticated');
@@ -192,7 +200,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithPopup(auth, provider);
+      const result: UserCredential = await signInWithPopup(auth, provider);
+
+      // Setelah Google login berhasil, cek apakah profil sudah ada di Firestore.
+      // Jika sudah ada (mis. sebelumnya daftar dengan email/password), role akan
+      // diambil dari Firestore melalui onAuthStateChanged di atas.
+      // Jika belum ada, needsRoleSelection akan true dan user diarahkan ke RoleSelectionScreen.
       return { ok: true };
     } catch (err) {
       const mapped = mapFirebaseAuthError(err);
@@ -339,6 +352,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        // Cek apakah profil sudah ada di Firestore (mis. user sudah pernah login
+        // dengan email/password sebelumnya dan baru saja login dengan Google).
+        // Role yang dipilih di RoleSelectionScreen akan ditulis ke Firestore,
+        // sehingga role konsisten terlepas dari metode login yang digunakan.
         const profile: UserProfile = {
           uid: currentUser.uid,
           displayName:
@@ -448,4 +465,3 @@ export function useAuth(): AuthContextValue {
   }
   return ctx;
 }
-
