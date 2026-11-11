@@ -317,6 +317,7 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
         onTabPress={onTabPress}
       />
     </View>
+  </AssistantSessionsProvider>
   );
 }
 
