@@ -339,6 +339,24 @@ export function AppNavigator() {
   );
 }
 
+export function AppNavigator() {
+  const { authStatus, user } = useAuth();
+
+  if (authStatus === 'loading') {
+    return <AuthLoadingView />;
+  }
+
+  if (authStatus === 'unauthenticated' || !user) {
+    return <AuthNavigator />;
+  }
+
+  return (
+    <LeaveProvider db={db} user={user}>
+      <AuthenticatedNavigator key={user.uid} user={user} />
+    </LeaveProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   loadingRoot: {
