@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
 import { isFirebaseConfigured } from '../../services/firebase';
@@ -24,7 +24,6 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Landing'>;
 
 export function LandingScreen({ navigation }: Props) {
   const { loginWithGoogle, error, clearError } = useAuth();
-  const [showEmailLogin, setShowEmailLogin] = useState(false);
 
   const handleGoogleLogin = async () => {
     clearError();
@@ -34,8 +33,8 @@ export function LandingScreen({ navigation }: Props) {
   return (
     <Screen>
       <StatusBar style="dark" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Top System Badge & Laboratory Identity */}
+      <View style={styles.container}>
+        {/* Laboratory Identity */}
         <View style={styles.header}>
           <View style={styles.systemBadge}>
             <View style={styles.statusDot} />
@@ -46,56 +45,57 @@ export function LandingScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* Editorial Hero Visual Section */}
-        <View style={styles.heroContainer}>
-          <View style={styles.heroImageWrapper}>
-            <View style={styles.heroImage} />
-            <View style={styles.heroGradient} />
-            <View style={styles.liveTag}>
-              <View style={styles.liveTagIcon} />
-              <Text style={styles.liveTagText}>Lab RPL • Gedung B201</Text>
-            </View>
-            <View style={styles.heroBottom}>
-              <View style={styles.semesterChip}>
-                <Text style={styles.semesterText}>SEMESTER GENAP</Text>
+        {/* Hero Card */}
+        <Card variant="panel" interactive={false} style={styles.heroCard}>
+          <CardContent>
+            <View style={styles.heroCardContent}>
+            <View style={styles.heroVisual}>
+              <View style={styles.heroImage} />
+              <View style={styles.liveTag}>
+                <View style={styles.liveTagIcon} />
+                <Text style={styles.liveTagText}>Lab RPL • Gedung B201</Text>
               </View>
-              <View style={styles.statusChip}>
-                <Text style={styles.statusText}>Aktif Terjadwal</Text>
+              <View style={styles.heroBottom}>
+                <View style={styles.semesterChip}>
+                  <Text style={styles.semesterText}>SEMESTER GENAP</Text>
+                </View>
+                <View style={styles.statusChip}>
+                  <Text style={styles.statusText}>Aktif Terjadwal</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.simCard}>
+              <View style={styles.simRow}>
+                <View style={styles.iconBox}>
+                  <Ionicons name="time" size={20} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={styles.simLabel}>Sesi Shift Terdekat</Text>
+                  <Text style={styles.simTime}>08:00 – 10:30</Text>
+                </View>
+                <View style={styles.verifiedPill}>
+                  <View style={styles.checkIcon} />
+                  <Text style={styles.verifiedText}>Presensi Terverifikasi</Text>
+                </View>
+              </View>
+
+              <View style={styles.pillRow}>
+                <View style={styles.pillLeft}>
+                  <View style={styles.desktopIcon} />
+                  <Text style={styles.pillText}>Bench #14 • Praktikum AI</Text>
+                </View>
+                <View style={styles.pillRight}>
+                  <View style={styles.avatar1} />
+                  <View style={styles.avatar2} />
+                </View>
               </View>
             </View>
           </View>
+        </CardContent>
+        </Card>
 
-          {/* Tactile Interactive Simulation Card */}
-          <View style={styles.simCard}>
-            <View style={styles.simRow}>
-              <View style={styles.iconBox}>
-                <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-              </View>
-              <View>
-                <Text style={styles.simLabel}>Sesi Shift Terdekat</Text>
-                <Text style={styles.simTime}>08:00 – 10:30</Text>
-              </View>
-              <View style={styles.verifiedPill}>
-                <View style={styles.checkIcon} />
-                <Text style={styles.verifiedText}>Presensi Terverifikasi</Text>
-              </View>
-            </View>
-
-            {/* Bench and Assistant Quick Pill Row */}
-            <View style={styles.pillRow}>
-              <View style={styles.pillLeft}>
-                <View style={styles.desktopIcon} />
-                <Text style={styles.pillText}>Bench #14 • Praktikum AI</Text>
-              </View>
-              <View style={styles.pillRight}>
-                <View style={styles.avatar1} />
-                <View style={styles.avatar2} />
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Editorial Headline & Copywriting */}
+        {/* Copywriting */}
         <View style={styles.copySection}>
           <View style={styles.kicker}>
             <Ionicons name="text-outline" size={18} color={colors.primary} />
@@ -111,7 +111,6 @@ export function LandingScreen({ navigation }: Props) {
             jadwal praktikum tanpa hambatan.
           </Text>
 
-          {/* Lab Metric Micro Badges */}
           <View style={styles.metricsGrid}>
             <View style={styles.metricCard}>
               <Text style={styles.metricValue}>14+</Text>
@@ -128,32 +127,40 @@ export function LandingScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* Action Button Group */}
-        <View style={styles.actionsSection}>
-          {!isFirebaseConfigured ? (
-            <Banner
-              title="Konfigurasi Firebase belum diisi"
-              message="Salin .env.example menjadi .env dan isi EXPO_PUBLIC_FIREBASE_* sebelum login."
-              tone="warning"
-            />
-          ) : null}
+        {/* Firebase Warning */}
+        {!isFirebaseConfigured ? (
+          <Banner
+            title="Konfigurasi Firebase belum diisi"
+            message="Salin .env.example menjadi .env dan isi EXPO_PUBLIC_FIREBASE_* sebelum login."
+            tone="warning"
+          />
+        ) : null}
 
+        {/* Error Banner */}
+        {error ? (
+          <Banner
+            title="Gagal"
+            message={error}
+            tone="danger"
+            onDismiss={clearError}
+          />
+        ) : null}
+
+        {/* Action Buttons */}
+        <View style={styles.actionsSection}>
           <Button
             label="Masuk dengan Email Kampus"
             variant="primary"
             icon="mail-outline"
-            onPress={() => setShowEmailLogin(true)}
+            onPress={() => navigation.navigate('Login')}
           />
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Masuk dengan Google"
+          <Button
+            label="Masuk dengan Akun Google"
+            variant="outline"
+            icon="logo-google"
             onPress={handleGoogleLogin}
-            style={styles.googleButton}
-          >
-            <Ionicons name="logo-google" size={20} color={colors.inkMuted} />
-            <Text style={styles.googleButtonText}>Masuk dengan Akun Google</Text>
-          </Pressable>
+          />
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
@@ -167,14 +174,13 @@ export function LandingScreen({ navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel="Registrasi Akun Baru"
               onPress={() => navigation.navigate('Register')}
-              style={styles.registerLink}
             >
               <Text style={styles.registerLinkText}>Registrasi Akun Baru</Text>
             </Pressable>
           </View>
         </View>
 
-        {/* SSO Academic Disclaimer Footer */}
+        {/* Footer */}
         <View style={styles.footer}>
           <View style={styles.ssoBadge}>
             <View style={styles.shieldIcon} />
@@ -185,14 +191,15 @@ export function LandingScreen({ navigation }: Props) {
             Teknologi Informasi.
           </Text>
         </View>
-      </ScrollView>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: spacing.lg,
+  container: {
+    flex: 1,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -208,9 +215,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     backgroundColor: colors.panel,
-    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: radius.full,
   },
   statusDot: {
     width: 6,
@@ -232,31 +239,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroContainer: {
-    width: '100%',
+  heroCard: {
+    marginHorizontal: spacing.md,
     marginTop: spacing.sm,
   },
-  heroImageWrapper: {
+  heroCardContent: {
+    padding: spacing.md,
+  },
+  heroVisual: {
     width: '100%',
-    height: 200,
+    height: 160,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
     position: 'relative',
+    backgroundColor: colors.panel,
   },
   heroImage: {
     width: '100%',
-    height: 200,
+    height: 160,
     backgroundColor: colors.surface,
-  },
-  heroGradient: {
-    position: 'absolute',
-    inset: 0,
-    backgroundColor: 'transparent',
   },
   liveTag: {
     position: 'absolute',
@@ -269,11 +270,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: 'rgba(255,255,255,0.95)',
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   liveTagIcon: {
     width: 16,
@@ -321,11 +317,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     marginTop: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
   },
   simRow: {
     flexDirection: 'row',
@@ -478,28 +469,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     gap: spacing.md,
   },
-  googleButton: {
-    width: '100%',
-    height: 52,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  googleButtonText: {
-    marginLeft: spacing.xs,
-    ...typography.body,
-    color: colors.ink,
-    fontWeight: '500',
-  },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -525,9 +494,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.inkMuted,
   },
-  registerLink: {
-    // no extra styles needed
-  },
   registerLinkText: {
     ...typography.label,
     color: colors.primary,
@@ -538,6 +504,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     alignItems: 'center',
     gap: spacing.xs,
+    paddingBottom: spacing.xl,
   },
   ssoBadge: {
     flexDirection: 'row',

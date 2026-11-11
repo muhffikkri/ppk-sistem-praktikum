@@ -40,29 +40,31 @@ const ROLE_OPTIONS: {
     description: 'Kelola kelas/sesi, rekap, & periksa izin',
     icon: 'school-outline',
   },
-  {
-    value: 'admin',
-    label: 'Admin',
-    description: 'Manajemen kelas, sesi, & pengguna',
-    icon: 'lock-closed-outline',
-  },
 ];
 
 export function RoleSelectionScreen({ navigation }: Props) {
   const { setUserRole, error, clearError } = useAuth();
   const [role, setRole] = useState<UserRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [roleError, setRoleError] = useState<string | null>(null);
 
-  const activeError = error;
+  const activeError = roleError ?? error;
+
+  const clearRoleError = () => {
+    setRoleError(null);
+    clearError();
+  };
 
   const handleContinue = async () => {
     if (!role) return;
-    clearError();
+    clearRoleError();
     setSubmitting(true);
     try {
       await setUserRole(role);
-      // AppNavigator will re-render and show the main stack once
+      // AppNavigator re-renders and shows main stack once
       // authStatus becomes 'authenticated' and needsRoleSelection becomes false.
+    } catch {
+      // Error already set by setUserRole via AuthContext
     } finally {
       setSubmitting(false);
     }
@@ -96,7 +98,7 @@ export function RoleSelectionScreen({ navigation }: Props) {
           title="Gagal"
           message={activeError}
           tone="danger"
-          onDismiss={() => clearError()}
+          onDismiss={clearRoleError}
         />
       ) : null}
 
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: colors.violetLight,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -37,11 +37,6 @@ const ROLE_OPTIONS: {
     label: 'Asisten praktikum',
     description: 'Kelola kelas/sesi, rekap, & periksa izin',
   },
-  {
-    value: 'admin',
-    label: 'Admin',
-    description: 'Manajemen kelas, sesi, & pengguna',
-  },
 ];
 
 export function RegisterScreen({ navigation }: Props) {
@@ -53,12 +48,18 @@ export function RegisterScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
-  const activeError = localError ?? error;
+  const activeError = localError ?? registerError;
+
+  const clearRegisterError = () => {
+    setRegisterError(null);
+    clearError();
+  };
 
   const handleRegister = async () => {
     setLocalError(null);
-    clearError();
+    setRegisterError(null);
 
     if (displayName.trim().length < 2) {
       setLocalError('Nama lengkap minimal 2 karakter.');
@@ -82,7 +83,7 @@ export function RegisterScreen({ navigation }: Props) {
         role,
       });
       if (!res.ok) {
-        setLocalError(res.message);
+        setRegisterError(res.message);
       }
     } finally {
       setSubmitting(false);
@@ -117,10 +118,7 @@ export function RegisterScreen({ navigation }: Props) {
           title="Gagal mendaftar"
           message={activeError}
           tone="danger"
-          onDismiss={() => {
-            setLocalError(null);
-            clearError();
-          }}
+          onDismiss={clearRegisterError}
         />
       ) : null}
 
@@ -244,7 +242,7 @@ export function RegisterScreen({ navigation }: Props) {
           <View style={styles.submitWrap}>
             <Button
               label={submitting ? 'Mendaftarkan...' : 'Daftar Akun'}
-              variant="accent"
+              variant="primary"
               icon="checkmark-circle-outline"
               loading={submitting}
               onPress={handleRegister}
@@ -259,6 +257,7 @@ export function RegisterScreen({ navigation }: Props) {
         disabled={submitting}
         onPress={() => {
           setLocalError(null);
+          setRegisterError(null);
           clearError();
           navigation.goBack();
         }}

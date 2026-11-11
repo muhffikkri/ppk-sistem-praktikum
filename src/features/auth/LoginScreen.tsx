@@ -55,6 +55,12 @@ export function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLocalError(null);
+    clearError();
+    await loginWithGoogle();
+  };
+
   return (
     <Screen>
       <View style={styles.heroHeader}>
@@ -159,15 +165,13 @@ export function LoginScreen({ navigation }: Props) {
               loading={submitting}
               onPress={handleLogin}
             />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Masuk dengan Google"
-              onPress={loginWithGoogle}
-              style={({ pressed }) => [styles.googleButton, pressed && styles.googleButtonPressed]}
-            >
-              <Ionicons name="logo-google" size={20} color={colors.inkMuted} />
-              <Text style={styles.googleButtonText}>Google</Text>
-            </Pressable>
+
+            <Button
+              label="Masuk dengan Google"
+              variant="outline"
+              icon="logo-google"
+              onPress={handleGoogleLogin}
+            />
           </View>
         </CardContent>
       </Card>
@@ -254,6 +258,7 @@ const styles = StyleSheet.create({
   },
   submitWrap: {
     marginTop: spacing.md,
+    gap: spacing.sm,
   },
   switchTitle: {
     ...typography.bodyStrong,
@@ -263,25 +268,5 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkMuted,
     marginBottom: spacing.xs,
-  },
-  googleButton: {
-    width: '100%',
-    marginTop: spacing.md,
-    height: 48,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleButtonPressed: {
-    backgroundColor: colors.lavenderSubtle,
-  },
-  googleButtonText: {
-    marginLeft: spacing.xs,
-    ...typography.body,
-    color: colors.ink,
   },
 });
