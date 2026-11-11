@@ -243,6 +243,7 @@ export function AppNavigator() {
         }}
       />
     </View>
+  </AssistantSessionsProvider>
   );
 }
 

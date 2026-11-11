@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { AsyncActionResult } from '../domain/types';
 import {
   fetchClasses,
   createClass,
@@ -18,14 +19,37 @@ import {
   initializeAssistantState,
 } from '../services/firestore/assistantService';
 import {
-  ClassInput,
-  SessionInput,
   PracticalClass,
   Session,
   UserProfile,
   AttendanceRecord,
+  SessionActionResult,
+  ClassInput,
+  SessionInput,
 } from '../domain/types';
-import { AsyncActionResult } from '../domain/types';
+
+// ============================================================
+// AssistantSessionsViewModel - matches domain/types.ts definition
+// ============================================================
+
+export type AssistantSessionsViewModel = {
+  sessions: Session[];
+  getSessionById: (sessionId: string) => Session | undefined;
+  getAttendanceForSession: (sessionId: string) => AttendanceRecord[];
+  openSession: (sessionId: string) => SessionActionResult;
+  closeSession: (sessionId: string) => SessionActionResult;
+  createSession: (input: SessionInput) => Promise<AsyncActionResult<string>>;
+  updateSession: (sessionId: string, input: SessionInput) => Promise<AsyncActionResult>;
+  deleteSession: (sessionId: string) => Promise<AsyncActionResult>;
+  addParticipantByEmail: (classId: string, email: string) => Promise<AsyncActionResult>;
+  removeParticipant: (classId: string, studentUid: string) => Promise<AsyncActionResult>;
+  getClassById: (classId: string) => PracticalClass | undefined;
+  classes: PracticalClass[];
+  studentsDirectory: UserProfile[];
+  loading: boolean;
+  error: string | null;
+  retry: () => void;
+};
 
 // ============================================================
 // Reducer Actions
@@ -39,58 +63,60 @@ type AssistantAction =
   | { type: 'SET_ERROR'; error: string | null }
   | { type: 'SET_RETRY' };
 
-type AssistantSessionsContextValue = {
-  classes: PracticalClass[];
+// ============================================================
+// State
+// ============================================================
+
+interface AssistantSessionsState {
   sessions: Session[];
-  studentsDirectory: UserProfile[];
-  loading: boolean;
-  error: string | null;
-  getClassById: (classId: string) => PracticalClass | undefined;
   getSessionById: (sessionId: string) => Session | undefined;
-  subscribeAttendanceForSession: (
-    sessionId: string,
-    onData: (records: AttendanceRecord[]) => void,
-    onError: (msg: string) => void,
-  ) => () => void;
-  createClass: (input: ClassInput) => Promise<AsyncActionResult<string>>;
-  updateClass: (classId: string, input: ClassInput) => Promise<AsyncActionResult>;
-  deleteClass: (classId: string) => Promise<AsyncActionResult>;
-  addParticipantByEmail: (classId: string, email: string) => Promise<AsyncActionResult>;
-  removeParticipant: (classId: string, studentUid: string) => Promise<AsyncActionResult>;
+  getAttendanceForSession: (sessionId: string) => AttendanceRecord[];
+  openSession: (sessionId: string) => SessionActionResult;
+  closeSession: (sessionId: string) => SessionActionResult;
   createSession: (input: SessionInput) => Promise<AsyncActionResult<string>>;
   updateSession: (sessionId: string, input: SessionInput) => Promise<AsyncActionResult>;
   deleteSession: (sessionId: string) => Promise<AsyncActionResult>;
-  openSession: (sessionId: string) => Promise<AsyncActionResult>;
-  closeSession: (sessionId: string) => Promise<AsyncActionResult>;
+  addParticipantByEmail: (classId: string, email: string) => Promise<AsyncActionResult>;
+  removeParticipant: (classId: string, studentUid: string) => Promise<AsyncActionResult>;
+  getClassById: (classId: string) => PracticalClass | undefined;
+  classes: PracticalClass[];
+  studentsDirectory: UserProfile[];
+  loading: boolean;
+  error: string | null;
   retry: () => void;
-};
+}
 
-const initialState: AssistantSessionsContextValue = {
-  classes: [],
+// ============================================================
+// Initial State
+// ============================================================
+
+const initialState: AssistantSessionsState = {
   sessions: [],
-  studentsDirectory: [],
-  loading: true,
-  error: null,
-  getClassById: () => undefined,
   getSessionById: () => undefined,
-  subscribeAttendanceForSession: (_sessionId, _onData, _onError) => () => {},
-  createClass: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  updateClass: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  deleteClass: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  addParticipantByEmail: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  removeParticipant: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
+  getAttendanceForSession: () => [],
+  openSession: () => ({ ok: false, reason: 'session_not_found' } as SessionActionResult),
+  closeSession: () => ({ ok: false, reason: 'session_not_found' } as SessionActionResult),
   createSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
   updateSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
   deleteSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  openSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
-  closeSession: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
+  addParticipantByEmail: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
+  removeParticipant: async () => ({ ok: false, reason: 'not_initialized', message: 'Context not initialized' }),
+  getClassById: () => undefined,
+  classes: [],
+  studentsDirectory: [],
+  loading: true,
+  error: null,
   retry: () => {},
 };
 
+// ============================================================
+// Reducer
+// ============================================================
+
 function assistantReducer(
-  state: AssistantSessionsContextValue,
+  state: AssistantSessionsState,
   action: AssistantAction,
-): AssistantSessionsContextValue {
+): AssistantSessionsState {
   switch (action.type) {
     case 'SET_CLASSES':
       return { ...state, classes: action.classes, loading: false };
@@ -113,7 +139,7 @@ function assistantReducer(
 // Context
 // ============================================================
 
-const AssistantSessionsContext = createContext<AssistantSessionsContextValue | undefined>(
+const AssistantSessionsContext = createContext<AssistantSessionsState | undefined>(
   undefined,
 );
 
@@ -126,31 +152,24 @@ export const AssistantSessionsProvider = ({
 
   // Initialize state from Firestore on mount
   useEffect(() => {
-    initializeAssistantState().then((ctx) => {
+    initializeAssistantState().then((ctx: any) => {
       dispatch({ type: 'SET_CLASSES', classes: ctx.classes });
       dispatch({ type: 'SET_SESSIONS', sessions: ctx.sessions });
       dispatch({ type: 'SET_STUDENTS', students: ctx.studentsDirectory });
-    }).catch((e) => {
+    }).catch((e: any) => {
       dispatch({ type: 'SET_ERROR', error: e.message || 'Gagal inisialisasi context asisten' });
     });
   }, []);
 
   // Set up real-time listeners
   useEffect(() => {
-    // Subscribe to classes real-time
-    const classesUnsubscribe = subscribeClasses(
-      (classes) => dispatch({ type: 'SET_CLASSES', classes }),
-      (msg) => dispatch({ type: 'SET_ERROR', error: msg }),
-    );
-
     // Subscribe to sessions real-time
     const sessionsUnsubscribe = subscribeSessions(
       (sessions) => dispatch({ type: 'SET_SESSIONS', sessions }),
-      (msg) => dispatch({ type: 'SET_ERROR', error: msg }),
+      (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
     );
 
     return () => {
-      classesUnsubscribe();
       sessionsUnsubscribe();
     };
   }, []);
@@ -162,9 +181,7 @@ export const AssistantSessionsProvider = ({
   );
 };
 
-export { AssistantSessionsContextValue };
-
-export function useAssistantSessionsViewModel(): AssistantSessionsContextValue {
+export function useAssistantSessionsViewModel(): AssistantSessionsViewModel {
   const context = useContext(AssistantSessionsContext);
 
   if (!context) {
@@ -173,5 +190,8 @@ export function useAssistantSessionsViewModel(): AssistantSessionsContextValue {
     );
   }
 
-  return context;
+  return context as AssistantSessionsViewModel;
 }
+
+// Export type for reference
+export type { AssistantSessionsState };
