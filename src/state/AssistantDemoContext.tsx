@@ -1,12 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import {
   AssistantDemoState,
-  AssistantSessionsViewModel,
-  AttendanceRecord,
-  Session,
-  SessionActionResult,
 } from '../domain/types';
-import { openSessionRule, closeSessionRule } from '../domain/sessionRules';
 import {
   assistantSessions,
   assistantAttendance,
@@ -79,67 +74,18 @@ export function AssistantDemoProvider({
 }
 
 /**
- * Hook ViewModel Asisten sesuai kontrak docs/shared-contract.md
- * Digunakan oleh Orang 3 untuk layar-layar asisten.
+ * Konteks demo (fixture) asisten. Provider tetap dipertahankan untuk testing
+ * tanpa backend; hook utama (`useAssistantSessionsViewModel`) kini berasal
+ * dari AssistantSessionsContext (Firestore-backed).
  */
-export function useAssistantSessionsViewModel(): AssistantSessionsViewModel {
+export function useAssistantDemoState() {
   const context = useContext(AssistantDemoContext);
 
   if (!context) {
     throw new Error(
-      'useAssistantSessionsViewModel must be used within an AssistantDemoProvider',
+      'useAssistantDemoState must be used within an AssistantDemoProvider',
     );
   }
 
-  const { state, dispatch } = context;
-
-  const getSessionById = (sessionId: string): Session | undefined => {
-    return state.sessions.find((s) => s.id === sessionId);
-  };
-
-  const getAttendanceForSession = (sessionId: string): AttendanceRecord[] => {
-    return state.attendanceBySession[sessionId] ?? [];
-  };
-
-  const openSession = (sessionId: string): SessionActionResult => {
-    const session = getSessionById(sessionId);
-    const result = openSessionRule(session);
-
-    if (!result.ok) {
-      return { ok: false, reason: result.reason };
-    }
-
-    dispatch({
-      type: 'OPEN_SESSION',
-      sessionId,
-      openedAt: result.updatedSession.openedAt!,
-    });
-
-    return { ok: true };
-  };
-
-  const closeSession = (sessionId: string): SessionActionResult => {
-    const session = getSessionById(sessionId);
-    const result = closeSessionRule(session);
-
-    if (!result.ok) {
-      return { ok: false, reason: result.reason };
-    }
-
-    dispatch({
-      type: 'CLOSE_SESSION',
-      sessionId,
-      closedAt: result.updatedSession.closedAt!,
-    });
-
-    return { ok: true };
-  };
-
-  return {
-    sessions: state.sessions,
-    getSessionById,
-    getAttendanceForSession,
-    openSession,
-    closeSession,
-  };
+  return context;
 }

@@ -107,7 +107,7 @@ export type ActionFailureReason =
 
 export type AsyncActionResult<T = void> =
   | (T extends void ? { ok: true } : { ok: true; data: T })
-  | { ok: false; reason: ActionFailureReason; message: string };
+  | { ok: false; reason: string; message: string };
 
 export type AuthContextValue = {
   authStatus: AuthStatus;

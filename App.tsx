@@ -6,6 +6,7 @@ import { AppNavigator } from './src/app/AppNavigator';
 import {
   AssistantDemoProvider,
   AuthProvider,
+  PovProvider,
   StudentDemoProvider,
 } from './src/state';
 
@@ -13,14 +14,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StudentDemoProvider>
-          <AssistantDemoProvider>
-            <NavigationContainer>
-              <AppNavigator />
-              <StatusBar style="dark" />
-            </NavigationContainer>
-          </AssistantDemoProvider>
-        </StudentDemoProvider>
+        <PovProvider>
+          <StudentDemoProvider>
+            <AssistantDemoProvider>
+              <NavigationContainer>
+                <AppNavigator />
+                <StatusBar style="dark" />
+              </NavigationContainer>
+            </AssistantDemoProvider>
+          </StudentDemoProvider>
+        </PovProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

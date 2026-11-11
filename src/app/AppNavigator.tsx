@@ -10,9 +10,12 @@ import {
   AssistantAllAttendanceScreen,
   AssistantAllSessionsScreen,
   AssistantAttendanceRosterScreen,
+  AssistantClassFormScreen,
+  AssistantClassListScreen,
   AssistantModuleListScreen,
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
+  AssistantSessionFormScreen,
   AssistantSettingsScreen,
 } from '../features/assistant';
 
@@ -278,6 +281,24 @@ export function AppNavigator() {
               name="AssistantAllAttendance"
 
               component={AssistantAllAttendanceScreen}
+            />
+
+            <Stack.Screen
+              name="AssistantClassList"
+
+              component={AssistantClassListScreen}
+            />
+
+            <Stack.Screen
+              name="AssistantClassForm"
+
+              component={AssistantClassFormScreen}
+            />
+
+            <Stack.Screen
+              name="AssistantSessionForm"
+
+              component={AssistantSessionFormScreen}
             />
           </Stack.Group>
 

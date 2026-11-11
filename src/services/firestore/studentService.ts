@@ -8,14 +8,14 @@ import {
     Timestamp,
     where
 } from 'firebase/firestore';
-// Sesuaikan path import firestore db Anda (misal dari '../../config/firebase' atau sejenisnya)
-// import { db } from '../../config/firebase'; 
+import { db } from '../firebase';
 
 export interface Session {
   id: string;
   courseName: string;
   groupName: string;
   status: 'scheduled' | 'open' | 'closed';
+  classId?: string;
   participantIds: string[];
 }
 

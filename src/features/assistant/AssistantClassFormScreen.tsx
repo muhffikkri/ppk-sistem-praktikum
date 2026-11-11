@@ -1,6 +1,14 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, TextInput, View, TouchableOpacity, Text } from 'react-native';
-import { ScrollView } from 'react-native';
+import { useState, useEffect } from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
@@ -8,14 +16,16 @@ import {
   radius,
   Screen,
   Button,
-  StatusBadge,
   typography,
-  Input,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
-import { ClassInput } from '../../domain/types';
-import { createClass, updateClass, removeParticipant, addParticipantByEmail } from '../../services/firestore/assistantService';
-import { formatSessionDate } from './formatters';
+import type { ClassInput } from '../../domain/types';
+import {
+  createClass,
+  updateClass,
+  removeParticipant,
+  addParticipantByEmail,
+} from '../../services/firestore/assistantService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantClassForm'>;
 
@@ -25,96 +35,105 @@ type ClassFormState = {
   groupName: string;
   submitting: boolean;
   error: string | null;
-  classId: string | null;
 };
 
-export function AssistantClassFormScreen({ navigation }: Props) {
-  const {
-    classes,
-    getClassById,
-    addParticipantByEmail,
-    removeParticipant,
-  } = useAssistantSessionsViewModel();
+export function AssistantClassFormScreen({ route, navigation }: Props) {
+  const { getClassById } = useAssistantSessionsViewModel();
 
-  // Extract route param
-  const route = navigation.getCurrentRoute();
-  const classId = route?.params?.classId ?? null;
+  const classId = route.params?.classId ?? null;
+  const existingClass = classId ? getClassById(classId) : undefined;
 
-  // Initial state
-  const [state, setState] = React.useState<ClassFormState>({
-    courseCode: '',
-    courseName: '',
-    groupName: '',
+  const [state, setState] = useState<ClassFormState>({
+    courseCode: existingClass?.courseCode ?? '',
+    courseName: existingClass?.courseName ?? '',
+    groupName: existingClass?.groupName ?? '',
     submitting: false,
     error: null,
-    classId: classId,
   });
 
-  // Fetch existing class data if editing
-  React.useEffect(() => {
-    if (classId && getClassById) {
-      const cls = getClassById(classId);
-      if (cls) {
-        setState({
-          ...state,
-          courseCode: cls.courseCode || '',
-          courseName: cls.courseName || '',
-          groupName: cls.groupName || '',
-        });
-      }
+  const [participantEmail, setParticipantEmail] = useState('');
+
+  // Edit: muat ulang saat param berubah
+  useEffect(() => {
+    const cls = classId ? getClassById(classId) : undefined;
+    if (cls) {
+      setState({
+        courseCode: cls.courseCode || '',
+        courseName: cls.courseName || '',
+        groupName: cls.groupName || '',
+        submitting: false,
+        error: null,
+      });
     }
   }, [classId, getClassById]);
 
-  const handleSubmit = async () => {
-    setState({ ...state, submitting: true, error: null });
+  const setField = <K extends keyof ClassFormState>(key: K, value: ClassFormState[K]) =>
+    setState((prev) => ({ ...prev, [key]: value }));
 
+  const handleSubmit = async () => {
+    if (!state.courseCode.trim() || !state.courseName.trim() || !state.groupName.trim()) {
+      setState((prev) => ({ ...prev, error: 'Semua field wajib diisi' }));
+      return;
+    }
+
+    setState((prev) => ({ ...prev, submitting: true, error: null }));
     try {
-      if (state.classId) {
-        // Update existing class
-        await updateStateClass(state.classId, {
-          courseCode: state.courseCode,
-          courseName: state.courseName,
-          groupName: state.groupName,
-        });
+      const input: ClassInput = {
+        courseCode: state.courseCode.trim(),
+        courseName: state.courseName.trim(),
+        groupName: state.groupName.trim(),
+      };
+
+      if (classId) {
+        const result = await updateClass(classId, input);
+        if (!result.ok) {
+          setState((prev) => ({ ...prev, error: result.message || 'Gagal memperbarui kelas' }));
+          return;
+        }
       } else {
-        // Create new class
-        await createClass({
-          courseCode: state.courseCode,
-          courseName: state.courseName,
-          groupName: state.groupName,
-        });
+        const result = await createClass(input);
+        if (!result.ok) {
+          setState((prev) => ({ ...prev, error: result.message || 'Gagal membuat kelas' }));
+          return;
+        }
       }
       navigation.goBack();
     } catch (e: any) {
-      setState({ ...state, error: e.message || 'Gagal menyimpan kelas' });
+      setState((prev) => ({ ...prev, error: e.message || 'Gagal menyimpan kelas' }));
     } finally {
-      setState({ ...state, submitting: false });
-    }
-  };
-
-  const updateStateClass = async (id: string, input: ClassInput) => {
-    const result = await updateClass(id, input);
-    if (!result.ok) {
-      throw new Error(result.message || 'Gagal update kelas');
+      setState((prev) => ({ ...prev, submitting: false }));
     }
   };
 
   const onAddParticipant = async () => {
-    const email = window.prompt('Masukkan email praktikan:');
-    if (email) {
-      const result = await addParticipantByEmail(state.classId || '', email);
-      if (!result.ok) {
-        setState({ ...state, error: result.message || 'Gagal menambahkan peserta' });
-      }
+    const email = participantEmail.trim();
+    if (!email || !classId) return;
+    const result = await addParticipantByEmail(classId, email);
+    if (!result.ok) {
+      setState((prev) => ({ ...prev, error: result.message || 'Gagal menambahkan peserta' }));
+      return;
     }
+    setParticipantEmail('');
   };
 
-  const onRemoveParticipant = async (uid: string) => {
-    const result = await removeParticipant(state.classId || '', uid);
-    if (!result.ok) {
-      setState({ ...state, error: result.message || 'Gagal menghapus peserta' });
-    }
+  const onRemoveParticipant = (uid: string) => {
+    if (!classId) return;
+    Alert.alert('Hapus Peserta', 'Yakin hapus peserta dari kelas ini?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          const result = await removeParticipant(classId, uid);
+          if (!result.ok) {
+            setState((prev) => ({ ...prev, error: result.message || 'Gagal menghapus peserta' }));
+          }
+        },
+      },
+    ]);
   };
+
+  const selectedClass = classId ? getClassById(classId) : undefined;
 
   return (
     <Screen>
@@ -124,9 +143,7 @@ export function AssistantClassFormScreen({ navigation }: Props) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>
-            {state.classId ? 'Edit Kelas' : 'Tambah Kelas'}
-          </Text>
+          <Text style={styles.headerTitle}>{classId ? 'Edit Kelas' : 'Tambah Kelas'}</Text>
           <Button
             label="Batal"
             variant="soft"
@@ -140,10 +157,12 @@ export function AssistantClassFormScreen({ navigation }: Props) {
           {/* Course Code */}
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Kode Mata Kuliah</Text>
-            <Input
+            <TextInput
               value={state.courseCode}
-              onChangeText={ (text: string) => setState({ ...state, courseCode: text }) }
+              onChangeText={(text) => setField('courseCode', text)}
               placeholder="Mis. PPK-101"
+              placeholderTextColor={colors.inkMuted}
+              style={styles.input}
               clearButtonMode="while-editing"
             />
           </View>
@@ -151,10 +170,12 @@ export function AssistantClassFormScreen({ navigation }: Props) {
           {/* Course Name */}
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Nama Mata Kuliah</Text>
-            <Input
+            <TextInput
               value={state.courseName}
-              onChangeText={ (text: string) => setState({ ...state, courseName: text }) }
+              onChangeText={(text) => setField('courseName', text)}
               placeholder="Mis. Praktikum Sistem Terdistribusi"
+              placeholderTextColor={colors.inkMuted}
+              style={styles.input}
               clearButtonMode="while-editing"
             />
           </View>
@@ -162,59 +183,70 @@ export function AssistantClassFormScreen({ navigation }: Props) {
           {/* Group Name */}
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Nama Kelas/Group</Text>
-            <Input
+            <TextInput
               value={state.groupName}
-              onChangeText={ (text: string) => setState({ ...state, groupName: text }) }
+              onChangeText={(text) => setField('groupName', text)}
               placeholder="Mis. Kelas A"
+              placeholderTextColor={colors.inkMuted}
+              style={styles.input}
               clearButtonMode="while-editing"
             />
           </View>
 
-          {/* Participants Section */}
-          {state.classId && (
-            <View style={styles.participantsSection}>
-              <Text style={styles.sectionTitle}>Peserta Terdaftar</Text>
-              {classes?.length > 0 && classes.some((c) => c.id === state.classId)
-                ? (classes as any[])
-                    .filter((c) => c.id === state.classId)[0]
-                    .participantIds?.map((uid: string, i: number) => (
-                      <View key={uid} style={styles.participantItem}>
-                        <Text style={styles.participantName}>Peserta {i + 1}</Text>
-                        <Button
-                          label="Hapus"
-                          variant="danger"
-                          size="small"
-                          onPress={() => onRemoveParticipant(uid)}
-                          accessibilityLabel="Hapus peserta"
-                        />
-                      </View>
-                    ))
-                : (
-                  <Text style={styles.emptyText}>Tidak ada data peserta</Text>
-                )}
+          {state.error && <Text style={styles.errorText}>{state.error}</Text>}
+        </View>
+
+        {/* Participants Section */}
+        {classId && selectedClass && (
+          <View style={styles.participantsSection}>
+            <Text style={styles.sectionTitle}>Peserta Terdaftar</Text>
+            {selectedClass.participantIds.length > 0 ? (
+              selectedClass.participantIds.map((uid: string, i: number) => (
+                <View key={uid} style={styles.participantItem}>
+                  <Text style={styles.participantName}>{`Peserta ${i + 1} (${uid})`}</Text>
+                  <Button
+                    label="Hapus"
+                    variant="destructive"
+                    onPress={() => onRemoveParticipant(uid)}
+                    accessibilityLabel="Hapus peserta"
+                  />
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>Tidak ada peserta terdaftar</Text>
+            )}
+
+            <View style={styles.addParticipantRow}>
+              <TextInput
+                value={participantEmail}
+                onChangeText={setParticipantEmail}
+                placeholder="email@mahasiswa.ac.id"
+                placeholderTextColor={colors.inkMuted}
+                style={styles.emailInput}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
               <TouchableOpacity
                 style={styles.addParticipantBtn}
                 onPress={onAddParticipant}
                 accessibilityLabel="Tambah peserta baru"
               >
-                <Text style={styles.addParticipantText}>+ Tambah Peserta</Text>
+                <Text style={styles.addParticipantText}>+ Tambah</Text>
               </TouchableOpacity>
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Submit Button */}
         <View style={styles.submitButtonWrapper}>
           <Button
-            label={state.classId ? 'Perbarui Kelas' : 'Buat Kelas'}
+            label={state.submitting ? 'Menyimpan...' : classId ? 'Perbarui Kelas' : 'Buat Kelas'}
+            variant={classId ? 'primary' : 'accent'}
             disabled={state.submitting}
-            variant={state.submitting ? 'secondary' : 'accent'}
             loading={state.submitting}
             onPress={handleSubmit}
-            accessibilityLabel={state.classId ? 'Perbarui kelas' : 'Buat kelas baru'}
-          >
-            {state.submitting ? 'Menyimpan...' : `${state.classId ? 'Perbarui' : 'Buat'} Kelas`}
-          </Button>
+            accessibilityLabel={classId ? 'Perbarui kelas' : 'Buat kelas baru'}
+          />
         </View>
       </ScrollView>
     </Screen>
@@ -224,7 +256,7 @@ export function AssistantClassFormScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   scrollContainer: {
     padding: 24,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -238,7 +270,7 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
   formSection: {
-    gap: 20,
+    gap: 16,
   },
   formGroup: {
     flexDirection: 'column',
@@ -247,32 +279,75 @@ const styles = StyleSheet.create({
   formLabel: {
     ...typography.caption,
     color: colors.inkMuted,
-    marginBottom: 4,
+  },
+  input: {
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    color: colors.ink,
+    ...typography.body,
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.danger,
   },
   participantsSection: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.panel,
     borderRadius: radius.md,
     padding: 16,
     marginTop: 16,
   },
   sectionTitle: {
-    ...typigraphy.caption,
+    ...typography.label,
     color: colors.inkMuted,
     marginBottom: 12,
   },
-  emptyText: { color: colors.inkMuted, fontStyle: 'italic' },
+  participantItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  participantName: {
+    ...typography.body,
+    color: colors.ink,
+    flexShrink: 1,
+  },
+  emptyText: {
+    ...typography.body,
+    color: colors.inkMuted,
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  addParticipantRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  emailInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.ink,
+    ...typography.body,
+  },
   addParticipantBtn: {
     borderWidth: 1,
     borderColor: colors.violet,
     borderRadius: radius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    marginTop: 8,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
   },
   addParticipantText: { color: colors.violet, ...typography.label },
   submitButtonWrapper: {
     marginTop: 24,
-    alignSelf: 'flex-end',
   },
 });

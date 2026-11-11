@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
@@ -11,12 +11,11 @@ import {
   typography,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
-import { formatSessionDate } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantClassList'>;
 
 export function AssistantClassListScreen({ navigation }: Props) {
-  const { classes, loading, error } = useAssistantSessionsViewModel();
+  const { classes, loading, error, retry } = useAssistantSessionsViewModel();
 
   if (loading) {
     return (
@@ -30,68 +29,65 @@ export function AssistantClassListScreen({ navigation }: Props) {
     return (
       <Screen>
         <Text style={styles.errorText}>Gagal memuat kelas: {error}</Text>
-        <Button label="Coba Lagi" onPress={() => window.location.reload()} />
+        <Button label="Coba Lagi" onPress={retry} />
       </Screen>
     );
   }
 
   return (
     <Screen>
-      {/* Editorial header */}
-      <View style={styles.headerBlock}>
-        <Text style={styles.eyebrow}>MODE ASISTEN · KELAS</Text>
-        <Text style={styles.pageTitle}>Kelas Saya</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        {/* Editorial header */}
+        <View style={styles.headerBlock}>
+          <Text style={styles.eyebrow}>MODE ASISTEN · KELAS</Text>
+          <Text style={styles.pageTitle}>Kelas Saya</Text>
+        </View>
 
-      {classes.length === 0 ? (
-        <View style={styles.emptyBlock}>
-          <Text style={styles.emptyTitle}>Belum ada kelas</Text>
-          <Text style={styles.emptySub}>
-            Tambah kelas pertama Anda untuk memulai praktikum.
-          </Text>
-          <Button
-            label="Tambah Kelas"
-            onPress={() => navigation.navigate('AssistantClassForm')}
-            variant="accent"
-          />
-        </View>
-      ) : (
-        <View style={styles.list}>
-          {classes.map((cls, index) => (
-            <Pressable
-              key={cls.id}
-              accessibilityRole="button"
-              accessibilityLabel={`${cls.courseName} - ${cls.groupName}`}
-              onPress={() =>
-                navigation.navigate('AssistantClassForm', { classId: cls.id })
-              }
-              style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-            >
-              <View style={styles.cardTop}>
-                <Text style={styles.courseNumberLines}>{cls.courseName}</Text>
-                <StatusBadge
-                  label={cls.groupName}
-                  tone="violet"
-                  dot
-                />
-              </View>
-              <View style={styles.cardBottom}>
-                <Text style={styles.meta}>
-                  {cls.groupName}
-                </Text>
-                <Text style={styles.metaMuted}>
-                  {cls.participantIds?.length || 0} peserta
-                </Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
-      )}
+        {classes.length === 0 ? (
+          <View style={styles.emptyBlock}>
+            <Text style={styles.emptyTitle}>Belum ada kelas</Text>
+            <Text style={styles.emptySub}>
+              Tambah kelas pertama Anda untuk memulai praktikum.
+            </Text>
+            <Button
+              label="Tambah Kelas"
+              onPress={() => navigation.navigate('AssistantClassForm', {})}
+              variant="accent"
+            />
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {classes.map((cls) => (
+              <TouchableOpacity
+                key={cls.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${cls.courseName} - ${cls.groupName}`}
+                onPress={() =>
+                  navigation.navigate('AssistantClassForm', { classId: cls.id })
+                }
+              >
+                <View style={styles.card}>
+                  <View style={styles.cardTop}>
+                    <Text style={styles.courseNumberLines}>{cls.courseName}</Text>
+                    <StatusBadge label={cls.groupName} tone="violet" dot />
+                  </View>
+                  <View style={styles.cardBottom}>
+                    <Text style={styles.meta}>{cls.groupName}</Text>
+                    <Text style={styles.metaMuted}>
+                      {cls.participantIds?.length || 0} peserta
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={styles.fabButton}
-          onPress={() => navigation.navigate('AssistantClassForm')}
+          onPress={() => navigation.navigate('AssistantClassForm', {})}
           accessibilityLabel="Tambah kelas baru"
         >
           <Text style={styles.fabText}>+</Text>
@@ -102,6 +98,11 @@ export function AssistantClassListScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    padding: 24,
+    gap: 20,
+  },
   headerBlock: { gap: 6 },
   eyebrow: { ...typography.overline, color: colors.violet },
   pageTitle: {
@@ -110,6 +111,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
     letterSpacing: -1,
   },
+  loadingText: { ...typography.body, color: colors.inkMuted, padding: 24 },
+  errorText: { ...typography.body, color: colors.danger, padding: 24 },
   emptyBlock: {
     backgroundColor: colors.panel,
     borderRadius: radius['3xl'],
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
   },
   fabText: {
     ...typography.display,
-    color: colors.onViolet,
+    color: colors.onPrimary,
     fontSize: 28,
   },
 });
