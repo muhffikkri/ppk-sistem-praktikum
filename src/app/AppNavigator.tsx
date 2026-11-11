@@ -18,6 +18,9 @@ import {
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
   AssistantSettingsScreen,
+  AssistantClassListScreen,
+  AssistantClassFormScreen,
+  AssistantSessionFormScreen,
 } from '../features/assistant';
 import { LoginScreen, RegisterScreen } from '../features/auth';
 import {
@@ -27,16 +30,11 @@ import {
   StudentScheduleScreen,
   StudentSessionDetailScreen,
 } from '../features/student';
-import {
-  Banner,
-  BottomDock,
-  colors,
-  spacing,
-  typography,
-  type DockTab,
-} from '../shared/ui';
-import { useAssistantSessionsViewModel, useAuth } from '../state';
-import type { AuthStackParamList, RootStackParamList } from './navigation';
+import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
+import { usePov } from '../state';
+import { AssistantSessionsProvider, useAssistantSessionsViewModel } from '../state/AssistantSessionsContext';
+import type { RootStackParamList } from './navigation';
+import { HomeScreen } from './HomeScreen';
 import { CalendarScreen } from './CalendarScreen';
 import { HomeScreen } from './HomeScreen';
 import { ProfileEditScreen } from './ProfileEditScreen';
@@ -154,18 +152,8 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
   };
 
   return (
-    <View style={styles.root}>
-      {error ? (
-        <View style={styles.shellBanner}>
-          <Banner
-            title="Gangguan akun"
-            message={error}
-            tone="danger"
-            onDismiss={clearError}
-          />
-        </View>
-      ) : null}
-
+    <AssistantSessionsProvider>
+      <View style={styles.root}>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{
