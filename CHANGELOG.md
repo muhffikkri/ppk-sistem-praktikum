@@ -4,6 +4,15 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+### Dokumentasi & Persiapan Tahap 0 Sprint 2
+
+- Menambahkan [`docs/sprint-2-prd.md`](docs/sprint-2-prd.md) berisi ruang lingkup ketat berbasis SRS Sprint 2, 8 kebutuhan fungsional, kondisi wajib, batas anti-scope-creep, dan 2 skenario demo akhir.
+- Menambahkan [`docs/sprint-2-firebase-and-ai.md`](docs/sprint-2-firebase-and-ai.md) berisi setup Firebase Expo, skema Cloud Firestore, `firestore.rules`, indeks, dan adapter API model AI pengajar.
+- Menambahkan [`docs/sprint-2-shared-contract.md`](docs/sprint-2-shared-contract.md) berisi kontrak bersama route, tipe domain TypeScript, validasi, dan ViewModel hooks Sprint 2.
+- Menambahkan [`docs/sprint-2-work-split.md`](docs/sprint-2-work-split.md) berisi pembagian kerja 4 developer paralel, tabel pemetaan SRS per developer, matriks kepemilikan file, dan strategi penggabungan PM/Lead Developer.
+- Memperbarui [`docs/README.md`](docs/README.md) untuk menambahkan peta dokumen Sprint 2.
+- Menyiapkan Tahap 0 PM/Lead Developer: memasang `firebase` & `@react-native-async-storage/async-storage`, menambahkan `.env.example`, `firestore.rules`, `firestore.indexes.json`, serta memperluas kontrak tipe di `src/domain/types.ts` dan route di `src/app/navigation.ts`.
+
 ### Fitur Baru
 
 - **Kalender interaktif (CalendarScreen)**: grid hari × jam (07:00–18:00) dengan event cards absolut, bottom sheet drawer detail sesi, view mode switcher (Hari/Minggu/Agenda), navigasi minggu dengan label tanggal dan badge peran.

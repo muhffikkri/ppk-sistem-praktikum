@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "897665739229",
+    "project_id": "project-praktikum-sprint",
+    "storage_bucket": "project-praktikum-sprint.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:897665739229:android:cc0b885d5c58b368a6ee34",
+        "android_client_info": {
+          "package_name": "com.muhffikkris.ppkmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBjzioCwhQd5UhqmdXMpO5KGKmIDY0HsI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

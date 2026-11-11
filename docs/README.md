@@ -1,26 +1,32 @@
 # Pusat dokumentasi
 
-Dokumen di repo ini adalah source of truth untuk perencanaan Sprint 1 aplikasi praktikum.
+Dokumen di repo ini adalah source of truth untuk perencanaan Sprint 1 dan Sprint 2 aplikasi praktikum.
 
-## Peta dokumen
+## Peta dokumen Sprint 2 (Aktif — Data Dinamis dengan Firebase & AI)
 
-- [`PRD.md`](PRD.md): ruang lingkup, checklist fitur, dan acceptance criteria.
-- [`database.md`](database.md): rancangan skema Supabase untuk integrasi mendatang.
-- [`sprint-1-work-split.md`](sprint-1-work-split.md): pembagian kerja empat orang dan kontrak integrasi.
-- [`shared-contract.md`](shared-contract.md): sumber tunggal untuk nama route, tipe, field, kondisi, dan aksi final lintas fitur.
+- [`sprint-2-prd.md`](sprint-2-prd.md): ruang lingkup Sprint 2 berbasis SRS, 8 kebutuhan fungsional, kondisi wajib, dan 2 skenario demo akhir.
+- [`sprint-2-firebase-and-ai.md`](sprint-2-firebase-and-ai.md): setup Firebase Expo, skema Cloud Firestore, `firestore.rules`, indeks, dan kontrak adapter API model AI pengajar.
+- [`sprint-2-shared-contract.md`](sprint-2-shared-contract.md): sumber tunggal route, tipe domain TypeScript, aturan validasi, dan kontrak ViewModel hooks Sprint 2.
+- [`sprint-2-work-split.md`](sprint-2-work-split.md): pembagian kerja 4 developer paralel, matriks kepemilikan file, dan strategi integrasi PM/Lead Developer.
+
+## Peta dokumen Sprint 1 (Arsip Fondasi UI & Demo Lokal)
+
+- [`PRD.md`](PRD.md): ruang lingkup, checklist fitur, dan acceptance criteria Sprint 1.
+- [`database.md`](database.md): rancangan skema Supabase historis (digantikan oleh Firebase pada Sprint 2).
+- [`sprint-1-work-split.md`](sprint-1-work-split.md): pembagian kerja empat orang Sprint 1.
+- [`shared-contract.md`](shared-contract.md): kontrak identifier Sprint 1.
 - [`../design.md`](../design.md): arahan tampilan, navigasi, dan interaksi.
 - [`../spec/system-spec.md`](../spec/system-spec.md): batasan sistem dan kontrak implementasi Sprint 1.
 - [`../CHANGELOG.md`](../CHANGELOG.md): catatan perubahan dokumen dan produk.
 
 ## Aturan untuk AI coding agents
 
-1. Baca dokumen di atas sebelum mengubah atau menambah kode produk.
-2. `spec/system-spec.md` menetapkan batas teknis Sprint 1; `PRD.md` menetapkan perilaku dan kriteria penerimaan. `design.md` menetapkan presentasi serta interaksi. `shared-contract.md` menjadi acuan tunggal identifier implementasi. `database.md` hanya rancangan untuk masa depan.
-3. Jangan menganggap rancangan database sebagai izin untuk menambahkan koneksi Supabase, autentikasi, backend, atau migrasi pada Sprint 1.
-4. Demo asisten dan praktikan menggunakan data dummy dan state lokal. Fixture kehadiran untuk tiap role boleh terpisah dan tidak perlu tersinkron.
-5. Bila implementasi stack tersedia, ikuti pola serta dependensi yang sudah ada. Jangan menambahkan library tanpa kebutuhan yang jelas.
-6. Bila kebutuhan baru bertentangan dengan dokumen ini, perbarui dokumen terkait dan `CHANGELOG.md` dalam perubahan yang sama. Jangan diam-diam mengubah kontrak.
-7. Jangan mengedit file referensi tersinkron di `sources/`.
+1. Baca dokumen Sprint 2 di atas (serta `design.md` untuk token dan primitif UI) sebelum mengubah atau menambah kode produk Sprint 2.
+2. `sprint-2-prd.md` menetapkan perilaku dan batas ruang lingkup SRS; `sprint-2-firebase-and-ai.md` menetapkan skema Firestore, Security Rules, dan adapter AI; `sprint-2-shared-contract.md` menjadi acuan tunggal identifier implementasi Sprint 2.
+3. Jangan menambahkan fitur di luar kebutuhan SRS Sprint 2 (seperti QR scanner, upload file, push notification, atau keputusan izin otomatis oleh AI).
+4. Bila implementasi stack tersedia, ikuti pola serta dependensi yang sudah ada. Jangan menambahkan library tanpa kebutuhan yang jelas.
+5. Bila kebutuhan baru bertentangan dengan dokumen ini, perbarui dokumen terkait dan `CHANGELOG.md` dalam perubahan yang sama. Jangan diam-diam mengubah kontrak.
+6. Jangan mengedit file referensi tersinkron di `sources/`.
 
 ## Struktur repo yang disarankan
 
@@ -33,7 +39,11 @@ Dokumen di repo ini adalah source of truth untuk perencanaan Sprint 1 aplikasi p
 │   ├── PRD.md
 │   ├── database.md
 │   ├── shared-contract.md
-│   └── sprint-1-work-split.md
+│   ├── sprint-1-work-split.md
+│   ├── sprint-2-prd.md
+│   ├── sprint-2-firebase-and-ai.md
+│   ├── sprint-2-shared-contract.md
+│   └── sprint-2-work-split.md
 ├── spec/
 │   └── system-spec.md
 └── sources/                 # referensi tersinkron; read-only
