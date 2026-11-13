@@ -71,7 +71,7 @@ export function RoleSelectionScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen>
+    <Screen withDock={false}>
       <View style={styles.header}>
         <CardOverline>
           <Text>PILIH PERAN AKUN</Text>

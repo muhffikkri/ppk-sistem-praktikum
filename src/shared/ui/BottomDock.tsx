@@ -11,6 +11,9 @@ import {
   typography,
 } from '../../theme/tokens';
 
+/** How far the center FAB rises above the dock into the screen content. */
+export const DOCK_FAB_OVERLAP = 30;
+
 export type DockTab = {
   key: string;
   label: string;
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.ink,
-    marginTop: -30,
+    marginTop: -DOCK_FAB_OVERLAP,
     ...shadow.elevated,
   },
   fabGlyph: { ...typography.title, fontSize: 24, color: colors.ink },

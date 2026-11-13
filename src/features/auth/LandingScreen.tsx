@@ -31,7 +31,7 @@ export function LandingScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen>
+    <Screen withDock={false}>
       <StatusBar style="dark" />
       <View style={styles.container}>
         {/* Laboratory Identity */}

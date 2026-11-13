@@ -62,7 +62,7 @@ export function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen>
+    <Screen withDock={false}>
       <View style={styles.heroHeader}>
         <CardOverline>
           <Text>LABPRESENSI · SPRINT 2</Text>

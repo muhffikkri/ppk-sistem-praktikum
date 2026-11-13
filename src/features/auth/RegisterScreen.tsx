@@ -91,7 +91,7 @@ export function RegisterScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen>
+    <Screen withDock={false}>
       <View style={styles.heroHeader}>
         <CardOverline>
           <Text>REGISTRASI AKUN</Text>
