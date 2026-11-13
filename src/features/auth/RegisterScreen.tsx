@@ -1,7 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
 import type { UserRole } from '../../domain/types';
@@ -11,16 +10,26 @@ import {
   Button,
   Card,
   CardContent,
-  CardOverline,
-  colors,
-  radius,
+  Header,
+  IconButton,
   Screen,
   spacing,
-  typography,
+  Text,
+  TextField,
+  TopBar,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+
+const NAME_TOO_SHORT = 'Nama lengkap minimal 2 karakter.';
+const EMAIL_REQUIRED = 'Email wajib diisi.';
+const PASSWORD_TOO_SHORT = 'Password minimal 6 karakter.';
+const FIELD_MESSAGES: string[] = [
+  NAME_TOO_SHORT,
+  EMAIL_REQUIRED,
+  PASSWORD_TOO_SHORT,
+];
 
 const ROLE_OPTIONS: {
   value: UserRole;
@@ -40,7 +49,7 @@ const ROLE_OPTIONS: {
 ];
 
 export function RegisterScreen({ navigation }: Props) {
-  const { register, error, clearError } = useAuth();
+  const { register, clearError } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,10 +60,24 @@ export function RegisterScreen({ navigation }: Props) {
   const [registerError, setRegisterError] = useState<string | null>(null);
 
   const activeError = localError ?? registerError;
+  // Validation messages render under their own field; everything else is a banner.
+  const bannerError =
+    localError && FIELD_MESSAGES.includes(localError) ? null : activeError;
+  const nameError = localError === NAME_TOO_SHORT ? localError : undefined;
+  const emailError = localError === EMAIL_REQUIRED ? localError : undefined;
+  const passwordError =
+    localError === PASSWORD_TOO_SHORT ? localError : undefined;
 
   const clearRegisterError = () => {
     setRegisterError(null);
     clearError();
+  };
+
+  const leaveScreen = () => {
+    setLocalError(null);
+    setRegisterError(null);
+    clearError();
+    navigation.goBack();
   };
 
   const handleRegister = async () => {
@@ -62,15 +85,15 @@ export function RegisterScreen({ navigation }: Props) {
     setRegisterError(null);
 
     if (displayName.trim().length < 2) {
-      setLocalError('Nama lengkap minimal 2 karakter.');
+      setLocalError(NAME_TOO_SHORT);
       return;
     }
     if (!email.trim()) {
-      setLocalError('Email wajib diisi.');
+      setLocalError(EMAIL_REQUIRED);
       return;
     }
     if (password.length < 6) {
-      setLocalError('Password minimal 6 karakter.');
+      setLocalError(PASSWORD_TOO_SHORT);
       return;
     }
 
@@ -92,18 +115,12 @@ export function RegisterScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <View style={styles.heroHeader}>
-        <CardOverline>
-          <Text>REGISTRASI AKUN</Text>
-        </CardOverline>
-        <Text accessibilityRole="header" style={styles.title}>
-          Buat Akun Baru
-        </Text>
-        <Text style={styles.subtitle}>
-          Pilih peran Anda dengan benar. Peran menentukan akses fitur dan data
-          di aplikasi.
-        </Text>
-      </View>
+      <TopBar title="Daftar" onBack={leaveScreen} />
+
+      <Header
+        title="Buat akun"
+        description="Pilih peran dengan benar. Peran menentukan akses fitur dan data di aplikasi."
+      />
 
       {!isFirebaseConfigured ? (
         <Banner
@@ -113,251 +130,128 @@ export function RegisterScreen({ navigation }: Props) {
         />
       ) : null}
 
-      {activeError ? (
+      <View style={styles.fields}>
+        <TextField
+          label="Nama lengkap"
+          value={displayName}
+          onChangeText={(val) => {
+            setDisplayName(val);
+            if (localError) setLocalError(null);
+          }}
+          placeholder="Nama lengkap Anda"
+          editable={!submitting}
+          error={nameError}
+        />
+
+        <TextField
+          label="Email"
+          value={email}
+          onChangeText={(val) => {
+            setEmail(val);
+            if (localError) setLocalError(null);
+          }}
+          placeholder="nama@email.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          editable={!submitting}
+          error={emailError}
+        />
+
+        <TextField
+          label="Password"
+          value={password}
+          onChangeText={(val) => {
+            setPassword(val);
+            if (localError) setLocalError(null);
+          }}
+          placeholder="Minimal 6 karakter"
+          secureTextEntry={!showPassword}
+          autoCapitalize="none"
+          editable={!submitting}
+          error={passwordError}
+          rightAccessory={
+            <IconButton
+              icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              variant="ghost"
+              accessibilityLabel={
+                showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'
+              }
+              onPress={() => setShowPassword((prev) => !prev)}
+            />
+          }
+        />
+
+        <View style={styles.roleBlock}>
+          <Text variant="overline" tone="muted">
+            Daftar sebagai
+          </Text>
+          <View style={styles.roleRow}>
+            {ROLE_OPTIONS.map((option) => {
+              const selected = role === option.value;
+              return (
+                <Card
+                  key={option.value}
+                  variant={selected ? 'heroViolet' : 'panel'}
+                  accessibilityState={{ selected }}
+                  disabled={submitting}
+                  onPress={() => setRole(option.value)}
+                  style={styles.roleCard}
+                >
+                  <CardContent>
+                    <Text
+                      variant="bodyStrong"
+                      tone={selected ? 'onDark' : 'ink'}
+                    >
+                      {option.label}
+                    </Text>
+                    <Text
+                      variant="caption"
+                      tone={selected ? 'onDarkMuted' : 'muted'}
+                    >
+                      {option.description}
+                    </Text>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </View>
+        </View>
+      </View>
+
+      {bannerError ? (
         <Banner
           title="Gagal mendaftar"
-          message={activeError}
+          message={bannerError}
           tone="danger"
           onDismiss={clearRegisterError}
         />
       ) : null}
 
-      <Card variant="panel" interactive={false}>
-        <CardContent>
-          <CardOverline>
-            <Text>IDENTITAS & PERAN</Text>
-          </CardOverline>
-
-          <View style={styles.fieldGroup}>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Nama Lengkap</Text>
-              <TextInput
-                value={displayName}
-                onChangeText={(val) => {
-                  setDisplayName(val);
-                  if (localError) setLocalError(null);
-                }}
-                placeholder="Contoh: Saburo Ardiansyah"
-                placeholderTextColor={colors.inkMuted}
-                editable={!submitting}
-                style={styles.input}
-                accessibilityLabel="Nama Lengkap"
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              <TextInput
-                value={email}
-                onChangeText={(val) => {
-                  setEmail(val);
-                  if (localError) setLocalError(null);
-                }}
-                placeholder="nama@kampus.ac.id"
-                placeholderTextColor={colors.inkMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!submitting}
-                style={styles.input}
-                accessibilityLabel="Email"
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Password</Text>
-              <View style={styles.passwordWrap}>
-                <TextInput
-                  value={password}
-                  onChangeText={(val) => {
-                    setPassword(val);
-                    if (localError) setLocalError(null);
-                  }}
-                  placeholder="Minimal 6 karakter"
-                  placeholderTextColor={colors.inkMuted}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  editable={!submitting}
-                  style={styles.passwordInput}
-                  accessibilityLabel="Password"
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    showPassword ? 'Sembunyikan password' : 'Tampilkan password'
-                  }
-                  onPress={() => setShowPassword((prev) => !prev)}
-                  style={styles.eyeButton}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={colors.inkMuted}
-                  />
-                </Pressable>
-              </View>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Daftar Sebagai</Text>
-              <View style={styles.roleRow}>
-                {ROLE_OPTIONS.map((option) => {
-                  const selected = role === option.value;
-                  return (
-                    <Pressable
-                      key={option.value}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      disabled={submitting}
-                      onPress={() => setRole(option.value)}
-                      style={({ pressed }) => [
-                        styles.roleCard,
-                        selected && styles.roleCardActive,
-                        pressed && styles.roleCardPressed,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.roleTitle,
-                          selected && styles.roleTitleActive,
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.roleDesc,
-                          selected && styles.roleDescActive,
-                        ]}
-                      >
-                        {option.description}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.submitWrap}>
-            <Button
-              label={submitting ? 'Mendaftarkan...' : 'Daftar Akun'}
-              variant="primary"
-              icon="checkmark-circle-outline"
-              loading={submitting}
-              onPress={handleRegister}
-            />
-          </View>
-        </CardContent>
-      </Card>
-
-      <Button
-        label="Sudah punya akun? Masuk"
-        variant="outline"
-        disabled={submitting}
-        onPress={() => {
-          setLocalError(null);
-          setRegisterError(null);
-          clearError();
-          navigation.goBack();
-        }}
-      />
+      <View style={styles.actions}>
+        <Button
+          label="Buat akun"
+          variant="primary"
+          icon="checkmark-circle-outline"
+          loading={submitting}
+          onPress={handleRegister}
+        />
+        <Button
+          label="Sudah punya akun? Masuk"
+          variant="outline"
+          disabled={submitting}
+          onPress={leaveScreen}
+        />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  heroHeader: {
-    gap: spacing.xs,
-    paddingTop: spacing.xs,
-  },
-  title: {
-    ...typography.display,
-    color: colors.ink,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.inkMuted,
-  },
-  fieldGroup: {
-    gap: spacing.md,
-    marginTop: spacing.xs,
-  },
-  field: {
-    gap: spacing.xs,
-  },
-  fieldLabel: {
-    ...typography.label,
-    color: colors.ink,
-  },
-  input: {
-    ...typography.body,
-    color: colors.ink,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    minHeight: 48,
-  },
-  passwordWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    minHeight: 48,
-  },
-  passwordInput: {
-    ...typography.body,
-    color: colors.ink,
-    flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  eyeButton: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  roleRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  roleCard: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: radius['2xl'],
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  roleCardActive: {
-    backgroundColor: colors.violet,
-    borderColor: colors.violet,
-  },
-  roleCardPressed: {
-    opacity: 0.9,
-  },
-  roleTitle: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-  },
-  roleTitleActive: {
-    color: colors.onPrimary,
-  },
-  roleDesc: {
-    ...typography.caption,
-    color: colors.inkMuted,
-  },
-  roleDescActive: {
-    color: colors.lavender,
-  },
-  submitWrap: {
-    marginTop: spacing.md,
-  },
+  fields: { gap: spacing.md },
+  roleBlock: { gap: spacing.xs },
+  roleRow: { flexDirection: 'row', gap: spacing.md },
+  roleCard: { flex: 1 },
+  actions: { gap: spacing.sm },
 });
