@@ -1,30 +1,49 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { colors, typography } from '../../theme/tokens';
+import { spacing } from '../../theme/tokens';
+import { Text } from './Text';
 
 export type HeaderProps = {
   eyebrow?: string;
   title: string;
+  /**
+   * Trailing fragment of the title set in italic violet (`displayAccent`).
+   * Use on the main page title only — at most once per screen.
+   */
+  accent?: string;
   description?: string;
+  /** On a violet/ink surface: switches every line to on-dark tones. */
   dark?: boolean;
 };
 
-export function Header({ eyebrow, title, description, dark }: HeaderProps) {
+export function Header({
+  eyebrow,
+  title,
+  accent,
+  description,
+  dark,
+}: HeaderProps) {
   return (
     <View style={styles.container}>
       {eyebrow ? (
-        <Text style={[styles.eyebrow, dark && styles.eyebrowDark]}>
+        <Text variant="overline" tone={dark ? 'onDarkMuted' : 'violet'}>
           {eyebrow}
         </Text>
       ) : null}
       <Text
+        variant="display"
+        tone={dark ? 'onDark' : 'ink'}
         accessibilityRole="header"
-        style={[styles.title, dark && styles.titleDark]}
       >
         {title}
+        {accent ? (
+          <Text variant="displayAccent" tone={dark ? 'onDark' : 'violet'}>
+            {` ${accent}`}
+          </Text>
+        ) : null}
       </Text>
       {description ? (
-        <Text style={[styles.description, dark && styles.descriptionDark]}>
+        <Text variant="body" tone={dark ? 'onDarkMuted' : 'muted'}>
           {description}
         </Text>
       ) : null}
@@ -33,11 +52,5 @@ export function Header({ eyebrow, title, description, dark }: HeaderProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8 },
-  eyebrow: { ...typography.overline, color: colors.violet },
-  eyebrowDark: { color: 'rgba(255,255,255,0.7)' },
-  title: { ...typography.display, color: colors.ink },
-  titleDark: { color: colors.panel },
-  description: { ...typography.body, color: colors.inkMuted },
-  descriptionDark: { color: 'rgba(255,255,255,0.7)' },
+  container: { gap: spacing.sm },
 });
