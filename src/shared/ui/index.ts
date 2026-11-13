@@ -13,6 +13,7 @@ export { EmptyState } from './EmptyState';
 export { ErrorState, type ErrorStateProps } from './ErrorState';
 export { Header } from './Header';
 export { IconButton, type IconButtonProps, type IconName } from './IconButton';
+export { InfoRow, type InfoRowProps } from './InfoRow';
 export { ListRow, type ListRowProps } from './ListRow';
 export { LoadingState, type LoadingStateProps } from './LoadingState';
 export { Screen } from './Screen';
