@@ -1,22 +1,27 @@
-import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import type { Session } from '../../domain/types';
 import {
   Banner,
   Button,
   Card,
   CardContent,
-  colors,
   ConfirmSheet,
+  EmptyState,
+  ErrorState,
   Header,
-  LegacyStatusBadge,
+  InfoRow,
+  LoadingState,
   Screen,
-  typography,
+  spacing,
+  Text,
+  TopBar,
 } from '../../shared/ui';
-import { useStudentLeaveViewModel } from '../leave';
 import { useStudentAttendanceViewModel } from '../../state';
+import { useStudentLeaveViewModel } from '../leave';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentSessionDetail'>;
@@ -30,13 +35,18 @@ const LEAVE_STATUS_LABEL = {
   rejected: 'Ditolak',
 } as const;
 
+const SESSION_STATUS_LABEL: Record<Session['status'], string> = {
+  open: 'Terbuka',
+  scheduled: 'Terjadwal',
+  closed: 'Tertutup',
+};
+
 export function StudentSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
   const {
     getSessionById,
     getAttendanceForSession,
     checkIn,
-    currentStudent,
     submittingSessionId,
     loading,
     error,
@@ -53,10 +63,8 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <Screen>
-        <View style={styles.stateBlock}>
-          <ActivityIndicator color={colors.violet} />
-          <Text style={styles.stateText}>Memuat jadwal…</Text>
-        </View>
+        <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
+        <LoadingState label="Memuat jadwal…" />
       </Screen>
     );
   }
@@ -64,13 +72,11 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   if (error) {
     return (
       <Screen>
-        <Banner
+        <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
+        <ErrorState
           title="Gagal memuat jadwal"
           message={error}
-          tone="danger"
-          action={
-            <Button label="Coba lagi" variant="outline" onPress={retry} />
-          }
+          onRetry={retry}
         />
       </Screen>
     );
@@ -83,15 +89,17 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen>
-        <Header
-          eyebrow="MODE PRAKTIKAN · DETAIL SESI"
+        <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
+        <EmptyState
           title="Sesi tidak ditemukan"
           description="Sesi tidak ditemukan atau kamu bukan peserta kelas ini."
-        />
-        <Button
-          label="Kembali ke jadwal"
-          variant="outline"
-          onPress={() => navigation.goBack()}
+          action={
+            <Button
+              label="Kembali ke jadwal"
+              variant="outline"
+              onPress={() => navigation.goBack()}
+            />
+          }
         />
       </Screen>
     );
@@ -110,11 +118,8 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <Header
-        eyebrow="MODE PRAKTIKAN · DETAIL SESI"
-        title={session.courseName}
-        description={session.groupName}
-      />
+      <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
+      <Header title={session.courseName} description={session.groupName} />
 
       {feedback ? (
         <Banner
@@ -127,28 +132,24 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 
       <Card interactive={false}>
         <CardContent>
-          <View style={styles.statusRow}>
-            <Text style={styles.infoLabel}>Status</Text>
-            <LegacyStatusBadge status={session.status} />
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Tanggal</Text>
-            <Text style={styles.infoValue}>
-              {formatSessionDate(session.startsAt)}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Waktu</Text>
-            <Text style={styles.infoValue}>
-              {formatTimeRange(session.startsAt, session.endsAt)}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Presensi kamu</Text>
-            <Text style={[styles.infoValue, record && styles.infoValueOk]}>
-              {record ? `Hadir ${formatClock(record.checkedInAt)}` : 'Belum'}
-            </Text>
-          </View>
+          <InfoRow
+            label="Status"
+            value={SESSION_STATUS_LABEL[session.status]}
+          />
+          <InfoRow
+            label="Tanggal"
+            value={formatSessionDate(session.startsAt)}
+          />
+          <InfoRow
+            label="Waktu"
+            value={formatTimeRange(session.startsAt, session.endsAt)}
+          />
+          <InfoRow
+            label="Presensi kamu"
+            value={
+              record ? `Hadir ${formatClock(record.checkedInAt)}` : 'Belum'
+            }
+          />
         </CardContent>
       </Card>
 
@@ -173,14 +174,14 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
             onPress={() => setSheet({ kind: 'confirm' })}
           />
         ) : (
-          <Text style={styles.hint}>
+          <Text tone="muted">
             {session.status === 'scheduled'
               ? 'Sesi belum dibuka'
               : 'Sesi sudah ditutup'}
           </Text>
         )}
         {existingLeave ? (
-          <Text style={styles.hint}>
+          <Text tone="muted">
             Status izin: {LEAVE_STATUS_LABEL[existingLeave.status]}
           </Text>
         ) : !record && session.status !== 'closed' ? (
@@ -200,10 +201,6 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
           onPress={() => navigation.navigate('StudentAttendanceHistory')}
         />
       </View>
-
-      <Text style={styles.note}>
-        {currentStudent?.email ?? '-'} • {currentStudent?.displayName ?? '-'}
-      </Text>
 
       {sheet?.kind === 'success' ? (
         <ConfirmSheet
@@ -233,35 +230,5 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 16,
-  },
-  infoLabel: { ...typography.label, color: colors.inkMuted },
-  infoValue: {
-    flex: 1,
-    flexShrink: 1,
-    textAlign: 'right',
-    ...typography.bodyStrong,
-    color: colors.ink,
-  },
-  infoValueOk: { color: colors.successInk },
-  stateBlock: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 48,
-  },
-  stateText: { ...typography.body, color: colors.inkMuted },
-  actions: { gap: 12 },
-  hint: { ...typography.body, color: colors.inkMuted },
-  note: { ...typography.caption, color: colors.inkMuted, marginTop: 4 },
+  actions: { gap: spacing.md },
 });
