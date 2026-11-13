@@ -167,7 +167,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
                 : 'Presensi sekarang'
             }
             variant="accent"
-            leadingIcon="✓"
+            icon="checkmark"
             disabled={submittingSessionId === session.id}
             accessibilityHint="Mencatat kehadiran di sesi ini"
             onPress={() => setSheet({ kind: 'confirm' })}

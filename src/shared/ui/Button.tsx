@@ -1,20 +1,15 @@
-import type { ComponentProps } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  ActivityIndicator,
   Pressable,
   type PressableProps,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
-import {
-  colors,
-  radius,
-  shadow,
-  spacing,
-  typography,
-} from '../../theme/tokens';
+import { colors, radius, shadow, spacing } from '../../theme/tokens';
+import type { IconName } from './IconButton';
+import { Text, type TextTone } from './Text';
 
 type ButtonVariant =
   | 'primary' // violet solid
@@ -23,83 +18,80 @@ type ButtonVariant =
   | 'outline' // panel + border
   | 'destructive'; // red danger
 
+type ButtonSize = 'md' | 'sm';
+
 export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
   variant?: ButtonVariant;
-  /** Small 40x40 icon button (sticker sheet "Loading and Icon States"). */
-  iconOnly?: boolean;
-  /** Leading glyph as plain text (unicode or icon-font char). */
-  leadingIcon?: string;
+  /** `md` (48 high) by default; `sm` (40 high) for actions inside cards/banners. */
+  size?: ButtonSize;
   /**
-   * Ionicons icon name (e.g. 'swap-horizontal', 'calendar'). Rendered as a
-   * vector icon next to the label — preferred over `leadingIcon` for named icons.
+   * Small 40x40 icon button. Prefer `IconButton`, which requires an
+   * accessibility label; kept for existing screens.
    */
-  icon?: ComponentProps<typeof Ionicons>['name'];
+  iconOnly?: boolean;
+  /** Ionicons name rendered before the label. */
+  icon?: IconName;
   loading?: boolean;
+};
+
+const labelTone: Record<ButtonVariant, TextTone> = {
+  primary: 'onDark',
+  accent: 'ink',
+  soft: 'violet',
+  outline: 'ink',
+  destructive: 'danger',
+};
+
+const contentColor: Record<ButtonVariant, string> = {
+  primary: colors.onPrimary,
+  accent: colors.ink,
+  soft: colors.violet,
+  outline: colors.ink,
+  destructive: colors.dangerInk,
 };
 
 export function Button({
   label,
   variant = 'primary',
+  size = 'md',
   iconOnly = false,
-  leadingIcon,
   icon,
   loading = false,
   disabled,
   ...pressableProps
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-
-  // Icon color follows the variant label color so it reads on any background.
-  const iconColor =
-    variant === 'primary'
-      ? colors.panel
-      : variant === 'accent'
-        ? colors.ink
-        : variant === 'soft'
-          ? colors.violet
-          : variant === 'outline'
-            ? colors.ink
-            : colors.dangerInk;
-
-  const leadingGlyph = icon ? null : leadingIcon;
+  const color = disabled ? colors.inkMuted : contentColor[variant];
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled }}
+      accessibilityLabel={iconOnly ? label : undefined}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
+        styles[size],
         iconOnly && styles.iconOnly,
         styles[variant],
         !isDisabled && pressed && styles[`${variant}Pressed`],
-        isDisabled && styles.disabled,
+        disabled && styles.disabled,
       ]}
       {...pressableProps}
     >
       <View style={styles.row}>
         {loading ? (
-          <View style={styles.spinner} accessibilityLabel="Memuat" />
+          <ActivityIndicator size="small" color={color} />
         ) : icon ? (
-          <Ionicons
-            name={icon}
-            size={16}
-            color={iconColor}
-            style={styles.vectorIcon}
-          />
-        ) : leadingGlyph ? (
-          <Text style={styles.leadingIcon} accessible={false}>
-            {leadingGlyph}
-          </Text>
+          <Ionicons name={icon} size={size === 'sm' ? 16 : 18} color={color} />
         ) : null}
         {!iconOnly && (
           <Text
-            style={[
-              styles.label,
-              styles[`${variant}Label`],
-              isDisabled && styles.disabledLabel,
-            ]}
+            variant={size === 'sm' ? 'label' : 'bodyStrong'}
+            tone={disabled ? 'muted' : labelTone[variant]}
+            numberOfLines={1}
+            style={styles.label}
           >
             {label}
           </Text>
@@ -111,21 +103,20 @@ export function Button({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 48,
     borderRadius: radius['2xl'], // 18px, sticker sheet buttons
-    paddingHorizontal: spacing['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     ...shadow.card,
   },
+  md: { minHeight: 48, paddingHorizontal: spacing['2xl'] },
+  sm: { minHeight: 40, paddingHorizontal: spacing.lg },
   iconOnly: {
     width: 40,
     height: 40,
     minHeight: 40,
-    padding: 0,
+    paddingHorizontal: 0,
     borderRadius: radius.lg,
-    borderWidth: 1,
   },
   row: {
     flexDirection: 'row',
@@ -133,68 +124,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  leadingIcon: {
-    ...typography.label,
-    fontSize: 14,
-  },
-  vectorIcon: {
-    marginLeft: 0,
-  },
-  spinner: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
-    borderTopColor: '#FFFFFF',
-  },
-
-  label: {
-    ...typography.label,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
+  label: { textAlign: 'center', flexShrink: 1 },
 
   // Sticker sheet variants
-  primary: {
-    backgroundColor: colors.violet,
-    borderColor: colors.violet,
-  },
+  primary: { backgroundColor: colors.violet, borderColor: colors.violet },
   primaryPressed: { backgroundColor: colors.violetDark },
-  primaryLabel: { color: colors.panel, fontWeight: '500' },
-
-  accent: {
-    backgroundColor: colors.lime,
-    borderColor: colors.lime,
-  },
+  accent: { backgroundColor: colors.lime, borderColor: colors.lime },
   accentPressed: { backgroundColor: colors.limeHover },
-  accentLabel: { color: colors.ink, fontWeight: '600' },
-
-  soft: {
-    backgroundColor: colors.lavender,
-    borderColor: colors.lavender,
-  },
+  soft: { backgroundColor: colors.lavender, borderColor: colors.lavender },
   softPressed: { backgroundColor: colors.lavenderSubtle },
-  softLabel: { color: colors.violet, fontWeight: '600' },
-
-  outline: {
-    backgroundColor: colors.panel,
-    borderColor: colors.border,
-  },
+  outline: { backgroundColor: colors.panel, borderColor: colors.border },
   outlinePressed: { backgroundColor: colors.surface },
-  outlineLabel: { color: colors.ink, fontWeight: '600' },
-
   destructive: {
     backgroundColor: colors.dangerSoft,
-    borderColor: 'rgba(252, 165, 165, 0.4)',
+    borderColor: colors.dangerBorder,
   },
   destructivePressed: { backgroundColor: colors.dangerBorder },
-  destructiveLabel: { color: colors.dangerInk, fontWeight: '600' },
 
   disabled: {
     backgroundColor: colors.disabled,
     borderColor: colors.disabled,
     opacity: 0.7,
   },
-  disabledLabel: { color: colors.inkMuted },
 });
