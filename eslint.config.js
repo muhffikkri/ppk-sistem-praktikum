@@ -5,13 +5,13 @@ const prettierConfig = require('eslint-config-prettier/flat');
 const reactNativePlugin = require('eslint-plugin-react-native');
 
 module.exports = defineConfig([
+  { ignores: ['dist/**', '.expo/**', 'node_modules/**'] },
   expoConfig,
   prettierConfig,
   {
     plugins: {
       'react-native': reactNativePlugin,
     },
-    ignores: ['dist/*', '.expo/*'],
     rules: {
       'react-native/no-raw-text': 'error',
     },
