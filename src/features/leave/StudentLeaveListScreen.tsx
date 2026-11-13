@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { View } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  EmptyState,
   Header,
   Screen,
   SectionHeader,
@@ -30,7 +31,17 @@ export function StudentLeaveListScreen({
       />
       <View style={{ gap: spacing.md }}>
         <SectionHeader title="Riwayat pengajuan" />
-        <ListFeedback {...vm} empty={vm.leaveRequests.length === 0} />
+        <ListFeedback
+          {...vm}
+          empty={vm.loading && vm.leaveRequests.length === 0}
+        />
+        {!vm.loading && !vm.error && vm.leaveRequests.length === 0 ? (
+          <EmptyState
+            icon="document-text-outline"
+            title="Belum ada pengajuan izin"
+            description="Pengajuanmu akan muncul di sini."
+          />
+        ) : null}
         {vm.leaveRequests.map((item) => (
           <RequestCard key={item.id} item={item} />
         ))}

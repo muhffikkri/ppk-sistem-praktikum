@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import type { Session } from '../../domain/types';
-import { EmptyState, SelectField, spacing } from '../../shared/ui';
+import { Banner, SelectField, spacing } from '../../shared/ui';
 import {
   leaveFailure,
   requireRole,
@@ -63,10 +63,10 @@ export function StudentLeaveSessionPicker({
         }}
       />
       {!loading && !error && sessions.length === 0 ? (
-        <EmptyState
-          icon="document-text-outline"
+        <Banner
+          tone="warning"
           title="Belum ada sesi terdaftar"
-          description="Sesi akan tersedia setelah asisten mendaftarkan Anda sebagai peserta praktikum."
+          message="Sesi muncul setelah asisten mendaftarkanmu sebagai peserta."
         />
       ) : null}
       {sessions.length > 0 ? (
