@@ -1,10 +1,16 @@
 import React from 'react';
 import { View, Text, Button, Alert, StyleSheet } from 'react-native';
-import { useAssistantSessionsViewModel } from '../state/AssistantSessionsViewModel';
+import { useAssistantSessionsViewModel } from '../state/AssistantSessionsContext';
 
 export function AssistantSessionDetailScreen({ route, navigation }: any) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession, openSession, closeSession } = useAssistantSessionsViewModel();
+
+  const {
+    getSessionById,
+    getAttendanceForSession,
+    openSession,
+    closeSession,
+  } = useAssistantSessionsViewModel();
 
   const session = getSessionById(sessionId);
   const attendees = getAttendanceForSession(sessionId);
@@ -17,8 +23,9 @@ export function AssistantSessionDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const handleOpen = () => {
-    const res = openSession(sessionId);
+  const handleOpen = async () => {
+    const res = await openSession(sessionId);
+
     if (res.ok) {
       Alert.alert('Berhasil', 'Sesi praktikum telah dibuka.');
     } else {
@@ -26,8 +33,9 @@ export function AssistantSessionDetailScreen({ route, navigation }: any) {
     }
   };
 
-  const handleClose = () => {
-    const res = closeSession(sessionId);
+  const handleClose = async () => {
+    const res = await closeSession(sessionId);
+
     if (res.ok) {
       Alert.alert('Berhasil', 'Sesi praktikum telah ditutup.');
     } else {
@@ -38,19 +46,30 @@ export function AssistantSessionDetailScreen({ route, navigation }: any) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{session.courseName}</Text>
-      <Text style={styles.info}>Status: <Text style={styles.bold}>{session.status.toUpperCase()}</Text></Text>
-      <Text style={styles.info}>Jumlah Hadir: {attendees.length} Praktikan</Text>
+
+      <Text style={styles.info}>
+        Status:{' '}
+        <Text style={styles.bold}>{session.status.toUpperCase()}</Text>
+      </Text>
+
+      <Text style={styles.info}>
+        Jumlah Hadir: {attendees.length} Praktikan
+      </Text>
 
       <View style={styles.buttonContainer}>
         {session.status === 'scheduled' && (
           <Button title="Buka Sesi" onPress={handleOpen} />
         )}
+
         {session.status === 'open' && (
           <Button title="Tutup Sesi" color="red" onPress={handleClose} />
         )}
+
         <Button
           title="Lihat Rekap Presensi"
-          onPress={() => navigation.navigate('AssistantAttendanceRoster', { sessionId })}
+          onPress={() =>
+            navigation.navigate('AssistantAttendanceRoster', { sessionId })
+          }
         />
       </View>
     </View>
@@ -58,11 +77,38 @@ export function AssistantSessionDetailScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 16, color: 'red' },
-  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  info: { fontSize: 15, marginBottom: 6, color: '#333' },
-  bold: { fontWeight: 'bold', color: '#007AFF' },
-  buttonContainer: { flexDirection: 'row', gap: 8, marginTop: 16, flexWrap: 'wrap' }
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  info: {
+    fontSize: 15,
+    marginBottom: 6,
+    color: '#333',
+  },
+  bold: {
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 16,
+    flexWrap: 'wrap',
+  },
 });
