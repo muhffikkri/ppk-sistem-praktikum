@@ -76,7 +76,7 @@ const DOCK_ROUTE_FOR_POV: Record<
   asisten: {
     Schedule: 'AssistantSchedule',
 
-    Attendance: 'AssistantAttendanceRoster',
+    Attendance: 'AssistantAllAttendance',
   },
 };
 
@@ -130,15 +130,7 @@ export function AppNavigator() {
 
     const route = resolveRoute(key);
 
-    if (key === 'Attendance' && actorRole === 'asisten') {
-      // Attendance roster for asisten requires a sessionId param.
-      navigation.reset({
-        index: 0,
-        routes: [{ name: route, params: { sessionId: 'session-ast-02' } }],
-      });
-    } else {
-      navigation.reset({ index: 0, routes: [{ name: route }] });
-    }
+    navigation.reset({ index: 0, routes: [{ name: route }] });
   };
 
   // When unauthenticated or loading, show auth stack (Landing → Login/Register)
