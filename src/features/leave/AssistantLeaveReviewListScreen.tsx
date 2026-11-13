@@ -1,8 +1,19 @@
 import { useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { StyleSheet, View } from 'react-native';
+import type { RootStackParamList } from '../../app/navigation';
 import type { AiClassificationResult } from '../../domain/types';
-import { Banner, Button, ConfirmSheet, Screen } from '../../shared/ui';
-import { ListFeedback, RequestCard, styles } from './components';
+import {
+  Banner,
+  Button,
+  ConfirmSheet,
+  Header,
+  Screen,
+  spacing,
+  TextField,
+  TopBar,
+} from '../../shared/ui';
+import { ListFeedback, RequestCard } from './components';
 import { useAssistantLeaveViewModel } from './useAssistantLeaveViewModel';
 
 function aiPredictionLabel(prediction: AiClassificationResult): string {
@@ -15,7 +26,12 @@ function aiPredictionLabel(prediction: AiClassificationResult): string {
   return `${prediction.category ?? '-'}${confidence}`;
 }
 
-export function AssistantLeaveReviewListScreen() {
+type Props = NativeStackScreenProps<
+  RootStackParamList,
+  'AssistantLeaveReviewList'
+>;
+
+export function AssistantLeaveReviewListScreen({ navigation }: Props) {
   const vm = useAssistantLeaveViewModel();
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [confirmation, setConfirmation] = useState<{
@@ -50,8 +66,12 @@ export function AssistantLeaveReviewListScreen() {
   }
 
   return (
-    <Screen>
-      <Text style={styles.title}>Pemeriksaan Izin</Text>
+    <Screen withDock={false}>
+      <TopBar onBack={() => navigation.goBack()} />
+      <Header
+        title="Pemeriksaan izin"
+        description="Prediksi AI hanya pendukung; keputusan ada pada asisten."
+      />
       <ListFeedback {...vm} empty={vm.leaveRequests.length === 0} />
       {feedback ? (
         <Banner
@@ -64,25 +84,29 @@ export function AssistantLeaveReviewListScreen() {
         <View key={item.id} style={styles.group}>
           <RequestCard item={item} />
           {item.status === 'pending' ? (
-            <>
-              <Button
-                label="Terima"
-                disabled={!!vm.reviewingId}
-                onPress={() => {
-                  setFeedback(null);
-                  setConfirmation({ id: item.id, approve: true });
-                }}
-              />
-              <Button
-                label="Tolak"
-                variant="destructive"
-                disabled={!!vm.reviewingId}
-                onPress={() => {
-                  setFeedback(null);
-                  setConfirmation({ id: item.id, approve: false });
-                }}
-              />
-            </>
+            <View style={styles.actions}>
+              <View style={styles.action}>
+                <Button
+                  label="Terima"
+                  disabled={!!vm.reviewingId}
+                  onPress={() => {
+                    setFeedback(null);
+                    setConfirmation({ id: item.id, approve: true });
+                  }}
+                />
+              </View>
+              <View style={styles.action}>
+                <Button
+                  label="Tolak"
+                  variant="destructive"
+                  disabled={!!vm.reviewingId}
+                  onPress={() => {
+                    setFeedback(null);
+                    setConfirmation({ id: item.id, approve: false });
+                  }}
+                />
+              </View>
+            </View>
           ) : null}
         </View>
       ))}
@@ -109,11 +133,9 @@ export function AssistantLeaveReviewListScreen() {
               tone="danger"
             />
           ) : null}
-          <TextInput
-            accessibilityLabel={`Catatan untuk ${activeItem.studentName}`}
-            placeholder="Catatan asisten (opsional)"
+          <TextField
+            label="Catatan asisten (opsional)"
             multiline
-            style={styles.input}
             value={notes[activeItem.id] ?? ''}
             editable={!vm.reviewingId}
             onChangeText={(note) =>
@@ -125,3 +147,9 @@ export function AssistantLeaveReviewListScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  group: { gap: spacing.sm },
+  actions: { flexDirection: 'row', gap: spacing.sm },
+  action: { flex: 1 },
+});
