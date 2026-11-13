@@ -1,11 +1,24 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TextInput } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../app/navigation';
 import type { AiClassificationResult, Session } from '../../domain/types';
-import { Banner, Button, Screen } from '../../shared/ui';
+import {
+  Banner,
+  Button,
+  Card,
+  CardContent,
+  Header,
+  InfoRow,
+  LoadingState,
+  Screen,
+  spacing,
+  Text,
+  TextField,
+  TopBar,
+} from '../../shared/ui';
 import { leaveFailure } from '../../services/firestore/leaveService';
-import { AiResult, styles } from './components';
+import { AiResult } from './components';
 import { useLeaveDependencies } from './LeaveProvider';
 import { useStudentLeaveViewModel } from './useStudentLeaveViewModel';
 
@@ -13,6 +26,8 @@ type FormProps = NativeStackScreenProps<
   RootStackParamList,
   'StudentLeaveRequestForm'
 >;
+
+const MIN_REASON_LENGTH = 5;
 
 export function StudentLeaveRequestFormScreen(props: FormProps) {
   return <LeaveRequestForm key={props.route.params.sessionId} {...props} />;
@@ -72,10 +87,12 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
   const eligible =
     user?.role === 'student' && session?.participantIds?.includes(user.uid);
   const busy = previewing || vm.submitting;
+  const reasonReady = reason.trim().length >= MIN_REASON_LENGTH;
+
   return (
     <Screen>
-      <Text style={styles.title}>Ajukan Izin</Text>
-      {loading ? <ActivityIndicator accessibilityLabel="Memuat sesi" /> : null}
+      <TopBar title="Ajukan izin" onBack={() => navigation.goBack()} />
+      {loading ? <LoadingState label="Memuat sesi…" /> : null}
       {error || vm.error ? (
         <>
           <Banner
@@ -84,7 +101,8 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
             message={error ?? vm.error ?? ''}
           />
           <Button
-            label="Coba Lagi"
+            label="Coba lagi"
+            variant="outline"
             disabled={busy}
             onPress={() => {
               if (!session) {
@@ -99,12 +117,15 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
       ) : null}
       {session ? (
         <>
-          <Text style={styles.subtitle}>
-            {session.courseName} · {session.groupName}
-          </Text>
-          <Text style={styles.body}>
-            {new Date(session.startsAt).toLocaleString('id-ID')}
-          </Text>
+          <Header title={session.courseName} description={session.groupName} />
+          <Card interactive={false}>
+            <CardContent>
+              <InfoRow
+                label="Waktu"
+                value={new Date(session.startsAt).toLocaleString('id-ID')}
+              />
+            </CardContent>
+          </Card>
           {!eligible ? (
             <Banner
               tone="warning"
@@ -118,7 +139,7 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
               message="Pengajuan tersimpan dengan status Menunggu. Asisten akan memeriksa alasan Anda."
             />
           ) : (
-            <>
+            <View style={styles.form}>
               {duplicate ? (
                 <Banner
                   tone="warning"
@@ -126,34 +147,32 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
                   message="Anda sudah memiliki izin menunggu atau diterima untuk sesi ini."
                 />
               ) : null}
-              <Text style={styles.body}>
-                Alasan ketidakhadiran (minimal 5 karakter)
-              </Text>
-              <TextInput
-                accessibilityLabel="Alasan ketidakhadiran"
+              <TextField
+                label="Alasan ketidakhadiran"
                 placeholder="Tuliskan alasan izin Anda"
-                style={styles.input}
-                multiline
+                hint={`${reason.trim().length} dari minimal ${MIN_REASON_LENGTH} karakter`}
                 value={reason}
+                multiline
                 editable={!busy && !!eligible && !duplicate}
                 onChangeText={(value) => {
                   setReason(value);
                   setPrediction(null);
                 }}
               />
+              <Text variant="caption" tone="muted">
+                Asisten yang memutuskan izin. Klasifikasi AI hanya membantu.
+              </Text>
               <Button
-                label="Pratinjau Klasifikasi AI"
+                label="Pratinjau klasifikasi AI"
                 variant="outline"
                 loading={previewing}
-                disabled={
-                  busy || !eligible || !!duplicate || reason.trim().length < 5
-                }
+                disabled={busy || !eligible || !!duplicate || !reasonReady}
                 onPress={() => {
                   void preview();
                 }}
               />
               <Button
-                label="Kirim Pengajuan"
+                label="Kirim pengajuan"
                 loading={vm.submitting}
                 disabled={
                   busy ||
@@ -161,22 +180,26 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
                   !!vm.error ||
                   !eligible ||
                   !!duplicate ||
-                  reason.trim().length < 5
+                  !reasonReady
                 }
                 onPress={() => {
                   void submit();
                 }}
               />
-            </>
+            </View>
           )}
           {prediction ? <AiResult prediction={prediction} /> : null}
         </>
       ) : null}
       <Button
-        label="Lihat Pengajuan Saya"
+        label="Lihat pengajuan saya"
         variant="soft"
         onPress={() => navigation.navigate('StudentLeaveList')}
       />
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  form: { gap: spacing.md },
+});
