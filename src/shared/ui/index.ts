@@ -18,6 +18,11 @@ export { ListRow, type ListRowProps } from './ListRow';
 export { LoadingState, type LoadingStateProps } from './LoadingState';
 export { Screen } from './Screen';
 export {
+  SelectField,
+  type SelectFieldProps,
+  type SelectOption,
+} from './SelectField';
+export {
   SegmentedControl,
   type SegmentedControlProps,
   type SegmentedOption,
