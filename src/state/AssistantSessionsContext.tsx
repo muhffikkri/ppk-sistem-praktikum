@@ -7,6 +7,7 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 import {
   createClass,
   updateClass,
@@ -21,8 +22,8 @@ import {
   subscribeClasses,
   subscribeSessions,
   subscribeAttendanceForSession,
-  initializeAssistantState,
 } from '../services/firestore/assistantService';
+import { db } from '../services/firebase';
 import {
   PracticalClass,
   Session,
@@ -120,9 +121,9 @@ function assistantReducer(
 ): AssistantSessionsState {
   switch (action.type) {
     case 'SET_CLASSES':
-      return { ...state, classes: action.classes, loading: false };
+      return { ...state, classes: action.classes };
     case 'SET_SESSIONS':
-      return { ...state, sessions: action.sessions, loading: false };
+      return { ...state, sessions: action.sessions };
     case 'SET_STUDENTS':
       return { ...state, studentsDirectory: action.students };
     case 'SET_LOADING':
@@ -151,51 +152,98 @@ export const AssistantSessionsProvider = ({
   const [state, dispatch] = useReducer(assistantReducer, initialState);
   const [retryCounter, setRetryCounter] = useState(0);
   const attendanceCacheRef = useRef<Record<string, AttendanceRecord[]>>({});
+  const studentsCacheRef = useRef<Map<string, UserProfile>>(new Map());
+  const classesReadyRef = useRef(false);
+  const sessionsReadyRef = useRef(false);
 
-  // Initialize state dari Firestore
+  // Set up real-time listeners scoped to the signed-in assistant.
   useEffect(() => {
-    let cancelled = false;
+    const uid = user?.uid;
+    if (!uid) {
+      dispatch({ type: 'SET_LOADING', loading: false });
+      return;
+    }
+
+    classesReadyRef.current = false;
+    sessionsReadyRef.current = false;
     dispatch({ type: 'SET_LOADING', loading: true });
     dispatch({ type: 'SET_ERROR', error: null });
 
-    initializeAssistantState()
-      .then((ctx) => {
-        if (cancelled) return;
-        dispatch({ type: 'SET_CLASSES', classes: ctx.classes });
-        dispatch({ type: 'SET_SESSIONS', sessions: ctx.sessions });
-        dispatch({ type: 'SET_STUDENTS', students: ctx.studentsDirectory });
-      })
-      .catch((e: any) => {
-        if (cancelled) return;
+    const loadStudentsDirectory = async (classes: PracticalClass[]) => {
+      const ids = new Set<string>();
+      classes.forEach((c) =>
+        (c.participantIds ?? []).forEach((id) => {
+          if (id.trim()) ids.add(id);
+        }),
+      );
+
+      const missing = [...ids].filter(
+        (id) => !studentsCacheRef.current.has(id),
+      );
+
+      try {
+        await Promise.all(
+          missing.map(async (studentUid) => {
+            const snap = await getDoc(doc(db, 'users', studentUid));
+            if (!snap.exists()) return;
+            const profile = snap.data() as UserProfile;
+            if (profile.role === 'student') {
+              studentsCacheRef.current.set(studentUid, profile);
+            }
+          }),
+        );
+
+        dispatch({
+          type: 'SET_STUDENTS',
+          students: [...studentsCacheRef.current.values()],
+        });
+      } catch {
         dispatch({
           type: 'SET_ERROR',
-          error: e?.message || 'Gagal inisialisasi context asisten',
+          error: 'Gagal memuat daftar praktikan.',
         });
-        dispatch({ type: 'SET_LOADING', loading: false });
-      });
-
-    return () => {
-      cancelled = true;
+      }
     };
-  }, [retryCounter]);
 
-  // Set up real-time listeners
-  useEffect(() => {
+    const markReady = (which: 'classes' | 'sessions') => {
+      if (which === 'classes') classesReadyRef.current = true;
+      else sessionsReadyRef.current = true;
+
+      if (classesReadyRef.current && sessionsReadyRef.current) {
+        dispatch({ type: 'SET_LOADING', loading: false });
+      }
+    };
+
     const classesUnsubscribe = subscribeClasses(
-      (classes) => dispatch({ type: 'SET_CLASSES', classes }),
-      (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+      uid,
+      (classes) => {
+        dispatch({ type: 'SET_CLASSES', classes });
+        void loadStudentsDirectory(classes);
+        markReady('classes');
+      },
+      (msg: string) => {
+        dispatch({ type: 'SET_ERROR', error: msg });
+        dispatch({ type: 'SET_LOADING', loading: false });
+      },
     );
 
     const sessionsUnsubscribe = subscribeSessions(
-      (sessions) => dispatch({ type: 'SET_SESSIONS', sessions }),
-      (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+      uid,
+      (sessions) => {
+        dispatch({ type: 'SET_SESSIONS', sessions });
+        markReady('sessions');
+      },
+      (msg: string) => {
+        dispatch({ type: 'SET_ERROR', error: msg });
+        dispatch({ type: 'SET_LOADING', loading: false });
+      },
     );
 
     return () => {
       classesUnsubscribe();
       sessionsUnsubscribe();
     };
-  }, []);
+  }, [user?.uid, retryCounter]);
 
   const getSessionById = (sessionId: string) =>
     state.sessions.find((s) => s.id === sessionId);

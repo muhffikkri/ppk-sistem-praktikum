@@ -30,7 +30,6 @@ import {
 const classesCol = collection(db, 'classes');
 const sessionsCol = collection(db, 'sessions');
 const attendanceCol = collection(db, 'attendance');
-const leaveRequestsCol = collection(db, 'leave_requests');
 const usersCol = collection(db, 'users');
 
 type AsyncFailure = { ok: false; reason: string; message: string };
@@ -65,17 +64,6 @@ function toFailure(e: unknown): AsyncFailure {
 // ============================================================
 // CRUD: Classes
 // ============================================================
-
-export async function fetchClasses(): Promise<PracticalClass[]> {
-  try {
-    const qs = query(classesCol, orderBy('createdAt', 'desc'));
-    const snap = await getDocs(qs);
-    return snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as PracticalClass));
-  } catch (e: any) {
-    console.error('fetchClasses error:', e);
-    return [];
-  }
-}
 
 export async function createClass(
   actorUid: string,
@@ -389,10 +377,15 @@ export async function closeSession(sessionId: string): Promise<AsyncActionResult
 // ============================================================
 
 export function subscribeClasses(
+  uid: string,
   onClasses: (classes: PracticalClass[]) => void,
   onError: (msg: string) => void,
 ) {
-  const q = query(classesCol, orderBy('createdAt', 'desc'));
+  const q = query(
+    classesCol,
+    where('assistantIds', 'array-contains', uid),
+    orderBy('createdAt', 'desc'),
+  );
   return onSnapshot(q, (snap: any) => {
     const classes = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as PracticalClass));
     onClasses(classes);
@@ -402,10 +395,15 @@ export function subscribeClasses(
 }
 
 export function subscribeSessions(
+  uid: string,
   onSessions: (sessions: Session[]) => void,
   onError: (msg: string) => void,
 ) {
-  const q = query(sessionsCol, orderBy('startsAt', 'asc'));
+  const q = query(
+    sessionsCol,
+    where('assistantIds', 'array-contains', uid),
+    orderBy('startsAt', 'asc'),
+  );
   return onSnapshot(q, (snap: any) => {
     const sessions = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Session));
     onSessions(sessions);
@@ -428,55 +426,3 @@ export function subscribeAttendanceForSession(
   });
 }
 
-export function subscribeLeaveRequestsForStudent(
-  uid: string,
-  onData: (requests: any[]) => void,
-  onError: (msg: string) => void,
-) {
-  const q = query(leaveRequestsCol, where('studentId', '==', uid), orderBy('createdAt', 'desc'));
-  return onSnapshot(q, (snap: any) => {
-    const requests = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
-    onData(requests);
-  }, (err: any) => {
-    onError(err.message || 'Gagal memuat pengajuan izin');
-  });
-}
-
-// ============================================================
-// Initial state fetch (use on component mount)
-// ============================================================
-
-export async function initializeAssistantState(): Promise<{
-  classes: PracticalClass[];
-  sessions: Session[];
-  studentsDirectory: UserProfile[];
-}> {
-  try {
-    // Fetch classes and sessions in parallel
-    const [classesSnap, sessionsSnap] = await Promise.all([
-      getDocs(query(classesCol, orderBy('createdAt', 'desc'))),
-      getDocs(query(sessionsCol, orderBy('startsAt', 'asc'))),
-    ]);
-
-    const classes = classesSnap.docs.map((d: any) => ({ id: d.id, ...d.data() } as PracticalClass));
-    const sessions = sessionsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Session));
-
-    // Build students directory dari participantIds kelas + sesi
-    const ids = new Set<string>();
-    classes.forEach((c: any) => (c.participantIds || []).forEach((id: string) => ids.add(id)));
-    sessions.forEach((s: any) => (s.participantIds || []).forEach((id: string) => ids.add(id)));
-
-    // ponytail: lewati uid kosong (placeholder createdBy); tambahkan filtering per-role/auth nanti
-    const uids = [...ids].filter((u: string) => u.trim() !== '');
-
-    const userDocs = await Promise.all(uids.map((uid) => getDoc(doc(db, 'users', uid))));
-    const studentsDirectory = userDocs
-      .filter((d: any) => d.exists())
-      .map((d: any) => ({ ...d.data() } as UserProfile))
-      .filter((u: any) => u.role === 'student');
-
-    return { classes, sessions, studentsDirectory };
-  } catch (e: any) {
-    throw e;
-  }
-}
