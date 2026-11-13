@@ -1,272 +1,119 @@
-import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import type { Session } from '../../domain/types';
 import {
   Button,
-  Card,
-  CardContent,
-  CardOverline,
-  colors,
-  radius,
+  EmptyState,
+  ErrorState,
+  Header,
+  LoadingState,
   Screen,
-  StatusBadge,
-  typography,
+  SectionHeader,
+  spacing,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
-import { formatSessionDate, formatTimeRange } from './formatters';
 import { AssistantSessionCard } from './components/AssistantSessionCard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSchedule'>;
 
-type WeekTab = 'today' | 'week' | 'swap';
-
-const WEEK_TITLES: Record<WeekTab, string> = {
-  today: 'Hari Ini',
-  week: 'Minggu Ini',
-  swap: 'Tukar Shift',
-};
+const SECTIONS: { status: Session['status']; title: string }[] = [
+  { status: 'open', title: 'Sedang dibuka' },
+  { status: 'scheduled', title: 'Terjadwal' },
+  { status: 'closed', title: 'Selesai' },
+];
 
 export function AssistantScheduleScreen({ navigation }: Props) {
-  const { sessions, getAttendanceForSession } = useAssistantSessionsViewModel();
-  const [tab, setTab] = useState<WeekTab>('today');
+  const { sessions, getAttendanceForSession, loading, error, retry } =
+    useAssistantSessionsViewModel();
 
-  const sessionsSorted = [...sessions].sort(
+  if (loading) {
+    return (
+      <Screen>
+        <LoadingState label="Memuat jadwal…" />
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen>
+        <ErrorState
+          title="Gagal memuat jadwal"
+          message={error}
+          onRetry={retry}
+        />
+      </Screen>
+    );
+  }
+
+  const sorted = [...sessions].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
   );
-  const openSession = sessions.find((s) => s.status === 'open');
-  const nextSession = sessionsSorted.find((s) => s.status === 'scheduled');
 
   return (
     <Screen>
-      <Text accessibilityRole="header" style={styles.screenTitle}>
-        Jadwal
-      </Text>
-      <Text style={styles.subhead}>
-        Semester Ganjil 2026/2027 • Lab Terpadu FTI
-      </Text>
+      <Header
+        title="Jadwal"
+        accent="sesi"
+        description={`${sessions.length} sesi praktikum`}
+      />
 
-      <View style={styles.tabBar}>
-        {(['today', 'week', 'swap'] as const).map((t) => (
-          <Pressable
-            key={t}
-            style={({ pressed }) => [
-              styles.tab,
-              tab === t && styles.tabActive,
-              pressed && styles.tabPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: tab === t }}
-            onPress={() => setTab(t)}
-          >
-            <Text
-              style={[styles.tabLabel, tab === t && styles.tabLabelActive]}
-              accessibilityElementsHidden
-            >
-              {WEEK_TITLES[t]}
-            </Text>
-            {tab === t && <View style={styles.tabDot} />}
-          </Pressable>
-        ))}
-      </View>
-
-      {openSession && (
-        <View style={styles.hero}>
-          <Card variant="heroViolet" interactive={false}>
-            <CardContent>
-              <View style={styles.heroTop}>
-                <View style={styles.heroBadge}>
-                  <StatusBadge label="Siap Clock-in" tone="success" />
-                </View>
-                <Text style={styles.heroLocation}>{openSession.groupName}</Text>
-              </View>
-              <Text style={styles.heroTime}>
-                {formatTimeRange(openSession.startsAt, openSession.endsAt)}
-                <Text style={styles.heroTimeUnit}> WIB</Text>
-              </Text>
-              <Text style={styles.heroCourse}>{openSession.courseName}</Text>
-              <Text style={styles.heroMeta}>
-                {formatSessionDate(openSession.startsAt)} •{' '}
-                {openSession.groupName}
-              </Text>
-              <View style={styles.heroActions}>
-                <View style={styles.heroPrimaryWrap}>
-                  <Button
-                    label="Mulai Sesi"
-                    variant="accent"
-                    icon="play"
-                    onPress={() =>
-                      navigation.navigate('AssistantSessionDetail', {
-                        sessionId: openSession.id,
-                      })
-                    }
-                    accessibilityHint="Buka detail sesi untuk presensi"
-                  />
-                </View>
-              </View>
-            </CardContent>
-          </Card>
-        </View>
-      )}
-
-      {nextSession && (
-        <View style={styles.panel}>
-          <Card variant="panel" interactive={false}>
-            <CardContent>
-              <CardOverline>
-                <Text>BERIKUTNYA</Text>
-              </CardOverline>
-              <Text style={styles.panelTitle}>{nextSession.courseName}</Text>
-              <Text style={styles.panelMeta}>
-                {formatTimeRange(nextSession.startsAt, nextSession.endsAt)} •{' '}
-                {formatSessionDate(nextSession.startsAt)}
-              </Text>
-            </CardContent>
-          </Card>
-        </View>
-      )}
-
-      <Text accessibilityRole="header" style={styles.sectionTitle}>
-        Semua Sesi ({sessionsSorted.length})
-      </Text>
-      <View style={styles.seeAllRow}>
+      <View style={styles.actions}>
         <Button
           label="Buat sesi"
-          variant="primary"
           icon="add"
           onPress={() => navigation.navigate('AssistantSessionForm', {})}
-          accessibilityHint="Membuat sesi praktikum baru"
         />
         <Button
           label="Kelola kelas"
           variant="outline"
           icon="people-outline"
           onPress={() => navigation.navigate('AssistantClassList')}
-          accessibilityHint="Membuat kelas dan menambahkan peserta"
         />
         <Button
-          label="Lihat Kalender"
+          label="Lihat kalender"
           variant="soft"
-          icon="calendar"
+          icon="calendar-outline"
           onPress={() => navigation.navigate('Calendar')}
-          accessibilityHint="Membuka halaman kalender semua sesi"
         />
       </View>
-      <View style={styles.section}>
-        {sessionsSorted.map((session) => (
-          <AssistantSessionCard
-            key={session.id}
-            session={session}
-            attendeeCount={getAttendanceForSession(session.id).length}
-            onPress={() =>
-              navigation.navigate('AssistantSessionDetail', {
-                sessionId: session.id,
-              })
-            }
-          />
-        ))}
-      </View>
+
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon="calendar-outline"
+          title="Belum ada sesi"
+          description="Buat sesi pertama untuk kelas praktikum Anda."
+        />
+      ) : (
+        SECTIONS.map(({ status, title }) => {
+          const items = sorted.filter((s) => s.status === status);
+          if (items.length === 0) return null;
+          return (
+            <View key={status} style={styles.section}>
+              <SectionHeader title={`${title} · ${items.length}`} />
+              {items.map((session) => (
+                <AssistantSessionCard
+                  key={session.id}
+                  session={session}
+                  attendeeCount={getAttendanceForSession(session.id).length}
+                  onPress={() =>
+                    navigation.navigate('AssistantSessionDetail', {
+                      sessionId: session.id,
+                    })
+                  }
+                />
+              ))}
+            </View>
+          );
+        })
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  // Asisten: editorial Fraunces display, italic accents (Sebenza signature)
-  screenTitle: {
-    ...typography.display,
-    color: colors.ink,
-    letterSpacing: -1,
-  },
-  subhead: {
-    ...typography.label,
-    color: colors.inkMuted,
-    fontStyle: 'italic',
-    marginTop: -8,
-    marginBottom: 4,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.panel,
-    borderRadius: radius.full,
-    padding: 4,
-    gap: 4,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: radius.full,
-  },
-  tabActive: {
-    backgroundColor: colors.surface,
-    shadowColor: colors.ink,
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  tabPressed: { opacity: 0.75 },
-  tabLabel: { ...typography.label, color: colors.inkMuted },
-  tabLabelActive: { color: colors.ink, fontWeight: '700' },
-  tabDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.violet,
-  },
-  hero: { marginTop: 4 },
-  heroTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  heroBadge: { alignSelf: 'flex-start' },
-  heroLocation: {
-    ...typography.label,
-    color: colors.onPrimary,
-    opacity: 0.85,
-    textAlign: 'right',
-  },
-  heroTime: { ...typography.display, color: colors.onPrimary },
-  heroTimeUnit: {
-    ...typography.label,
-    color: colors.onPrimary,
-    opacity: 0.7,
-  },
-  heroCourse: {
-    ...typography.subtitle,
-    color: colors.onPrimary,
-    marginTop: 4,
-    letterSpacing: 0,
-  },
-  heroMeta: {
-    ...typography.caption,
-    color: colors.onPrimary,
-    opacity: 0.75,
-    marginTop: 4,
-  },
-  panel: { marginTop: 4 },
-  heroActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  heroPrimaryWrap: { flex: 1 },
-  seeAllRow: { marginBottom: 8, gap: 8 },
-  panelTitle: { ...typography.subtitle, color: colors.ink },
-  panelMeta: {
-    ...typography.label,
-    color: colors.inkMuted,
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  sectionTitle: { ...typography.overline, color: colors.inkMuted },
-  section: { gap: 12 },
+  actions: { gap: spacing.sm },
+  section: { gap: spacing.sm },
 });
