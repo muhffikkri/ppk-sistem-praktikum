@@ -9,8 +9,7 @@ import {
 import { useLeaveDependencies } from './LeaveProvider';
 import { ListFeedback, styles } from './components';
 
-// This picker lets leave requests use real sessions while the main schedule is
-// still backed by Sprint 1 fixtures. It can coexist with Dev 3's detail shortcut.
+// Picker sesi untuk form izin; sumber data sesi sama dengan jadwal praktikan (Firestore).
 export function StudentLeaveSessionPicker({
   onSelect,
 }: {
