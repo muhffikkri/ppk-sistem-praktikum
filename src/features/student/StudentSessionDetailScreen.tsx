@@ -14,6 +14,7 @@ import {
   Screen,
   typography,
 } from '../../shared/ui';
+import { useStudentLeaveViewModel } from '../leave';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
@@ -21,6 +22,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'StudentSessionDetail'>;
 
 type Feedback =
   { kind: 'ok'; message: string } | { kind: 'error'; message: string } | null;
+
+const LEAVE_STATUS_LABEL = {
+  pending: 'Menunggu',
+  approved: 'Diterima',
+  rejected: 'Ditolak',
+} as const;
 
 export function StudentSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
@@ -34,6 +41,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
     error,
     retry,
   } = useStudentAttendanceViewModel();
+  const { getLeaveForSession } = useStudentLeaveViewModel();
   const [feedback, setFeedback] = useState<Feedback>(null);
 
   if (loading) {
@@ -62,6 +70,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 
   const session = getSessionById(sessionId);
   const record = getAttendanceForSession(sessionId);
+  const existingLeave = getLeaveForSession(sessionId);
 
   if (!session) {
     return (
@@ -163,6 +172,21 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
               : 'Sesi sudah ditutup'}
           </Text>
         )}
+        {existingLeave ? (
+          <Text style={styles.hint}>
+            Status izin: {LEAVE_STATUS_LABEL[existingLeave.status]}
+          </Text>
+        ) : !record && session.status !== 'closed' ? (
+          <Button
+            label="Ajukan izin"
+            variant="outline"
+            onPress={() =>
+              navigation.navigate('StudentLeaveRequestForm', {
+                sessionId: session.id,
+              })
+            }
+          />
+        ) : null}
         <Button
           label="Lihat riwayat kehadiran"
           variant="outline"

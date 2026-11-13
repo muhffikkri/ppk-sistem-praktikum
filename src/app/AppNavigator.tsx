@@ -396,14 +396,16 @@ export function AppNavigator() {
           onTabPress={onTabPress}
 
           fab={{
-            glyph: 'scan',
+            glyph: 'document-text',
 
-            label: 'Scan QR',
+            label: 'Izin',
 
-            onPress: () => {
-              // ponytail: QR scanner screen not yet implemented; no-op.
-              // Replace with camera-scan navigation when that screen lands.
-            },
+            onPress: () =>
+              navigation.navigate(
+                actorRole === 'asisten'
+                  ? 'AssistantLeaveReviewList'
+                  : 'StudentLeaveList',
+              ),
           }}
         />
         </View>

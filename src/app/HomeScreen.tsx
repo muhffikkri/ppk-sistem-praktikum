@@ -110,6 +110,14 @@ export function HomeScreen({ navigation }: Props) {
     }
   };
 
+  const onSeeLeave = () => {
+    if (isAsisten) {
+      navigation.navigate('AssistantLeaveReviewList');
+    } else {
+      navigation.navigate('StudentLeaveList');
+    }
+  };
+
   // Radio button: hari yang dipilih di bar hari bawah.
   // Nilai awal = activeDayIndex dari sesi yang sedang berjalan.
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | undefined>(
@@ -566,6 +574,33 @@ export function HomeScreen({ navigation }: Props) {
                         {isAsisten
                           ? 'Rekap kehadiran seluruh sesi'
                           : 'Riwayat kehadiranmu'}
+                      </Text>
+                    </CardContent>
+                  </Card>
+                  <Card
+                    variant="panel"
+                    onPress={onSeeLeave}
+                    style={styles.shrinkCard}
+                  >
+                    <CardContent>
+                      <View
+                        style={[
+                          styles.toolIcon,
+                          { backgroundColor: colors.lavenderSubtle },
+                        ]}
+                        accessibilityElementsHidden
+                      >
+                        <Ionicons
+                          name="document-text-outline"
+                          size={18}
+                          color={colors.violet}
+                        />
+                      </View>
+                      <Text style={styles.toolLabel}>Izin</Text>
+                      <Text style={styles.toolCaption}>
+                        {isAsisten
+                          ? 'Periksa pengajuan izin'
+                          : 'Ajukan & lihat izin'}
                       </Text>
                     </CardContent>
                   </Card>
