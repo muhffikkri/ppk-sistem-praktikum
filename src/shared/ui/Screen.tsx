@@ -1,7 +1,9 @@
 import type { PropsWithChildren } from 'react';
 import {
   ScrollView,
+  type StyleProp,
   StyleSheet,
+  type ViewStyle,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -20,9 +22,19 @@ export type ScreenProps = PropsWithChildren<{
    * Set `false` for auth screens, which must clear the system bar themselves.
    */
   withDock?: boolean;
+  /**
+   * Layout-only style for the content column. Pass
+   * `{ flexGrow: 1, justifyContent: 'space-between' }` to pin the last block
+   * to the bottom on tall phones while staying scrollable on short ones.
+   */
+  contentStyle?: StyleProp<ViewStyle>;
 }>;
 
-export function Screen({ children, withDock = true }: ScreenProps) {
+export function Screen({
+  children,
+  withDock = true,
+  contentStyle,
+}: ScreenProps) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -42,7 +54,13 @@ export function Screen({ children, withDock = true }: ScreenProps) {
         contentContainerStyle={[styles.scroll, { paddingBottom }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.content, !isNarrow && styles.contentWide]}>
+        <View
+          style={[
+            styles.content,
+            !isNarrow && styles.contentWide,
+            contentStyle,
+          ]}
+        >
           {children}
         </View>
       </ScrollView>
