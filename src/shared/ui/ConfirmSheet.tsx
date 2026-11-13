@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(23,20,31,0.45)',
+    backgroundColor: colors.scrim,
   },
   panel: {
     backgroundColor: colors.panel,

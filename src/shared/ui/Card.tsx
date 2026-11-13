@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     textTransform: 'uppercase',
   },
-  overlineDark: { color: 'rgba(255,255,255,0.6)' },
+  overlineDark: { color: colors.onInkMuted },
   pressed: { opacity: 0.92 },
 
   panel: {
