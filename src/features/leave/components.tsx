@@ -1,13 +1,31 @@
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { AiClassificationResult, LeaveRequest } from '../../domain/types';
-import { Banner, Button, Card, CardContent, EmptyState } from '../../shared/ui';
-import { colors, radius, spacing, typography } from '../../theme/tokens';
+import {
+  Banner,
+  Button,
+  Card,
+  CardContent,
+  EmptyState,
+  LoadingState,
+  spacing,
+  StatusBadge,
+  Text,
+  type BadgeTone,
+} from '../../shared/ui';
+import { colors, radius, typography } from '../../theme/tokens';
 
 export const leaveLabels = {
   pending: 'Menunggu',
   approved: 'Diterima',
   rejected: 'Ditolak',
 };
+
+const leaveTone: Record<LeaveRequest['status'], BadgeTone> = {
+  pending: 'lavender',
+  approved: 'success',
+  rejected: 'danger',
+};
+
 export function AiResult({
   prediction,
 }: {
@@ -20,7 +38,7 @@ export function AiResult({
       message="Klasifikasi AI tidak tersedia saat ini. Pengajuan tetap dapat disimpan untuk diperiksa asisten."
     />
   ) : (
-    <Text style={styles.body}>
+    <Text variant="caption" tone="muted">
       Kategori AI: {prediction.category}
       {prediction.confidence !== null
         ? ` (${Math.round(prediction.confidence * 100)}%)`
@@ -29,25 +47,35 @@ export function AiResult({
     </Text>
   );
 }
+
 export function RequestCard({ item }: { item: LeaveRequest }) {
   return (
     <Card>
       <CardContent>
-        <Text style={styles.subtitle}>
-          {item.courseName} · {item.groupName}
-        </Text>
-        <Text style={styles.body}>
+        <View style={styles.requestHead}>
+          <Text variant="bodyStrong" numberOfLines={2} style={styles.flex}>
+            {item.courseName} · {item.groupName}
+          </Text>
+          <StatusBadge
+            label={leaveLabels[item.status]}
+            tone={leaveTone[item.status]}
+          />
+        </View>
+        <Text variant="caption" tone="muted" numberOfLines={1}>
           {item.studentName} ·{' '}
           {new Date(item.sessionStartsAt).toLocaleString('id-ID')}
         </Text>
-        <Text style={styles.subtitle}>Status: {leaveLabels[item.status]}</Text>
-        <Text style={styles.body}>{item.reason}</Text>
+        <Text variant="body" numberOfLines={4}>
+          {item.reason}
+        </Text>
         <AiResult prediction={item.aiPrediction} />
         {item.decisionNote ? (
-          <Text style={styles.body}>Catatan asisten: {item.decisionNote}</Text>
+          <Text variant="caption" tone="muted">
+            Catatan asisten: {item.decisionNote}
+          </Text>
         ) : null}
         {item.reviewedAt ? (
-          <Text style={styles.body}>
+          <Text variant="caption" tone="muted">
             Diperiksa: {new Date(item.reviewedAt).toLocaleString('id-ID')}
           </Text>
         ) : null}
@@ -55,6 +83,7 @@ export function RequestCard({ item }: { item: LeaveRequest }) {
     </Card>
   );
 }
+
 export function ListFeedback({
   loading,
   error,
@@ -69,15 +98,12 @@ export function ListFeedback({
   return (
     <>
       {loading && empty ? (
-        <>
-          <ActivityIndicator />
-          <Text style={styles.body}>Memuat pengajuan izin…</Text>
-        </>
+        <LoadingState label="Memuat pengajuan izin…" />
       ) : null}
       {error ? (
         <>
           <Banner tone="danger" title="Gagal memuat izin" message={error} />
-          <Button label="Coba Lagi" onPress={retry} />
+          <Button label="Coba lagi" variant="outline" onPress={retry} />
         </>
       ) : null}
       {!loading && !error && empty ? (
@@ -89,6 +115,9 @@ export function ListFeedback({
     </>
   );
 }
+
+// Dipakai juga oleh layar asisten. Kunci title, subtitle, body, input, dan
+// group tetap ada agar layar itu tidak berubah.
 export const styles = StyleSheet.create({
   title: { ...typography.title, color: colors.ink },
   subtitle: { ...typography.bodyStrong, color: colors.ink },
@@ -103,6 +132,13 @@ export const styles = StyleSheet.create({
     padding: spacing.lg,
     minHeight: 100,
     textAlignVertical: 'top',
+  },
+  flex: { flex: 1, flexShrink: 1 },
+  requestHead: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
   group: { gap: spacing.md },
 });
