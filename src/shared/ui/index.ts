@@ -5,9 +5,11 @@ export { Card, CardContent, CardHeader, CardOverline } from './Card';
 export { ConfirmSheet } from './ConfirmSheet';
 export { EmptyState } from './EmptyState';
 export { Header } from './Header';
+export { IconButton, type IconButtonProps, type IconName } from './IconButton';
 export { Screen } from './Screen';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';
 export { Text, type TextProps, type TextTone, type TextVariant } from './Text';
+export { TopBar, type TopBarProps } from './TopBar';
 export {
   colors,
   token,
