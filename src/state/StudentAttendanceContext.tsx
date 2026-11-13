@@ -124,7 +124,8 @@ export function StudentAttendanceProvider({
         sessionsReady = true;
         markReady();
       },
-      () => {
+      (msg) => {
+        if (__DEV__) console.warn('[StudentAttendance] sessions error:', msg);
         dispatch({
           type: 'SET_ERROR',
           error: 'Gagal memuat jadwal. Periksa koneksi lalu coba lagi.',
@@ -140,7 +141,8 @@ export function StudentAttendanceProvider({
         attendanceReady = true;
         markReady();
       },
-      () => {
+      (msg) => {
+        if (__DEV__) console.warn('[StudentAttendance] attendance error:', msg);
         dispatch({
           type: 'SET_ERROR',
           error:
@@ -153,7 +155,8 @@ export function StudentAttendanceProvider({
     const classesUnsubscribe = subscribeStudentClasses(
       uid,
       (classes) => dispatch({ type: 'SET_CLASSES', classes }),
-      () => {
+      (msg) => {
+        if (__DEV__) console.warn('[StudentAttendance] classes error:', msg);
         dispatch({
           type: 'SET_ERROR',
           error: 'Gagal memuat kelas. Periksa koneksi lalu coba lagi.',
