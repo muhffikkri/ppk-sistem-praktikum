@@ -142,45 +142,7 @@ export type SessionInput = {
   endsAt: string;
 };
 
-export type AssistantSessionsViewModelV2 = {
-  classes: PracticalClass[];
-  sessions: Session[];
-  studentsDirectory: UserProfile[];
-  loading: boolean;
-  error: string | null;
-  getClassById: (classId: string) => PracticalClass | undefined;
-  getSessionById: (sessionId: string) => Session | undefined;
-  subscribeAttendanceForSession: (
-    sessionId: string,
-    onData: (records: AttendanceRecord[]) => void,
-    onError: (msg: string) => void,
-  ) => () => void;
-  createClass: (input: ClassInput) => Promise<AsyncActionResult<string>>;
-  updateClass: (
-    classId: string,
-    input: ClassInput,
-  ) => Promise<AsyncActionResult>;
-  deleteClass: (classId: string) => Promise<AsyncActionResult>;
-  addParticipantByEmail: (
-    classId: string,
-    email: string,
-  ) => Promise<AsyncActionResult>;
-  removeParticipant: (
-    classId: string,
-    studentUid: string,
-  ) => Promise<AsyncActionResult>;
-  createSession: (input: SessionInput) => Promise<AsyncActionResult<string>>;
-  updateSession: (
-    sessionId: string,
-    input: SessionInput,
-  ) => Promise<AsyncActionResult>;
-  deleteSession: (sessionId: string) => Promise<AsyncActionResult>;
-  openSession: (sessionId: string) => Promise<AsyncActionResult>;
-  closeSession: (sessionId: string) => Promise<AsyncActionResult>;
-  retry: () => void;
-};
-
-export type StudentAttendanceViewModelV2 = {
+export type StudentAttendanceViewModel = {
   classes: PracticalClass[];
   sessions: Session[];
   currentStudent: UserProfile | null;
@@ -224,38 +186,10 @@ export type AssistantLeaveViewModel = {
   retry: () => void;
 };
 
-// --- Tipe Transisi Sprint 1 (dipertahankan sampai DemoContexts dimigrasi) ---
+// --- Tipe transisi Sprint 1 yang masih dipakai domain rules & fixtures ---
 
 export type SessionActionFailure =
   'session_not_found' | 'invalid_status' | 'already_checked_in';
 
 export type SessionActionResult =
   { ok: true } | { ok: false; reason: SessionActionFailure };
-
-export type AssistantDemoState = {
-  sessions: Session[];
-  attendanceBySession: Record<string, AttendanceRecord[]>;
-};
-
-export type StudentDemoState = {
-  sessions: Session[];
-  currentStudent: DemoStudent;
-  attendanceHistory: AttendanceRecord[];
-};
-
-export type AssistantSessionsViewModel = {
-  sessions: Session[];
-  getSessionById: (sessionId: string) => Session | undefined;
-  getAttendanceForSession: (sessionId: string) => AttendanceRecord[];
-  openSession: (sessionId: string) => SessionActionResult;
-  closeSession: (sessionId: string) => SessionActionResult;
-};
-
-export type StudentAttendanceViewModel = {
-  sessions: Session[];
-  currentStudent: DemoStudent;
-  attendanceHistory: AttendanceRecord[];
-  getSessionById: (sessionId: string) => Session | undefined;
-  getAttendanceForSession: (sessionId: string) => AttendanceRecord | undefined;
-  checkIn: (sessionId: string) => SessionActionResult;
-};

@@ -1,16 +1,36 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import { colors, radius, Screen, typography } from '../../shared/ui';
+import {
+  Banner,
+  Button,
+  colors,
+  EmptyState,
+  radius,
+  Screen,
+  typography,
+} from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentAllAttendance'>;
 
 export function StudentAllAttendanceScreen({ navigation }: Props) {
-  const { attendanceHistory, sessions, currentStudent } =
-    useStudentAttendanceViewModel();
+  const {
+    attendanceHistory,
+    sessions,
+    currentStudent,
+    loading,
+    error,
+    retry,
+  } = useStudentAttendanceViewModel();
 
   const sorted = [...attendanceHistory].sort(
     (a, b) =>
@@ -20,6 +40,30 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
   const rate =
     sessions.length > 0 ? Math.round((total / sessions.length) * 100) : 0;
 
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.stateBlock}>
+          <ActivityIndicator color={colors.violet} />
+          <Text style={styles.stateText}>Memuat jadwal…</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen>
+        <Banner
+          title="Gagal memuat jadwal"
+          message={error}
+          tone="danger"
+          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       {/* Praktikan header — clean sans, bold title */}
@@ -27,7 +71,7 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
         <Text style={styles.eyebrow}>MODE PRAKTIKAN · RIWAYAT</Text>
         <Text style={styles.pageTitle}>Semua Presensi</Text>
         <Text style={styles.pageSub}>
-          {currentStudent.displayName} · NIM {currentStudent.id}
+          {currentStudent?.displayName ?? '-'} · {currentStudent?.email ?? '-'}
         </Text>
       </View>
 
@@ -50,23 +94,17 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
       </View>
 
       {sorted.length === 0 ? (
-        <View style={styles.emptyBlock}>
-          <Text style={styles.emptyTitle}>Belum ada riwayat</Text>
-          <Text style={styles.emptySub}>
-            Presensi yang kamu lakukan akan muncul di sini.
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Buka jadwal"
-            onPress={() => navigation.navigate('StudentAllSessions')}
-            style={({ pressed }) => [
-              styles.emptyAction,
-              pressed && styles.emptyActionPressed,
-            ]}
-          >
-            <Text style={styles.emptyActionLabel}>Buka Jadwal</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          title="Belum ada riwayat presensi"
+          description="Presensi yang kamu lakukan akan muncul di sini."
+          action={
+            <Button
+              label="Buka jadwal"
+              variant="outline"
+              onPress={() => navigation.navigate('StudentAllSessions')}
+            />
+          }
+        />
       ) : (
         <View style={styles.list}>
           {sorted.map((record, index) => {
@@ -129,6 +167,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   pageSub: { ...typography.label, color: colors.inkMuted },
+  stateBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 48,
+  },
+  stateText: { ...typography.body, color: colors.inkMuted },
 
   metricsGrid: { flexDirection: 'row', gap: 8 },
   metricTile: {

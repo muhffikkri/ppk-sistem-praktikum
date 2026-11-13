@@ -1,7 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import type { AttendanceRecord, Session } from '../domain/types';
 import type { RootStackParamList } from './navigation';
@@ -12,6 +18,7 @@ import {
   CardContent,
   CardOverline,
   colors,
+  EmptyState,
   radius,
   Screen,
   StatusBadge,
@@ -57,8 +64,13 @@ export function HomeScreen({ navigation }: Props) {
   const isAsisten = user?.role === 'assistant';
 
   const { sessions, getAttendanceForSession } = useAssistantSessionsViewModel();
-  const { sessions: studentSessions, attendanceHistory: studentHistory } =
-    useStudentAttendanceViewModel();
+  const {
+    sessions: studentSessions,
+    attendanceHistory: studentHistory,
+    loading: studentLoading,
+    error: studentError,
+    retry: retryStudent,
+  } = useStudentAttendanceViewModel();
 
   // Each role has its own session source: asisten manages lab sessions,
   // praktikan follows their own class schedule.
@@ -122,6 +134,32 @@ export function HomeScreen({ navigation }: Props) {
     selectedDayIndex !== undefined && active
       ? formatSessionDate(active.startsAt)
       : '-';
+
+  if (!isAsisten && studentLoading) {
+    return (
+      <Screen>
+        <View style={styles.stateBlock}>
+          <ActivityIndicator color={colors.violet} />
+          <Text style={styles.stateText}>Memuat jadwal…</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!isAsisten && studentError) {
+    return (
+      <Screen>
+        <Banner
+          title="Gagal memuat jadwal"
+          message={studentError}
+          tone="danger"
+          action={
+            <Button label="Coba lagi" variant="outline" onPress={retryStudent} />
+          }
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -535,13 +573,10 @@ export function HomeScreen({ navigation }: Props) {
               </View>
             </>
           ) : (
-            <Card variant="surface" interactive={false}>
-              <CardContent>
-                <Text style={styles.emptyText}>
-                  Tidak ada sesi yang sedang berjalan.
-                </Text>
-              </CardContent>
-            </Card>
+            <EmptyState
+              title="Belum ada jadwal"
+              description="Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas."
+            />
           )}
         </>
       )}
@@ -715,6 +750,13 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     textAlign: 'center',
   },
+  stateBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 48,
+  },
+  stateText: { ...typography.body, color: colors.inkMuted },
 
   rosterList: { gap: 8 },
   rosterRow: {

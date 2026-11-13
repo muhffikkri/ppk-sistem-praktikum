@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Pressable,
   ScrollView,
@@ -15,11 +16,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Session } from '../domain/types';
 import type { RootStackParamList } from './navigation';
 import {
+  Banner,
   Button,
   Card,
   CardContent,
   CardOverline,
   colors,
+  EmptyState,
   radius,
   Screen,
   StatusBadge,
@@ -137,7 +140,12 @@ function sessionMinutes(session: Session): {
 export function CalendarScreen({ navigation }: Props) {
   const { user } = useAuth();
   const { sessions: assistantSessions } = useAssistantSessionsViewModel();
-  const { sessions: studentSessions } = useStudentAttendanceViewModel();
+  const {
+    sessions: studentSessions,
+    loading: studentLoading,
+    error: studentError,
+    retry: retryStudent,
+  } = useStudentAttendanceViewModel();
 
   const isAsisten = user?.role === 'assistant';
   const sessions = isAsisten ? assistantSessions : studentSessions;
@@ -405,6 +413,32 @@ export function CalendarScreen({ navigation }: Props) {
         : 'Selesai'
     : '';
 
+  if (!isAsisten && studentLoading) {
+    return (
+      <Screen>
+        <View style={styles.stateBlock}>
+          <ActivityIndicator color={colors.violet} />
+          <Text style={styles.stateText}>Memuat jadwal…</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!isAsisten && studentError) {
+    return (
+      <Screen>
+        <Banner
+          title="Gagal memuat jadwal"
+          message={studentError}
+          tone="danger"
+          action={
+            <Button label="Coba lagi" variant="outline" onPress={retryStudent} />
+          }
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       <View style={styles.headRow}>
@@ -554,7 +588,13 @@ export function CalendarScreen({ navigation }: Props) {
       </View>
 
       {/* Grid container */}
-      <View style={styles.gridContainer}>
+      {sessions.length === 0 ? (
+        <EmptyState
+          title="Belum ada jadwal"
+          description="Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas."
+        />
+      ) : (
+        <View style={styles.gridContainer}>
         {viewMode === 'week' ? (
           <ScrollView
             horizontal
@@ -750,7 +790,8 @@ export function CalendarScreen({ navigation }: Props) {
             <Text style={styles.legendText}>Waktu sekarang</Text>
           </View>
         </View>
-      </View>
+        </View>
+      )}
 
       {/* Bottom sheet drawer */}
       {drawerSession ? (
@@ -929,6 +970,13 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 4,
   },
+  stateBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 48,
+  },
+  stateText: { ...typography.body, color: colors.inkMuted },
   headText: { gap: 2 },
   title: {
     ...typography.display,

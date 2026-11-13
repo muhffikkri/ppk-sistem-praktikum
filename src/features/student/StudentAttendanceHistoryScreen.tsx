@@ -1,8 +1,9 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Banner,
   Button,
   colors,
   EmptyState,
@@ -20,8 +21,14 @@ type Props = NativeStackScreenProps<
 >;
 
 export function StudentAttendanceHistoryScreen({ navigation }: Props) {
-  const { attendanceHistory, sessions, currentStudent } =
-    useStudentAttendanceViewModel();
+  const {
+    attendanceHistory,
+    sessions,
+    currentStudent,
+    loading,
+    error,
+    retry,
+  } = useStudentAttendanceViewModel();
 
   const sorted = [...attendanceHistory].sort(
     (a, b) =>
@@ -32,6 +39,30 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
   const rate =
     sessions.length > 0 ? Math.round((total / sessions.length) * 100) : 0;
 
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.stateBlock}>
+          <ActivityIndicator color={colors.violet} />
+          <Text style={styles.stateText}>Memuat jadwal…</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen>
+        <Banner
+          title="Gagal memuat jadwal"
+          message={error}
+          tone="danger"
+          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       {/* Praktikan: clean sans, bold title */}
@@ -39,7 +70,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
         <Text style={styles.eyebrow}>MODE PRAKTIKAN · RIWAYAT</Text>
         <Text style={styles.pageTitle}>Riwayat Kehadiran</Text>
         <Text style={styles.pageSub}>
-          {currentStudent.displayName} • NIM {currentStudent.id}
+          {currentStudent?.displayName ?? '-'} • {currentStudent?.email ?? '-'}
         </Text>
       </View>
 
@@ -61,7 +92,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
 
         {sorted.length === 0 ? (
           <EmptyState
-            title="Belum ada riwayat"
+            title="Belum ada riwayat presensi"
             description="Presensi yang kamu lakukan akan muncul di sini."
             action={
               <Button
@@ -112,8 +143,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
       </View>
 
       <Text style={styles.note}>
-        Riwayat ini berasal dari data demo praktikan dan dapat direset saat
-        aplikasi dimulai ulang.
+        Riwayat ini tersinkron dengan presensi yang kamu lakukan.
       </Text>
     </Screen>
   );
@@ -132,6 +162,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   pageSub: { ...typography.label, color: colors.inkMuted },
+  stateBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 48,
+  },
+  stateText: { ...typography.body, color: colors.inkMuted },
 
   metricsGrid: { flexDirection: 'row', gap: 8 },
   metricTile: {

@@ -1,12 +1,20 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import type { Session } from '../../domain/types';
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Banner,
   Button,
   CardOverline,
   colors,
+  EmptyState,
   radius,
   shadow,
   Screen,
@@ -29,12 +37,42 @@ function statusLabel(status: Session['status']): string {
 }
 
 export function StudentScheduleScreen({ navigation }: Props) {
-  const { sessions, getAttendanceForSession, currentStudent } =
-    useStudentAttendanceViewModel();
+  const {
+    sessions,
+    getAttendanceForSession,
+    currentStudent,
+    loading,
+    error,
+    retry,
+  } = useStudentAttendanceViewModel();
 
   const sorted = [...sessions].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
   );
+
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.stateBlock}>
+          <ActivityIndicator color={colors.violet} />
+          <Text style={styles.stateText}>Memuat jadwal…</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen>
+        <Banner
+          title="Gagal memuat jadwal"
+          message={error}
+          tone="danger"
+          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -43,7 +81,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
         <Text style={styles.eyebrow}>MODE PRAKTIKAN · JADWAL</Text>
         <Text style={styles.pageTitle}>Jadwal</Text>
         <Text style={styles.pageSub}>
-          Semester Ganjil 2026/2027 • {currentStudent.displayName}
+          Semester Ganjil 2026/2027 • {currentStudent?.displayName ?? '-'}
         </Text>
       </View>
 
@@ -70,7 +108,13 @@ export function StudentScheduleScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Semua Sesi ({sorted.length})</Text>
 
-      <View style={styles.list}>
+      {sorted.length === 0 ? (
+        <EmptyState
+          title="Belum ada jadwal"
+          description="Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas."
+        />
+      ) : (
+        <View style={styles.list}>
         {sorted.map((session, index) => {
           const record = getAttendanceForSession(session.id);
           return (
@@ -134,7 +178,8 @@ export function StudentScheduleScreen({ navigation }: Props) {
             </Pressable>
           );
         })}
-      </View>
+        </View>
+      )}
     </Screen>
   );
 }
@@ -186,6 +231,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  stateBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 48,
+  },
+  stateText: { ...typography.body, color: colors.inkMuted },
   list: {
     backgroundColor: colors.panel,
     borderRadius: radius['3xl'],

@@ -1,8 +1,22 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import { colors, radius, Screen, typography } from '../../shared/ui';
+import {
+  Banner,
+  Button,
+  colors,
+  EmptyState,
+  radius,
+  Screen,
+  typography,
+} from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatSessionDate, formatTimeRange } from './formatters';
 
@@ -20,12 +34,42 @@ function statusTone(status: string) {
 }
 
 export function StudentAllSessionsScreen({ navigation }: Props) {
-  const { sessions, getAttendanceForSession, currentStudent } =
-    useStudentAttendanceViewModel();
+  const {
+    sessions,
+    getAttendanceForSession,
+    currentStudent,
+    loading,
+    error,
+    retry,
+  } = useStudentAttendanceViewModel();
 
   const sorted = [...sessions].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
   );
+
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.stateBlock}>
+          <ActivityIndicator color={colors.violet} />
+          <Text style={styles.stateText}>Memuat jadwal…</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen>
+        <Banner
+          title="Gagal memuat jadwal"
+          message={error}
+          tone="danger"
+          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -34,11 +78,17 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
         <Text style={styles.eyebrow}>MODE PRAKTIKAN · SEMUA SESI</Text>
         <Text style={styles.pageTitle}>Semua Sesi</Text>
         <Text style={styles.pageSub}>
-          {currentStudent.displayName} · {sorted.length} sesi minggu ini
+          {currentStudent?.displayName ?? '-'} · {sorted.length} sesi minggu ini
         </Text>
       </View>
 
-      <View style={styles.list}>
+      {sorted.length === 0 ? (
+        <EmptyState
+          title="Belum ada jadwal"
+          description="Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas."
+        />
+      ) : (
+        <View style={styles.list}>
         {sorted.map((session, index) => {
           const record = getAttendanceForSession(session.id);
           const st = statusTone(session.status);
@@ -115,7 +165,8 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
             </Pressable>
           );
         })}
-      </View>
+        </View>
+      )}
     </Screen>
   );
 }
@@ -132,6 +183,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   pageSub: { ...typography.label, color: colors.inkMuted },
+  stateBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 48,
+  },
+  stateText: { ...typography.body, color: colors.inkMuted },
 
   list: {
     backgroundColor: colors.panel,

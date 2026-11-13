@@ -12,7 +12,7 @@ import {
   AsyncActionResult,
   PracticalClass,
   Session,
-  StudentAttendanceViewModelV2,
+  StudentAttendanceViewModel,
 } from '../domain/types';
 import {
   checkInStudent,
@@ -84,7 +84,7 @@ function studentReducer(
 }
 
 const StudentAttendanceContext = createContext<
-  StudentAttendanceViewModelV2 | undefined
+  StudentAttendanceViewModel | undefined
 >(undefined);
 
 export function StudentAttendanceProvider({
@@ -99,7 +99,8 @@ export function StudentAttendanceProvider({
   const [retryCounter, setRetryCounter] = useState(0);
 
   useEffect(() => {
-    if (!enabled || !user) {
+    const uid = user?.uid;
+    if (!enabled || !uid) {
       dispatch({ type: 'RESET' });
       return;
     }
@@ -117,7 +118,7 @@ export function StudentAttendanceProvider({
     };
 
     const sessionsUnsubscribe = subscribeStudentSessions(
-      user.uid,
+      uid,
       (sessions) => {
         dispatch({ type: 'SET_SESSIONS', sessions });
         sessionsReady = true;
@@ -133,7 +134,7 @@ export function StudentAttendanceProvider({
     );
 
     const attendanceUnsubscribe = subscribeStudentAttendance(
-      user.uid,
+      uid,
       (records) => {
         dispatch({ type: 'SET_ATTENDANCE', records });
         attendanceReady = true;
@@ -150,7 +151,7 @@ export function StudentAttendanceProvider({
     );
 
     const classesUnsubscribe = subscribeStudentClasses(
-      user.uid,
+      uid,
       (classes) => dispatch({ type: 'SET_CLASSES', classes }),
       () => {
         dispatch({
@@ -207,7 +208,7 @@ export function StudentAttendanceProvider({
     }
   };
 
-  const viewModel: StudentAttendanceViewModelV2 = {
+  const viewModel: StudentAttendanceViewModel = {
     classes: state.classes,
     sessions: state.sessions,
     currentStudent: enabled ? user : null,
@@ -230,7 +231,7 @@ export function StudentAttendanceProvider({
   );
 }
 
-export function useStudentAttendanceViewModel(): StudentAttendanceViewModelV2 {
+export function useStudentAttendanceViewModel(): StudentAttendanceViewModel {
   const context = useContext(StudentAttendanceContext);
 
   if (!context) {

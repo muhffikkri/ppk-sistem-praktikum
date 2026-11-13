@@ -33,6 +33,7 @@ import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 import { useActorRole, useAuth } from '../state';
 
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
+import { StudentAttendanceProvider } from '../state/StudentAttendanceContext';
 
 import { CalendarScreen } from './CalendarScreen';
 
@@ -157,7 +158,8 @@ export function AppNavigator() {
 
   return (
     <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
-      <View style={styles.root}>
+      <StudentAttendanceProvider enabled={user?.role === 'student'}>
+        <View style={styles.root}>
         <Stack.Navigator
           initialRouteName="Home"
 
@@ -370,7 +372,8 @@ export function AppNavigator() {
             },
           }}
         />
-      </View>
+        </View>
+      </StudentAttendanceProvider>
     </AssistantSessionsProvider>
   );
 }

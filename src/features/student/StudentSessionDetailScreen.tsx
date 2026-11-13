@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
@@ -24,9 +24,41 @@ type Feedback =
 
 export function StudentSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession, checkIn, currentStudent } =
-    useStudentAttendanceViewModel();
+  const {
+    getSessionById,
+    getAttendanceForSession,
+    checkIn,
+    currentStudent,
+    submittingSessionId,
+    loading,
+    error,
+    retry,
+  } = useStudentAttendanceViewModel();
   const [feedback, setFeedback] = useState<Feedback>(null);
+
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.stateBlock}>
+          <ActivityIndicator color={colors.violet} />
+          <Text style={styles.stateText}>Memuat jadwal…</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen>
+        <Banner
+          title="Gagal memuat jadwal"
+          message={error}
+          tone="danger"
+          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+        />
+      </Screen>
+    );
+  }
 
   const session = getSessionById(sessionId);
   const record = getAttendanceForSession(sessionId);
@@ -37,7 +69,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
         <Header
           eyebrow="MODE PRAKTIKAN · DETAIL SESI"
           title="Sesi tidak ditemukan"
-          description="Sesi ini tidak tersedia pada data demo praktikan."
+          description="Sesi tidak ditemukan atau kamu bukan peserta kelas ini."
         />
         <Button
           label="Kembali ke jadwal"
@@ -48,26 +80,16 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
     );
   }
 
-  const onCheckIn = () => {
-    const result = checkIn(session.id);
-    if (result.ok) {
-      setFeedback({
-        kind: 'ok',
-        message: `Presensi tercatat pukul ${formatClock(new Date().toISOString())}.`,
-      });
-    } else if (result.reason === 'already_checked_in') {
-      setFeedback({
-        kind: 'error',
-        message: 'Kamu sudah presensi di sesi ini.',
-      });
-    } else if (result.reason === 'invalid_status') {
-      setFeedback({
-        kind: 'error',
-        message: 'Sesi belum / sudah tidak terbuka untuk presensi.',
-      });
-    } else {
-      setFeedback({ kind: 'error', message: 'Sesi tidak ditemukan.' });
+  const onCheckIn = async () => {
+    const result = await checkIn(session.id);
+    if (!result.ok) {
+      setFeedback({ kind: 'error', message: result.message });
+      return;
     }
+    setFeedback({
+      kind: 'ok',
+      message: `Presensi tercatat pukul ${formatClock(new Date().toISOString())}.`,
+    });
   };
 
   return (
@@ -117,23 +139,28 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
       <View style={styles.actions}>
         {record ? (
           <Banner
-            title="Sudah presensi"
-            message={`Kamu tercatat hadir pukul ${formatClock(record.checkedInAt)}.`}
+            title="Presensi tercatat"
+            message={`Presensi tercatat pukul ${formatClock(record.checkedInAt)}.`}
             tone="success"
           />
         ) : session.status === 'open' ? (
           <Button
-            label="Presensi sekarang"
+            label={
+              submittingSessionId === session.id
+                ? 'Memproses…'
+                : 'Presensi sekarang'
+            }
             variant="accent"
             leadingIcon="✓"
+            disabled={submittingSessionId === session.id}
             accessibilityHint="Mencatat kehadiran di sesi ini"
             onPress={onCheckIn}
           />
         ) : (
           <Text style={styles.hint}>
             {session.status === 'scheduled'
-              ? 'Sesi belum mulai. Tombol presensi akan aktif setelah sesi dibuka asisten.'
-              : 'Sesi sudah ditutup. Presensi tidak dapat lagi dilakukan.'}
+              ? 'Sesi belum dibuka'
+              : 'Sesi sudah ditutup'}
           </Text>
         )}
         <Button
@@ -144,7 +171,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
       </View>
 
       <Text style={styles.note}>
-        NIM {currentStudent.id} • {currentStudent.displayName}
+        {currentStudent?.email ?? '-'} • {currentStudent?.displayName ?? '-'}
       </Text>
     </Screen>
   );
@@ -172,6 +199,13 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   infoValueOk: { color: colors.successInk },
+  stateBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 48,
+  },
+  stateText: { ...typography.body, color: colors.inkMuted },
   actions: { gap: 12 },
   hint: { ...typography.body, color: colors.inkMuted },
   note: { ...typography.caption, color: colors.inkMuted, marginTop: 4 },
