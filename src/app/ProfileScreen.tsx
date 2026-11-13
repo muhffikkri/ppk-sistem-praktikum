@@ -6,17 +6,17 @@ import { StyleSheet, View } from 'react-native';
 import {
   Avatar,
   Banner,
-  Button,
+  Card,
+  CardContent,
   colors,
   ConfirmSheet,
+  Header,
   ListRow,
   radius,
   Screen,
   SectionHeader,
   spacing,
-  StatusBadge,
   Text,
-  TopBar,
 } from '../shared/ui';
 import { useAuth } from '../state';
 import type { RootStackParamList } from './navigation';
@@ -89,7 +89,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <TopBar title="Profil" />
+      <Header title="Profil" />
 
       {activeError ? (
         <Banner
@@ -103,21 +103,24 @@ export function ProfileScreen({ navigation }: Props) {
         />
       ) : null}
 
-      <View style={styles.identity}>
-        <Avatar name={displayName} size={44} />
-        <Text variant="title" accessibilityRole="header" numberOfLines={1}>
-          {displayName}
-        </Text>
-        <Text variant="body" tone="muted" numberOfLines={2}>
-          {email}
-        </Text>
-        <StatusBadge
-          label={roleLabel}
-          tone={isAssistant ? 'violet' : 'success'}
-          dot
-          live={isAssistant}
-        />
-      </View>
+      <Card variant="heroViolet" interactive={false}>
+        <CardContent>
+          <View style={styles.identity}>
+            <Avatar name={displayName} size={44} tone="lime" />
+            <View style={styles.identityText}>
+              <Text variant="subtitle" tone="onDark" numberOfLines={1}>
+                {displayName}
+              </Text>
+              <Text variant="caption" tone="onDarkMuted" numberOfLines={1}>
+                {email}
+              </Text>
+              <Text variant="captionStrong" tone="onDark">
+                {roleLabel}
+              </Text>
+            </View>
+          </View>
+        </CardContent>
+      </Card>
 
       <View style={styles.section}>
         <SectionHeader title={`Menu ${roleLabel}`} />
@@ -141,11 +144,6 @@ export function ProfileScreen({ navigation }: Props) {
             }
           />
         ))}
-        <Button
-          label="Ke Beranda"
-          variant="soft"
-          onPress={() => navigation.navigate('Home')}
-        />
       </View>
 
       <View style={styles.section}>
@@ -197,7 +195,8 @@ export function ProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  identity: { gap: spacing.sm, alignItems: 'flex-start' },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  identityText: { flex: 1, gap: spacing.xs },
   section: { gap: spacing.sm },
   iconBox: {
     width: 34,
