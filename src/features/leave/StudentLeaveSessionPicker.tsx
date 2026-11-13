@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { Session } from '../../domain/types';
-import { Button, EmptyState } from '../../shared/ui';
+import { EmptyState, SelectField, spacing } from '../../shared/ui';
 import {
   leaveFailure,
   requireRole,
 } from '../../services/firestore/leaveService';
 import { useLeaveDependencies } from './LeaveProvider';
-import { ListFeedback, styles } from './components';
+import { ListFeedback } from './components';
 
 // Picker sesi untuk form izin; sumber data sesi sama dengan jadwal praktikan (Firestore).
 export function StudentLeaveSessionPicker({
@@ -51,8 +51,7 @@ export function StudentLeaveSessionPicker({
     };
   }, [user, service, revision]);
   return (
-    <View style={styles.group}>
-      <Text style={styles.subtitle}>Pilih sesi untuk mengajukan izin</Text>
+    <View style={{ gap: spacing.md }}>
       <ListFeedback
         loading={loading}
         error={error}
@@ -69,14 +68,19 @@ export function StudentLeaveSessionPicker({
           description="Sesi akan tersedia setelah asisten mendaftarkan Anda sebagai peserta praktikum."
         />
       ) : null}
-      {sessions.map((session) => (
-        <Button
-          key={session.id}
-          label={`${session.courseName} · ${session.groupName} · ${new Date(session.startsAt).toLocaleString('id-ID')}`}
-          variant="outline"
-          onPress={() => onSelect(session.id)}
+      {sessions.length > 0 ? (
+        <SelectField<string>
+          label="Sesi"
+          placeholder="Pilih sesi untuk mengajukan izin"
+          value={null}
+          options={sessions.map((session) => ({
+            value: session.id,
+            label: `${session.courseName} · ${session.groupName}`,
+            description: new Date(session.startsAt).toLocaleString('id-ID'),
+          }))}
+          onChange={onSelect}
         />
-      ))}
+      ) : null}
     </View>
   );
 }
