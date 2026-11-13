@@ -42,7 +42,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "verify:contracts": "tsx scripts/verify-contracts.ts"
+    "verify:contracts": "tsx scripts/verify-contracts.ts",
+    "check:ui": "tsx scripts/check-ui-tokens.ts"
   },
   "private": true
 }
