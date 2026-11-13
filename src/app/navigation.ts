@@ -31,9 +31,9 @@ export type RootStackParamList = {
   ProfileEdit: undefined;
 };
 
-export type ActorPov = 'praktikan' | 'asisten';
+import type { ActorRole } from '../state/AuthContext';
 
-export const POVLABEL: Record<ActorPov, string> = {
+export const POVLABEL: Record<ActorRole, string> = {
   praktikan: 'Praktikan',
   asisten: 'Asisten',
 };

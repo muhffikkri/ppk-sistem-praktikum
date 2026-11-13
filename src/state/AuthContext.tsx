@@ -459,3 +459,10 @@ export function useAuth(): AuthContextValue {
   }
   return ctx;
 }
+
+export type ActorRole = 'praktikan' | 'asisten';
+
+export function useActorRole(): ActorRole {
+  const { user } = useAuth();
+  return user?.role === 'assistant' ? 'asisten' : 'praktikan';
+}

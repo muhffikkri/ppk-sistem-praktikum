@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -30,8 +30,7 @@ import {
 
 import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 
-import { useAuth, usePov, type Pov } from '../state';
-import type { UserRole } from '../domain/types';
+import { useActorRole, useAuth } from '../state';
 
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
 
@@ -89,8 +88,8 @@ const AuthStack = createNativeStackNavigator<{
 }>();
 
 export function AppNavigator() {
-  const { authStatus, user, logout, needsRoleSelection } = useAuth();
-  const { pov, setPov } = usePov();
+  const { authStatus, logout, needsRoleSelection } = useAuth();
+  const actorRole = useActorRole();
 
   const [activeKey, setActiveKey] = useState<string>('Home');
 
@@ -105,20 +104,9 @@ export function AppNavigator() {
     }) => void;
   };
 
-  useEffect(() => {
-    // When user logs in, set POV based on role
-    if (user) {
-      const roleMap: Record<UserRole, Pov> = {
-        student: 'praktikan',
-        assistant: 'asisten',
-      };
-      setPov(roleMap[user.role]);
-    }
-  }, [user, setPov]);
-
   // Resolve the stable dock keys to the route matching the active POV.
   const resolveRoute = (key: string): keyof RootStackParamList => {
-    const currentPov = pov ?? 'praktikan';
+    const currentPov = actorRole;
     switch (key) {
       case 'Schedule':
         return DOCK_ROUTE_FOR_POV[currentPov].Schedule;
@@ -142,7 +130,7 @@ export function AppNavigator() {
 
     const route = resolveRoute(key);
 
-    if (key === 'Attendance' && pov === 'asisten') {
+    if (key === 'Attendance' && actorRole === 'asisten') {
       // Attendance roster for asisten requires a sessionId param.
       navigation.reset({
         index: 0,
