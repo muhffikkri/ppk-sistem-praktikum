@@ -39,15 +39,7 @@ export const colors = {
   onSiteSoft: '#DCFCE7',
   onSiteBorder: '#86EFAC',
 
-  // Compat aliases used by pre-refactor components
-  primary: '#5B3BE8',
-  primaryDark: '#4427C6',
-  muted: '#5D586C',
-  background: '#F4F2F9',
-  panelColor: '#FFFFFF',
-  primarySoft: '#E4DBFF',
-  primaryPressed: '#4427C6',
-  warningSoft: '#FDEBC8',
+  // Disabled control fill (Button disabled state).
   disabled: '#ECEAF2',
 } as const;
 
