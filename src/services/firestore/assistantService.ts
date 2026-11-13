@@ -13,6 +13,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { normalizeAttendanceRecord } from './normalize';
 import { closeSessionRule, openSessionRule } from '../../domain/sessionRules';
 import {
   PracticalClass,
@@ -440,18 +441,9 @@ export function subscribeAttendanceForSession(
 ) {
   const q = query(attendanceCol, where('sessionId', '==', sessionId), orderBy('checkedInAt', 'asc'));
   return onSnapshot(q, (snap: any) => {
-    const records = snap.docs.map((d: any) => {
-      const data = d.data();
-      const checkedInAt = data.checkedInAt;
-      return {
-        ...data,
-        id: d.id,
-        checkedInAt:
-          typeof checkedInAt?.toDate === 'function'
-            ? checkedInAt.toDate().toISOString()
-            : checkedInAt,
-      } as AttendanceRecord;
-    });
+    const records = snap.docs.map((d: any) =>
+      normalizeAttendanceRecord(d.id, d.data()),
+    );
     onData(records);
   }, (err: any) => {
     onError(err.message || 'Gagal memuat kehadiran');

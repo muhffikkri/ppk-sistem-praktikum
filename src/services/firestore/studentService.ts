@@ -1,118 +1,178 @@
 import {
-    collection,
-    doc,
-    getDoc,
-    onSnapshot,
-    query,
-    setDoc,
-    Timestamp,
-    where
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+  where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { checkInRule } from '../../domain/attendanceRules';
+import {
+  AttendanceRecord,
+  AsyncActionResult,
+  PracticalClass,
+  Session,
+  UserProfile,
+} from '../../domain/types';
+import { normalizeAttendanceRecord } from './normalize';
 
-export interface Session {
-  id: string;
-  courseName: string;
-  groupName: string;
-  status: 'scheduled' | 'open' | 'closed';
-  classId?: string;
-  participantIds: string[];
-}
+const classesCol = collection(db, 'classes');
+const sessionsCol = collection(db, 'sessions');
+const attendanceCol = collection(db, 'attendance');
 
-export interface AttendanceRecord {
-  id: string;
-  sessionId: string;
-  studentId: string;
-  checkedInAt: Timestamp | string;
-}
-
-// 1. Mendapatkan daftar sesi secara real-time yang hanya diikuti oleh studentId tertentu
-export function subscribeStudentSessions(
-  studentId: string, 
-  onUpdate: (sessions: Session[]) => void,
-  onError: (error: Error) => void
+export function subscribeStudentClasses(
+  uid: string,
+  onData: (classes: PracticalClass[]) => void,
+  onError: (msg: string) => void,
 ) {
-  // Query ke koleksi classes/sessions di Firestore berdasarkan participantIds
-  const q = query(
-    collection(db, 'sessions'),
-    where('participantIds', 'array-contains', studentId)
-  );
+  const q = query(classesCol, where('participantIds', 'array-contains', uid));
 
-  return onSnapshot(q, 
-    (snapshot) => {
-      const sessions: Session[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Session[];
-      onUpdate(sessions);
-    }, 
-    (error) => {
-      onError(error);
-    }
-  );
-}
-
-// 2. Mendapatkan riwayat kehadiran praktikan secara real-time
-export function subscribeStudentAttendance(
-  studentId: string,
-  onUpdate: (records: AttendanceRecord[]) => void,
-  onError: (error: Error) => void
-) {
-  const q = query(
-    collection(db, 'attendance'),
-    where('studentId', '==', studentId)
-  );
-
-  return onSnapshot(q,
-    (snapshot) => {
-      const records: AttendanceRecord[] = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as AttendanceRecord[];
-      onUpdate(records);
+  return onSnapshot(
+    q,
+    (snap) => {
+      const classes = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as PracticalClass,
+      );
+      onData(classes);
     },
-    (error) => {
-      onError(error);
-    }
+    (err) => {
+      onError(err.message || 'Gagal memuat kelas.');
+    },
   );
 }
 
-// 3. Aksi Check-In Presensi Terintegrasi
-export async function checkInStudent(sessionId: string, studentId: string): Promise<{ ok: boolean; reason?: string }> {
+export function subscribeStudentSessions(
+  uid: string,
+  onData: (sessions: Session[]) => void,
+  onError: (msg: string) => void,
+) {
+  const q = query(
+    sessionsCol,
+    where('participantIds', 'array-contains', uid),
+    orderBy('startsAt', 'asc'),
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const sessions = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as Session,
+      );
+      onData(sessions);
+    },
+    (err) => {
+      onError(err.message || 'Gagal memuat jadwal.');
+    },
+  );
+}
+
+export function subscribeStudentAttendance(
+  uid: string,
+  onData: (records: AttendanceRecord[]) => void,
+  onError: (msg: string) => void,
+) {
+  const q = query(
+    attendanceCol,
+    where('studentId', '==', uid),
+    orderBy('checkedInAt', 'desc'),
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const records = snap.docs.map((d) =>
+        normalizeAttendanceRecord(d.id, d.data()),
+      );
+      onData(records);
+    },
+    (err) => {
+      onError(err.message || 'Gagal memuat riwayat presensi.');
+    },
+  );
+}
+
+function errorCode(e: unknown): string {
+  return typeof e === 'object' && e !== null && 'code' in e
+    ? String((e as { code?: unknown }).code)
+    : '';
+}
+
+export async function checkInStudent(input: {
+  session: Session;
+  student: UserProfile;
+  existing: AttendanceRecord[];
+}): Promise<AsyncActionResult> {
+  const { session, student, existing } = input;
+
+  const validation = checkInRule(
+    session,
+    { id: student.uid, displayName: student.displayName },
+    existing,
+  );
+
+  if (!validation.ok) {
+    const message =
+      validation.reason === 'invalid_status'
+        ? 'Sesi belum dibuka atau sudah ditutup.'
+        : validation.reason === 'already_checked_in'
+          ? 'Kamu sudah presensi di sesi ini.'
+          : 'Sesi tidak ditemukan.';
+    return { ok: false, reason: validation.reason, message };
+  }
+
+  // ID deterministik = anti-duplikasi di sisi server: setDoc ke dokumen yang
+  // sudah ada diperlakukan sebagai update, dan rules melarang update.
+  const attendanceId = `${session.id}_${student.uid}`;
+  const attendanceRef = doc(db, 'attendance', attendanceId);
+
   try {
-    const sessionRef = doc(db, 'sessions', sessionId);
-    const sessionSnap = await getDoc(sessionRef);
-
-    if (!sessionSnap.exists()) {
-      return { ok: false, reason: 'session_not_found' };
-    }
-
-    const sessionData = sessionSnap.data() as Session;
-
-    // Validasi status sesi harus 'open'
-    if (sessionData.status !== 'open') {
-      return { ok: false, reason: 'invalid_status' };
-    }
-
-    // Format ID dokumen presensi: {sessionId}_{studentId} untuk mencegah duplikasi
-    const attendanceId = `${sessionId}_${studentId}`;
-    const attendanceRef = doc(db, 'attendance', attendanceId);
-    const attendanceSnap = await getDoc(attendanceRef);
-
-    if (attendanceSnap.exists()) {
-      return { ok: false, reason: 'already_checked_in' };
-    }
-
-    // Simpan data presensi ke Firestore
     await setDoc(attendanceRef, {
       id: attendanceId,
-      sessionId,
-      studentId,
-      checkedInAt: Timestamp.now(),
+      sessionId: session.id,
+      classId: session.classId ?? '',
+      studentId: student.uid,
+      studentName: student.displayName,
+      checkedInAt: new Date().toISOString(),
     });
-
     return { ok: true };
-  } catch (error: any) {
-    return { ok: false, reason: error.message || 'network_error' };
+  } catch (e) {
+    if (errorCode(e) === 'permission-denied') {
+      try {
+        const snap = await getDoc(attendanceRef);
+        if (snap.exists()) {
+          return {
+            ok: false,
+            reason: 'already_checked_in',
+            message: 'Kamu sudah presensi di sesi ini.',
+          };
+        }
+      } catch {
+        // Abaikan kegagalan pengecekan, lanjut sebagai forbidden.
+      }
+
+      return {
+        ok: false,
+        reason: 'forbidden',
+        message:
+          'Presensi ditolak. Pastikan sesi terbuka dan kamu terdaftar di kelas ini.',
+      };
+    }
+
+    if (errorCode(e) === 'unavailable') {
+      return {
+        ok: false,
+        reason: 'network_error',
+        message: 'Koneksi bermasalah. Coba lagi.',
+      };
+    }
+
+    return {
+      ok: false,
+      reason: 'unknown_error',
+      message: 'Presensi gagal. Coba lagi.',
+    };
   }
 }
