@@ -21,7 +21,6 @@ import {
 import { useAssistantSessionsViewModel } from '../../state';
 import type { ClassInput } from '../../domain/types';
 import {
-  createClass,
   updateClass,
   removeParticipant,
   addParticipantByEmail,
@@ -38,7 +37,7 @@ type ClassFormState = {
 };
 
 export function AssistantClassFormScreen({ route, navigation }: Props) {
-  const { getClassById } = useAssistantSessionsViewModel();
+  const { getClassById, createClass } = useAssistantSessionsViewModel();
 
   const classId = route.params?.classId ?? null;
   const existingClass = classId ? getClassById(classId) : undefined;

@@ -32,6 +32,17 @@ import {
   ClassInput,
   SessionInput,
 } from '../domain/types';
+import { useAuth } from './AuthContext';
+
+const unauthenticated = (): {
+  ok: false;
+  reason: string;
+  message: string;
+} => ({
+  ok: false,
+  reason: 'unauthenticated',
+  message: 'Silakan login ulang.',
+});
 
 // ============================================================
 // AssistantSessionsViewModel — Firestore-backed (Sprint 2)
@@ -136,6 +147,7 @@ export const AssistantSessionsProvider = ({
 }: {
   children: ReactNode;
 }) => {
+  const { user } = useAuth();
   const [state, dispatch] = useReducer(assistantReducer, initialState);
   const [retryCounter, setRetryCounter] = useState(0);
   const attendanceCacheRef = useRef<Record<string, AttendanceRecord[]>>({});
@@ -216,14 +228,18 @@ export const AssistantSessionsProvider = ({
     getAttendanceForSession,
     openSession,
     closeSession,
-    createSession,
+    createSession: (input) =>
+      user
+        ? createSession(user.uid, input)
+        : Promise.resolve(unauthenticated()),
     updateSession,
     deleteSession,
     addParticipantByEmail,
     removeParticipant,
     getClassById: (classId: string) => state.classes.find((c) => c.id === classId),
     subscribeAttendanceForSession: subscribeAttendance,
-    createClass,
+    createClass: (input) =>
+      user ? createClass(user.uid, input) : Promise.resolve(unauthenticated()),
     updateClass,
     deleteClass,
     retry: () => setRetryCounter((c) => c + 1),
