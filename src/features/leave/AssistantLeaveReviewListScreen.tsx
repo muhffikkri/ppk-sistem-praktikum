@@ -23,6 +23,7 @@ export function AssistantLeaveReviewListScreen() {
     approve: boolean;
   } | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [sheetError, setSheetError] = useState<string | null>(null);
 
   const activeItem = confirmation
     ? vm.leaveRequests.find((item) => item.id === confirmation.id)
@@ -34,9 +35,18 @@ export function AssistantLeaveReviewListScreen() {
       confirmation.approve ? vm.approveLeave : vm.rejectLeave
     )(confirmation.id, notes[confirmation.id]);
     if (result.ok) {
+      setSheetError(null);
       setFeedback('Keputusan berhasil disimpan.');
       setConfirmation(null);
+    } else {
+      // Banner di layar tertutup Modal, jadi error ditampilkan di dalam sheet.
+      setSheetError(result.message);
     }
+  }
+
+  function closeSheet() {
+    setSheetError(null);
+    setConfirmation(null);
   }
 
   return (
@@ -90,8 +100,15 @@ export function AssistantLeaveReviewListScreen() {
           onConfirm={() => {
             void confirm();
           }}
-          onCancel={() => setConfirmation(null)}
+          onCancel={closeSheet}
         >
+          {sheetError ? (
+            <Banner
+              title="Gagal menyimpan keputusan"
+              message={sheetError}
+              tone="danger"
+            />
+          ) : null}
           <TextInput
             accessibilityLabel={`Catatan untuk ${activeItem.studentName}`}
             placeholder="Catatan asisten (opsional)"
