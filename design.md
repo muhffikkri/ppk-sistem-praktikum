@@ -21,21 +21,35 @@ defined here and from `src/theme/tokens.ts`.
   kontrol buka/tutup hanya tersedia untuk role asisten.
 - **Fokus satu tugas:** jadwal = titik masuk; detail sesi = aksi + info.
 - **Responsif:** satu kolom nyaman disentuh; konten memanjang discroll.
-- **Feedback langsung:** aksi lokal → banner konfirmasi + state diperbarui.
+- **Feedback langsung:** aksi → banner konfirmasi + state diperbarui dari
+  Firestore (listener realtime).
+- **Konten jujur:** setiap angka, nama, lokasi, dan status berasal dari data
+  Firestore atau label UI statis. Tidak ada metrik, nama, atau fitur
+  karangan (QR, beacon, geofence, tukar shift, modul materi) — lihat
+  batas fitur di [`docs/sprint-2-prd.md`](docs/sprint-2-prd.md).
 
 ## Navigasi
 
 ```text
-Pemilihan role
+Landing
+├── Masuk (email/password) ─┐
+├── Masuk dengan Google ────┼─→ Pilih peran (sekali, akun baru) ─→ App
+└── Daftar ─────────────────┘
+
+App (BottomDock: Beranda · Jadwal · [Izin] · Presensi · Akun)
 ├── Praktikan
-│   ├── Jadwal → Detail sesi → Presensi
-│   └── Riwayat kehadiran
+│   ├── Jadwal → Detail sesi → Presensi / Ajukan izin
+│   ├── Riwayat kehadiran
+│   └── Izin saya
 └── Asisten
-    ├── Jadwal → Detail sesi → Buka/Tutup sesi
-    └── Rekap kehadiran sesi
+    ├── Kelas → Form kelas / peserta
+    ├── Jadwal → Detail sesi → Buka/Tutup sesi → Rekap kehadiran
+    └── Pemeriksaan izin
 ```
 
-Pilihan role = mode demo lokal (bukan login).
+Autentikasi memakai Firebase Auth; peran disimpan di profil Firestore dan
+tidak bisa diganti sendiri oleh pengguna. FAB tengah dock membuka layar izin
+sesuai peran — tidak ada aksi QR.
 
 ---
 
@@ -50,6 +64,37 @@ Pilihan role = mode demo lokal (bukan login).
 
 Fraunces memakai letter-spacing negatif (editorial):
 `display` `-0.03em`, `subtitle` `-0.02em`.
+
+**Pemuatan font:** paket `@expo-google-fonts/fraunces` dan
+`@expo-google-fonts/plus-jakarta-sans`, dimuat oleh `useFonts` di `App.tsx`
+(daftar file di `src/theme/fonts.ts`) sebelum render pertama; splash
+ditahan dengan `expo-splash-screen`. Cara ini berjalan di Expo Go maupun
+development build.
+
+**Satu family per berat.** Android tidak memilih berat dari `fontWeight`
+untuk font custom, jadi token memakai nama family per berat dan **tidak**
+memakai `fontWeight`:
+
+| Token `fontFamily` | Family terdaftar              |
+| ------------------ | ----------------------------- |
+| `display`          | `Fraunces_400Regular`         |
+| `displayItalic`    | `Fraunces_400Regular_Italic`  |
+| `displaySemibold`  | `Fraunces_600SemiBold`        |
+| `displayBold`      | `Fraunces_700Bold`            |
+| `sans`             | `PlusJakartaSans_400Regular`  |
+| `sansMedium`       | `PlusJakartaSans_500Medium`   |
+| `sansSemibold`     | `PlusJakartaSans_600SemiBold` |
+| `sansBold`         | `PlusJakartaSans_700Bold`     |
+
+Layar tidak menulis `fontFamily`/`fontSize`/`fontWeight` sendiri — pakai
+primitif `Text` (`variant` = nama token tipografi, `tone` = warna).
+
+### Ikon
+
+`@expo/vector-icons` → **Ionicons** (sticker sheet memakai Phosphor sebagai
+referensi web; padanannya di app adalah Ionicons). Varian `-outline` untuk
+keadaan pasif, solid untuk aktif. Jangan pakai glyph unicode/emoji
+sebagai ikon.
 
 ### Warna (Sebenza violet family)
 
@@ -69,6 +114,16 @@ Fraunces memakai letter-spacing negatif (editorial):
 | `panel`         | `#FFFFFF` | Kartu, input, modal (permukaan putih)   |
 | `border`        | `#E7E3F2` | Garis tepi utama                        |
 | `borderSubtle`  | `#F0EDF7` | Garis tepi halus / divider              |
+| `pinkInk`       | `#8A0F41` | Teks di atas `pink` (badge late/izin)   |
+
+### Warna di atas permukaan gelap & overlay
+
+| Token         | Nilai                    | Untuk                                   |
+| ------------- | ------------------------ | --------------------------------------- |
+| `onPrimary`   | `#FFFFFF`                | Teks/ikon utama di atas `violet`/`ink`  |
+| `onInkMuted`  | `rgba(255,255,255,0.7)`  | Teks sekunder di atas `violet`/`ink`    |
+| `onInkSubtle` | `rgba(255,255,255,0.08)` | Tint panel/metrik di atas `ink` (white/5–10) |
+| `scrim`       | `rgba(23,20,31,0.45)`    | Backdrop sheet/modal                    |
 
 ### Warna semantik
 
@@ -113,19 +168,23 @@ Fraunces memakai letter-spacing negatif (editorial):
 
 ### Type scale (px)
 
-| Token        | Font       | Ukuran | Line-height | Berat   | Kegunaan            |
-| ------------ | ---------- | -----: | ----------: | ------ | ------------------- |
-| `display`    | Fraunces   |   28   |      34     | 700    | Headline halaman    |
-| `displayHero`| Fraunces   |   30   |      36     | 400    | Waktu hero "08:00"  |
-| `title`      | Fraunces   |   24   |      30     | 600    | Judul kartu/section |
-| `subtitle`   | Fraunces   |   18   |      26     | 400    | Judul kartu konten  |
-| `body`       | Sans       |   14   |      20     | 400    | Body text           |
-| `bodyStrong` | Sans       |   14   |      20     | 600    | Body emphasized     |
-| `label`      | Sans       |   13   |      18     | 500    | Label form/row      |
-| `caption`    | Sans       |   11   |      16     | 400    | Caption, hint       |
-| `overline`   | Sans       |   10   |      14     | 700    | Eyebrow, spec label |
+| Token           | Font       | Ukuran | Line-height | Berat      | Kegunaan            |
+| --------------- | ---------- | -----: | ----------: | ---------- | ------------------- |
+| `display`       | Fraunces   |   28   |      34     | 700        | Headline halaman    |
+| `displayAccent` | Fraunces   |   28   |      34     | 400 italic | Potongan judul beraksen (maks. 1× per layar) |
+| `displayHero`   | Fraunces   |   30   |      36     | 400        | Waktu hero "08:00"  |
+| `title`         | Fraunces   |   24   |      30     | 600        | Judul kartu/section |
+| `subtitle`      | Fraunces   |   18   |      26     | 400        | Judul kartu konten  |
+| `body`          | Sans       |   14   |      20     | 400        | Body text           |
+| `bodyStrong`    | Sans       |   14   |      20     | 600        | Body emphasized     |
+| `label`         | Sans       |   13   |      18     | 500        | Label form/row      |
+| `caption`       | Sans       |   12   |      16     | 400        | Caption, hint       |
+| `captionStrong` | Sans       |   12   |      16     | 600        | Badge, label tab    |
+| `overline`      | Sans       |   10   |      14     | 700        | Eyebrow, spec label |
 
-`overline` & eyebrow selalu UPPERCASE + letter-spacing `0.08em`.
+`overline` & eyebrow selalu UPPERCASE + letter-spacing `0.08em` (sudah
+termasuk di token). Caption 12px (bukan 11) agar tetap terbaca di Android.
+Italic hanya lewat `displayAccent`, jangan `fontStyle: 'italic'` lokal.
 
 ---
 
@@ -232,7 +291,7 @@ MVVM ringan per fitur:
 
 - **View** = screen/component React Native
 - **ViewModel** = custom hook (siapkan data + aksi UI)
-- **Model** = tipe domain, aturan, fixture lokal
+- **Model** = tipe domain, aturan, service Firestore
 
 Aliran satu arah: View baca state → panggil aksi → ViewModel validasi
 aturan → update state → View re-render. Nama hook & identifier final
@@ -245,7 +304,8 @@ src/
 ├─ theme/tokens.ts          # SEMUA token (sumber tunggal)
 ├─ shared/ui/               # primitif design system (Card, Button, ...)
 ├─ features/<role>/        # screen + viewmodel per fitur
-├─ state/                  # context/demo state
+├─ theme/fonts.ts           # daftar file font yang dimuat useFonts
+├─ state/                  # provider Firestore per role
 └─ domain/                 # tipe + aturan
 ```
 
@@ -259,7 +319,10 @@ src/
    dark, live).
 4. Teks aksesibel wajib: `accessibilityRole`, `accessibilityLabel` pada
    semua kontrol non-teks.
-5. Jangan pernyataan "tersimpan ke server" pada demo — semua aksi lokal.
+5. Teks di layar memakai primitif `Text` (`shared/ui`), bukan `Text` dari
+   `react-native`, agar font & ukuran selalu dari token.
+6. Feedback setelah tulis ke Firestore hanya ditampilkan setelah promise
+   berhasil; gagal → banner danger dengan pesan dari service.
 
 ## Layar & elemen
 
@@ -293,12 +356,16 @@ Feedback banner wajib setelah aksi: "Sesi dibuka", "Sesi ditutup",
 - Daftar & detail discroll termasuk saat keyboard tampil.
 - Nama praktikum/kelas panjang: `numberOfLines` + ellipsis, jangan overflow.
 
-## Fixture & state
+## Data & state
 
-Fixture role asisten & praktikan dipisah (`data/fixtures/*`).
-Perubahan lokal asisten tidak mengubah status yang dibaca praktikan.
-Identitas demo praktikan tetap agar presensi duplikat bisa dicegah.
-State tidak dijanjikan persist antar restart kecuali sengaja disimpan.
+Semua data layar berasal dari Firestore lewat provider di `src/state/`
+(listener realtime, ter-scope ke user yang login). Fixture di
+`data/fixtures/*` hanya untuk test/pengembangan — layar tidak boleh
+mengimpornya. Presensi ganda dicegah oleh ID deterministik
+`{sessionId}_{uid}` dan Security Rules, bukan oleh UI.
+
+Layar yang tidak termasuk SRS Sprint 2 (modul materi, pengaturan
+notifikasi/geofence) tidak ditampilkan di navigasi.
 
 ---
 
@@ -312,5 +379,7 @@ Sebelum menambah/mengubah UI:
 - [ ] Gunakan primitif `shared/ui` (Card, Button, StatusBadge, Banner,
       Header, Screen, EmptyState) — buat primitif baru hanya jika
       belum ada.
-- [ ] Jalankan `npx tsc --noEmit` dan `npx eslint .` sebelum selesai.
+- [ ] Tidak ada konten karangan (angka, nama, lokasi, fitur di luar SRS).
+- [ ] Jalankan `npm run typecheck`, `npm run lint`, dan
+      `npm run format:check` sebelum selesai.
 - [ ] Update file ini + sticker sheet bila menambah token/komponen baru.
