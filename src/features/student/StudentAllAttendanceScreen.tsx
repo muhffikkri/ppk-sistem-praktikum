@@ -67,7 +67,7 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
         <StatCard variant="panel" value={total} label="Total presensi" />
         <StatCard
           variant="panel"
-          value={`${rate}%`}
+          value={sessions.length > 0 ? `${rate}%` : '–'}
           label="Tingkat kehadiran"
         />
         <StatCard variant="panel" value={sessions.length} label="Total sesi" />

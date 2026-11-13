@@ -68,7 +68,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
         <StatCard variant="panel" value={total} label="Total presensi" />
         <StatCard
           variant="panel"
-          value={`${rate}%`}
+          value={sessions.length > 0 ? `${rate}%` : '–'}
           label="Tingkat kehadiran"
         />
       </StatRow>
