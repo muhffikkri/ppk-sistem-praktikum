@@ -75,7 +75,7 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <TopBar title="Semua sesi" onBack={() => navigation.goBack()} />
+      <TopBar onBack={() => navigation.goBack()} />
       <Header
         title="Semua sesi"
         description={`${sorted.length} sesi praktikum terdaftar`}

@@ -119,7 +119,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
+      <TopBar onBack={() => navigation.goBack()} />
       <Header title={session.courseName} description={session.groupName} />
 
       {feedback ? (

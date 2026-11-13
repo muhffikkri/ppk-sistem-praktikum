@@ -284,7 +284,7 @@ export function AppNavigator() {
 
                   component={StudentLeaveListScreen}
 
-                  options={{ title: 'Izin Saya' }}
+                  options={{ headerShown: false }}
                 />
               </Stack.Group>
 

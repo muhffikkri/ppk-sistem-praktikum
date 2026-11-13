@@ -15,7 +15,6 @@ import {
   StatCard,
   StatRow,
   Text,
-  TopBar,
 } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
@@ -41,7 +40,6 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
-        <TopBar title="Riwayat kehadiran" onBack={() => navigation.goBack()} />
         <LoadingState label="Memuat riwayat…" />
       </Screen>
     );
@@ -50,7 +48,6 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
-        <TopBar title="Riwayat kehadiran" onBack={() => navigation.goBack()} />
         <ErrorState
           title="Gagal memuat riwayat"
           message={error}
@@ -62,7 +59,6 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <TopBar title="Riwayat kehadiran" onBack={() => navigation.goBack()} />
       <Header
         title="Riwayat kehadiran"
         description={`${total} presensi tercatat`}

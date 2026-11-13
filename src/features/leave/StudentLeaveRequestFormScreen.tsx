@@ -91,7 +91,10 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
 
   return (
     <Screen>
-      <TopBar title="Ajukan izin" onBack={() => navigation.goBack()} />
+      <TopBar
+        title={session ? undefined : 'Ajukan izin'}
+        onBack={() => navigation.goBack()}
+      />
       {loading ? <LoadingState label="Memuat sesi…" /> : null}
       {error || vm.error ? (
         <>

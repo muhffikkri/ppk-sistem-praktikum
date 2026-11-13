@@ -57,7 +57,7 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <TopBar title="Semua presensi" onBack={() => navigation.goBack()} />
+      <TopBar onBack={() => navigation.goBack()} />
       <Header
         title="Semua presensi"
         description="Daftar presensi yang kamu catat"

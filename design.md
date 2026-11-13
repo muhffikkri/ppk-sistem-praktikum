@@ -242,6 +242,12 @@ Untuk layar push (detail, form): `IconButton` kembali (bila `onBack`
 diberikan, label default "Kembali") + judul `bodyStrong` satu baris +
 slot `trailing`. Tinggi minimum 44.
 
+Aturan judul: jika layar sudah punya `Header` (judul besar), `TopBar` hanya
+berisi tombol kembali tanpa `title`. `TopBar` dengan `title` hanya dipakai
+saat layar belum punya `Header` (loading, error, atau sesi belum termuat).
+Layar yang dibuka dari tab dock tidak memakai `TopBar` sama sekali; header
+native juga dimatikan (`headerShown: false`).
+
 ### Header
 
 `eyebrow` (overline violet, opsional) + `title` (`display`) +
