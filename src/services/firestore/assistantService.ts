@@ -13,6 +13,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { closeSessionRule, openSessionRule } from '../../domain/sessionRules';
 import {
   PracticalClass,
   Session,
@@ -335,12 +336,24 @@ export async function openSession(sessionId: string): Promise<AsyncActionResult>
     if (!snap.exists()) {
       return { ok: false, reason: 'session_not_found', message: 'Sesi tidak ditemukan' };
     }
-    if (snap.data()?.status === 'closed') {
-      return { ok: false, reason: 'invalid_status', message: 'Sesi sudah ditutup' };
+
+    const session = { id: snap.id, ...(snap.data() ?? {}) } as Session;
+    const result = openSessionRule(session);
+
+    if (!result.ok) {
+      return {
+        ok: false,
+        reason: result.reason,
+        message:
+          result.reason === 'invalid_status'
+            ? 'Hanya sesi berstatus terjadwal yang bisa dibuka.'
+            : 'Sesi tidak ditemukan.',
+      };
     }
+
     await updateDoc(sessionDoc, {
-      status: 'open',
-      openedAt: new Date().toISOString(),
+      status: result.updatedSession.status,
+      openedAt: result.updatedSession.openedAt,
     });
     return { ok: true };
   } catch (e) {
@@ -355,16 +368,24 @@ export async function closeSession(sessionId: string): Promise<AsyncActionResult
     if (!snap.exists()) {
       return { ok: false, reason: 'session_not_found', message: 'Sesi tidak ditemukan' };
     }
-    if (snap.data()?.status !== 'open') {
+
+    const session = { id: snap.id, ...(snap.data() ?? {}) } as Session;
+    const result = closeSessionRule(session);
+
+    if (!result.ok) {
       return {
         ok: false,
-        reason: 'invalid_status',
-        message: 'Hanya sesi terbuka yang bisa ditutup',
+        reason: result.reason,
+        message:
+          result.reason === 'invalid_status'
+            ? 'Hanya sesi terbuka yang bisa ditutup.'
+            : 'Sesi tidak ditemukan.',
       };
     }
+
     await updateDoc(sessionDoc, {
-      status: 'closed',
-      closedAt: new Date().toISOString(),
+      status: result.updatedSession.status,
+      closedAt: result.updatedSession.closedAt,
     });
     return { ok: true };
   } catch (e) {
