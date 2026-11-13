@@ -614,7 +614,11 @@ export function HomeScreen({ navigation }: Props) {
           ) : (
             <EmptyState
               title="Belum ada jadwal"
-              description="Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas."
+              description={
+                isAsisten
+                  ? 'Buat kelas dan jadwal sesi untuk mulai mengelola praktikum.'
+                  : 'Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas.'
+              }
             />
           )}
         </>
