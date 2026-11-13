@@ -2,6 +2,7 @@ export { Banner } from './Banner';
 export { BottomDock, type DockTab } from './BottomDock';
 export { Button } from './Button';
 export { Card, CardContent, CardHeader, CardOverline } from './Card';
+export { ConfirmSheet } from './ConfirmSheet';
 export { EmptyState } from './EmptyState';
 export { Header } from './Header';
 export { Screen } from './Screen';
