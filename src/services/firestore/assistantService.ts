@@ -12,7 +12,7 @@ import {
   updateDoc,
   deleteDoc,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { normalizeAttendanceRecord } from './normalize';
 import { closeSessionRule, openSessionRule } from '../../domain/sessionRules';
 import {
@@ -117,13 +117,25 @@ export async function updateClass(
   }
 }
 
-// ponytail: deleteClass shadows imported `doc`; rename shadow
 export async function deleteClass(classId: string): Promise<AsyncActionResult> {
+  const actorUid = auth.currentUser?.uid;
+  if (!actorUid) {
+    return {
+      ok: false,
+      reason: 'unauthenticated',
+      message: 'Silakan login ulang.',
+    };
+  }
+
   try {
-    // Also delete associated sessions (batch delete)
-    const sessionsSnap = await getDocs(query(sessionsCol, where('classId', '==', classId)));
+    // Filter ownership agar query lolos rule list `sessions`.
+    const sessionsSnap = await getDocs(
+      query(sessionsCol, where('assistantIds', 'array-contains', actorUid)),
+    );
     const batch = writeBatch(db);
-    sessionsSnap.docs.forEach((d: any) => batch.delete(d.ref));
+    sessionsSnap.docs
+      .filter((d: any) => d.data().classId === classId)
+      .forEach((d: any) => batch.delete(d.ref));
     batch.delete(doc(db, 'classes', classId));
     await batch.commit();
     return { ok: true };
@@ -140,6 +152,15 @@ export async function addParticipantByEmail(
   classId: string,
   email: string,
 ): Promise<AsyncActionResult> {
+  const actorUid = auth.currentUser?.uid;
+  if (!actorUid) {
+    return {
+      ok: false,
+      reason: 'unauthenticated',
+      message: 'Silakan login ulang.',
+    };
+  }
+
   try {
     const classDoc = doc(db, 'classes', classId);
     const classSnap = await getDoc(classDoc);
@@ -167,20 +188,25 @@ export async function addParticipantByEmail(
       (id, idx, self) => self.indexOf(id) === idx,
     );
 
-    await updateDoc(classDoc, {
-      participantIds: updatedParticipantIds,
-      updatedAt: new Date().toISOString(),
-    });
+    const updatedAt = new Date().toISOString();
 
-    // Sync participantIds ke semua sesi milik classId ini
-    const sessionsSnap = await getDocs(query(sessionsCol, where('classId', '==', classId)));
-    await Promise.all(
-      sessionsSnap.docs.map((s: any) =>
-        updateDoc(s.ref, {
+    // Sync participantIds ke kelas & semua sesinya secara atomik.
+    const sessionsSnap = await getDocs(
+      query(sessionsCol, where('assistantIds', 'array-contains', actorUid)),
+    );
+    const batch = writeBatch(db);
+    batch.update(classDoc, {
+      participantIds: updatedParticipantIds,
+      updatedAt,
+    });
+    sessionsSnap.docs
+      .filter((s: any) => s.data().classId === classId)
+      .forEach((s: any) =>
+        batch.update(s.ref, {
           participantIds: updatedParticipantIds,
         }),
-      ),
-    );
+      );
+    await batch.commit();
 
     return { ok: true };
   } catch (e) {
@@ -192,6 +218,15 @@ export async function removeParticipant(
   classId: string,
   studentUid: string,
 ): Promise<AsyncActionResult> {
+  const actorUid = auth.currentUser?.uid;
+  if (!actorUid) {
+    return {
+      ok: false,
+      reason: 'unauthenticated',
+      message: 'Silakan login ulang.',
+    };
+  }
+
   try {
     const classDoc = doc(db, 'classes', classId);
     const classSnap = await getDoc(classDoc);
@@ -201,22 +236,25 @@ export async function removeParticipant(
     const updatedParticipantIds = ((classSnap.data() as PracticalClass).participantIds || []).filter(
       (id: string) => id !== studentUid,
     );
-    await updateDoc(classDoc, {
+    // Sync participantIds ke kelas & semua sesinya secara atomik.
+    const sessionsSnap = await getDocs(
+      query(sessionsCol, where('assistantIds', 'array-contains', actorUid)),
+    );
+    const batch = writeBatch(db);
+    batch.update(classDoc, {
       participantIds: updatedParticipantIds,
       updatedAt: new Date().toISOString(),
     });
-
-    // Sync ke semua sesi milik classId ini
-    const sessionsSnap = await getDocs(query(sessionsCol, where('classId', '==', classId)));
-    await Promise.all(
-      sessionsSnap.docs.map((s: any) =>
-        updateDoc(s.ref, {
+    sessionsSnap.docs
+      .filter((s: any) => s.data().classId === classId)
+      .forEach((s: any) =>
+        batch.update(s.ref, {
           participantIds: ((s.data().participantIds as string[]) || []).filter(
             (id: string) => id !== studentUid,
           ),
         }),
-      ),
-    );
+      );
+    await batch.commit();
 
     return { ok: true };
   } catch (e) {
