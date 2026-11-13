@@ -11,11 +11,11 @@ import {
   IconButton,
   Screen,
   spacing,
-  Text,
   TextField,
   TopBar,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
+import { AuthSwitchLink } from './AuthSwitchLink';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -162,22 +162,17 @@ export function LoginScreen({ navigation }: Props) {
         />
       </View>
 
-      <View style={styles.switchRow}>
-        <Text variant="caption" tone="muted">
-          Belum punya akun?
-        </Text>
-        <Button
-          label="Buat akun"
-          variant="soft"
-          icon="person-add-outline"
-          disabled={submitting}
-          onPress={() => {
-            setLocalError(null);
-            clearError();
-            navigation.navigate('Register');
-          }}
-        />
-      </View>
+      <AuthSwitchLink
+        prompt="Belum punya akun?"
+        linkLabel="Daftar"
+        accessibilityLabel="Daftar akun baru"
+        disabled={submitting}
+        onPress={() => {
+          setLocalError(null);
+          clearError();
+          navigation.navigate('Register');
+        }}
+      />
     </Screen>
   );
 }
@@ -185,5 +180,4 @@ export function LoginScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   fields: { gap: spacing.md },
   actions: { gap: spacing.sm },
-  switchRow: { alignItems: 'center', gap: spacing.sm },
 });

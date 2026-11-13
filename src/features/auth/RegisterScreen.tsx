@@ -19,6 +19,7 @@ import {
   TopBar,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
+import { AuthSwitchLink } from './AuthSwitchLink';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
@@ -237,13 +238,15 @@ export function RegisterScreen({ navigation }: Props) {
           loading={submitting}
           onPress={handleRegister}
         />
-        <Button
-          label="Sudah punya akun? Masuk"
-          variant="outline"
-          disabled={submitting}
-          onPress={leaveScreen}
-        />
       </View>
+
+      <AuthSwitchLink
+        prompt="Sudah punya akun?"
+        linkLabel="Masuk"
+        accessibilityLabel="Kembali ke halaman masuk"
+        disabled={submitting}
+        onPress={leaveScreen}
+      />
     </Screen>
   );
 }
