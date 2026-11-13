@@ -1,7 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
 import type { UserRole } from '../../domain/types';
@@ -13,10 +12,10 @@ import {
   CardContent,
   CardOverline,
   colors,
-  radius,
+  Header,
   Screen,
   spacing,
-  typography,
+  Text,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 
@@ -24,21 +23,21 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'RoleSelection'>;
 
 const ROLE_OPTIONS: {
   value: UserRole;
+  overline: string;
   label: string;
   description: string;
-  icon: string;
 }[] = [
   {
     value: 'student',
+    overline: 'Untuk peserta praktikum',
     label: 'Praktikan',
-    description: 'Lihat jadwal, presensi, & ajukan izin',
-    icon: 'person-outline',
+    description: 'Lihat jadwal, presensi, dan ajukan izin.',
   },
   {
     value: 'assistant',
+    overline: 'Untuk pendamping sesi',
     label: 'Asisten praktikum',
-    description: 'Kelola kelas/sesi, rekap, & periksa izin',
-    icon: 'school-outline',
+    description: 'Kelola kelas dan sesi, lihat rekap, dan periksa izin.',
   },
 ];
 
@@ -72,18 +71,10 @@ export function RoleSelectionScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <View style={styles.header}>
-        <CardOverline>
-          <Text>PILIH PERAN AKUN</Text>
-        </CardOverline>
-        <Text accessibilityRole="header" style={styles.title}>
-          Daftar Sebagai Apa?
-        </Text>
-        <Text style={styles.subtitle}>
-          Pilih peran Anda dengan benar. Peran menentukan akses fitur dan data
-          di aplikasi.
-        </Text>
-      </View>
+      <Header
+        title="Pilih peran Anda"
+        description="Peran menentukan akses fitur dan data di aplikasi."
+      />
 
       {!isFirebaseConfigured ? (
         <Banner
@@ -102,151 +93,65 @@ export function RoleSelectionScreen({ navigation }: Props) {
         />
       ) : null}
 
-      <View style={styles.roleGrid}>
+      <View style={styles.roles}>
         {ROLE_OPTIONS.map((option) => {
           const selected = role === option.value;
           return (
-            <Pressable
+            <Card
               key={option.value}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              disabled={submitting}
-              onPress={() => setRole(option.value)}
-              style={({ pressed }) => [
-                styles.roleCard,
-                selected && styles.roleCardActive,
-                pressed && styles.roleCardPressed,
-              ]}
+              variant="panel"
+              interactive={false}
+              style={selected ? styles.roleSelected : undefined}
             >
-              <View style={styles.roleIconBox}>
-                <Ionicons
-                  name={option.icon as any}
-                  size={24}
-                  color={colors.primary}
-                />
-              </View>
-              <Text
-                style={[styles.roleTitle, selected && styles.roleTitleActive]}
-              >
-                {option.label}
-              </Text>
-              <Text
-                style={[styles.roleDesc, selected && styles.roleDescActive]}
-              >
-                {option.description}
-              </Text>
-              {selected && (
-                <View style={styles.checkmark}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={20}
-                    color={colors.primary}
+              <CardContent>
+                <CardOverline>{option.overline}</CardOverline>
+                <Text variant="title">{option.label}</Text>
+                <Text variant="body" tone="muted">
+                  {option.description}
+                </Text>
+                <View style={styles.roleAction}>
+                  <Button
+                    label={selected ? 'Terpilih' : 'Pilih'}
+                    variant={selected ? 'primary' : 'outline'}
+                    icon={selected ? 'checkmark-circle-outline' : undefined}
+                    disabled={submitting}
+                    onPress={() => setRole(option.value)}
                   />
                 </View>
-              )}
-            </Pressable>
+              </CardContent>
+            </Card>
           );
         })}
       </View>
 
+      <Text variant="caption" tone="muted">
+        Peran tidak bisa diganti sendiri. Pilih dengan benar.
+      </Text>
+
       <View style={styles.actions}>
         <Button
-          label={submitting ? 'Memproses...' : 'Lanjutkan'}
+          label="Lanjutkan"
           variant="primary"
           icon="arrow-forward-outline"
           loading={submitting}
           disabled={!role || submitting}
           onPress={handleContinue}
         />
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Daftar dengan Email"
+        <Button
+          label="Daftar dengan email"
+          variant="soft"
+          icon="mail-outline"
+          disabled={submitting}
           onPress={() => navigation.navigate('Register')}
-          style={styles.registerLink}
-        >
-          <Text style={styles.registerLinkText}>
-            Daftar dengan Email &amp; Password
-          </Text>
-        </Pressable>
+        />
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.xs,
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.display,
-    color: colors.ink,
-  },
-  subtitle: {
-    ...typography.body,
-    color: colors.inkMuted,
-  },
-  roleGrid: {
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.md,
-    gap: spacing.md,
-  },
-  roleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  roleCardActive: {
-    backgroundColor: colors.violet,
-    borderColor: colors.violet,
-  },
-  roleCardPressed: {
-    opacity: 0.9,
-  },
-  roleIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  roleTitle: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-    fontSize: 16,
-  },
-  roleTitleActive: {
-    color: colors.onPrimary,
-  },
-  roleDesc: {
-    ...typography.caption,
-    color: colors.inkMuted,
-  },
-  roleDescActive: {
-    color: colors.lavender,
-  },
-  checkmark: {
-    marginLeft: 'auto',
-  },
-  actions: {
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.lg,
-    gap: spacing.md,
-  },
-  registerLink: {
-    alignItems: 'center',
-  },
-  registerLinkText: {
-    ...typography.bodyStrong,
-    color: colors.primary,
-    fontWeight: '600',
-  },
+  roles: { gap: spacing.md },
+  roleSelected: { borderWidth: 2, borderColor: colors.violet },
+  roleAction: { marginTop: spacing.xs },
+  actions: { gap: spacing.sm },
 });
