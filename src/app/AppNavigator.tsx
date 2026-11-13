@@ -369,13 +369,7 @@ export function AppNavigator() {
 
                 component={ProfileEditScreen}
 
-                options={{
-                  headerTintColor: colors.inkMuted,
-
-                  headerStyle: { backgroundColor: colors.surface },
-
-                  title: 'Edit Profil',
-                }}
+                options={{ headerShown: false }}
               />
             </Stack.Navigator>
 
