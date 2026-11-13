@@ -243,6 +243,8 @@ export function AppNavigator() {
                   name="StudentSessionDetail"
 
                   component={StudentSessionDetailScreen}
+
+                  options={{ headerShown: false }}
                 />
 
                 <Stack.Screen
@@ -257,12 +259,16 @@ export function AppNavigator() {
                   name="StudentAllSessions"
 
                   component={StudentAllSessionsScreen}
+
+                  options={{ headerShown: false }}
                 />
 
                 <Stack.Screen
                   name="StudentAllAttendance"
 
                   component={StudentAllAttendanceScreen}
+
+                  options={{ headerShown: false }}
                 />
 
                 <Stack.Screen
@@ -270,7 +276,7 @@ export function AppNavigator() {
 
                   component={StudentLeaveRequestFormScreen}
 
-                  options={{ title: 'Ajukan Izin' }}
+                  options={{ headerShown: false }}
                 />
 
                 <Stack.Screen
