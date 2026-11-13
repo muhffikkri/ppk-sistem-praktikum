@@ -162,7 +162,11 @@ export function HomeScreen({ navigation }: Props) {
           message={studentError}
           tone="danger"
           action={
-            <Button label="Coba lagi" variant="outline" onPress={retryStudent} />
+            <Button
+              label="Coba lagi"
+              variant="outline"
+              onPress={retryStudent}
+            />
           }
         />
       </Screen>

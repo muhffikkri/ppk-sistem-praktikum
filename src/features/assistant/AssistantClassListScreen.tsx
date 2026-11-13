@@ -1,5 +1,11 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
@@ -68,7 +74,9 @@ export function AssistantClassListScreen({ navigation }: Props) {
               >
                 <View style={styles.card}>
                   <View style={styles.cardTop}>
-                    <Text style={styles.courseNumberLines}>{cls.courseName}</Text>
+                    <Text style={styles.courseNumberLines}>
+                      {cls.courseName}
+                    </Text>
                     <StatusBadge label={cls.groupName} tone="violet" dot />
                   </View>
                   <View style={styles.cardBottom}>

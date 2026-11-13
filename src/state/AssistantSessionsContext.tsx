@@ -66,10 +66,19 @@ export type AssistantSessionsViewModel = {
   openSession: (sessionId: string) => Promise<AsyncActionResult>;
   closeSession: (sessionId: string) => Promise<AsyncActionResult>;
   createSession: (input: SessionInput) => Promise<AsyncActionResult<string>>;
-  updateSession: (sessionId: string, input: SessionInput) => Promise<AsyncActionResult>;
+  updateSession: (
+    sessionId: string,
+    input: SessionInput,
+  ) => Promise<AsyncActionResult>;
   deleteSession: (sessionId: string) => Promise<AsyncActionResult>;
-  addParticipantByEmail: (classId: string, email: string) => Promise<AsyncActionResult>;
-  removeParticipant: (classId: string, studentUid: string) => Promise<AsyncActionResult>;
+  addParticipantByEmail: (
+    classId: string,
+    email: string,
+  ) => Promise<AsyncActionResult>;
+  removeParticipant: (
+    classId: string,
+    studentUid: string,
+  ) => Promise<AsyncActionResult>;
   getClassById: (classId: string) => PracticalClass | undefined;
   classes: PracticalClass[];
   studentsDirectory: UserProfile[];
@@ -82,7 +91,10 @@ export type AssistantSessionsViewModel = {
     onError: (msg: string) => void,
   ) => () => void;
   createClass: (input: ClassInput) => Promise<AsyncActionResult<string>>;
-  updateClass: (classId: string, input: ClassInput) => Promise<AsyncActionResult>;
+  updateClass: (
+    classId: string,
+    input: ClassInput,
+  ) => Promise<AsyncActionResult>;
   deleteClass: (classId: string) => Promise<AsyncActionResult>;
 };
 
@@ -167,9 +179,9 @@ function assistantReducer(
 // Context
 // ============================================================
 
-const AssistantSessionsContext = createContext<AssistantSessionsViewModel | undefined>(
-  undefined,
-);
+const AssistantSessionsContext = createContext<
+  AssistantSessionsViewModel | undefined
+>(undefined);
 
 export const AssistantSessionsProvider = ({
   children,
@@ -303,8 +315,7 @@ export const AssistantSessionsProvider = ({
 
       const unsubscribe = subscribeAttendanceForSession(
         sessionId,
-        (records) =>
-          dispatch({ type: 'SET_ATTENDANCE', sessionId, records }),
+        (records) => dispatch({ type: 'SET_ATTENDANCE', sessionId, records }),
         (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
       );
       attendanceUnsubsRef.current.set(sessionId, unsubscribe);
@@ -357,7 +368,8 @@ export const AssistantSessionsProvider = ({
       enabled
         ? removeParticipant(classId, studentUid)
         : Promise.resolve(forbidden()),
-    getClassById: (classId: string) => state.classes.find((c) => c.id === classId),
+    getClassById: (classId: string) =>
+      state.classes.find((c) => c.id === classId),
     subscribeAttendanceForSession: (sessionId, onData, onError) =>
       enabled ? subscribeAttendance(sessionId, onData, onError) : () => {},
     createClass: (input) =>
@@ -375,7 +387,11 @@ export const AssistantSessionsProvider = ({
     },
   };
 
-  return <AssistantSessionsContext.Provider value={viewModel}>{children}</AssistantSessionsContext.Provider>;
+  return (
+    <AssistantSessionsContext.Provider value={viewModel}>
+      {children}
+    </AssistantSessionsContext.Provider>
+  );
 };
 
 export function useAssistantSessionsViewModel(): AssistantSessionsViewModel {

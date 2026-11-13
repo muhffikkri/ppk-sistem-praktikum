@@ -83,9 +83,7 @@ assert(
 );
 
 // 3. Attendance Check-in Rules
-const openStudentSession = studentSessions.find(
-  (s) => s.status === 'open',
-)!;
+const openStudentSession = studentSessions.find((s) => s.status === 'open')!;
 assert(
   openStudentSession !== undefined,
   'Found open student session in fixture',
@@ -113,11 +111,9 @@ if (checkInSuccess.ok) {
   );
 
   // Check duplicate prevention
-  const duplicateCheck = checkInRule(
-    openStudentSession,
-    currentStudent,
-    [checkInSuccess.record],
-  );
+  const duplicateCheck = checkInRule(openStudentSession, currentStudent, [
+    checkInSuccess.record,
+  ]);
   assert(
     duplicateCheck.ok === false &&
       duplicateCheck.reason === 'already_checked_in',

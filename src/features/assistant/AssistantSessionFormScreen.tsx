@@ -9,13 +9,7 @@ import {
   View,
 } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
-import {
-  colors,
-  radius,
-  Screen,
-  Button,
-  typography,
-} from '../../shared/ui';
+import { colors, radius, Screen, Button, typography } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSessionForm'>;
@@ -50,13 +44,17 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
     title: existingSession?.title ?? '',
     lab: existingSession?.lab ?? '',
     startsAt: existingSession?.startsAt ?? new Date().toISOString(),
-    endsAt: existingSession?.endsAt ?? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    endsAt:
+      existingSession?.endsAt ??
+      new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
     submitting: false,
     error: null,
     isEditing: !!sessionId,
   });
 
-  const [activeStatus, setActiveStatus] = useState(existingSession?.status ?? 'scheduled');
+  const [activeStatus, setActiveStatus] = useState(
+    existingSession?.status ?? 'scheduled',
+  );
 
   // Edit: muat ulang saat param berubah
   useEffect(() => {
@@ -76,16 +74,23 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
     }
   }, [sessionId, getSessionById]);
 
-  const setField = <K extends keyof SessionFormState>(key: K, value: SessionFormState[K]) =>
-    setState((prev) => ({ ...prev, [key]: value }));
+  const setField = <K extends keyof SessionFormState>(
+    key: K,
+    value: SessionFormState[K],
+  ) => setState((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = async () => {
     if (!state.classId) {
       setState((prev) => ({ ...prev, error: 'Pilih kelas terlebih dahulu' }));
       return;
     }
-    if (new Date(state.endsAt).getTime() <= new Date(state.startsAt).getTime()) {
-      setState((prev) => ({ ...prev, error: 'Waktu selesai harus setelah waktu mulai' }));
+    if (
+      new Date(state.endsAt).getTime() <= new Date(state.startsAt).getTime()
+    ) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Waktu selesai harus setelah waktu mulai',
+      }));
       return;
     }
 
@@ -118,7 +123,10 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
       }
       navigation.goBack();
     } catch (e: any) {
-      setState((prev) => ({ ...prev, error: e.message || 'Gagal menyimpan sesi' }));
+      setState((prev) => ({
+        ...prev,
+        error: e.message || 'Gagal menyimpan sesi',
+      }));
     } finally {
       setState((prev) => ({ ...prev, submitting: false }));
     }
@@ -128,7 +136,10 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
     if (activeStatus === 'scheduled' && sessionId) {
       const result = await openSession(sessionId);
       if (!result.ok) {
-        setState((prev) => ({ ...prev, error: result.message || 'Gagal membuka sesi' }));
+        setState((prev) => ({
+          ...prev,
+          error: result.message || 'Gagal membuka sesi',
+        }));
         return;
       }
       setActiveStatus('open');
@@ -139,7 +150,10 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
     if (activeStatus === 'open' && sessionId) {
       const result = await closeSession(sessionId);
       if (!result.ok) {
-        setState((prev) => ({ ...prev, error: result.message || 'Gagal menutup sesi' }));
+        setState((prev) => ({
+          ...prev,
+          error: result.message || 'Gagal menutup sesi',
+        }));
         return;
       }
       setActiveStatus('closed');
@@ -189,13 +203,13 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
         <View style={styles.formGroup}>
           <Text style={styles.formLabel}>Kelas</Text>
           {classes.length === 0 ? (
-            <Text style={styles.emptyClass}>Belum ada kelas. Buat kelas dulu.</Text>
+            <Text style={styles.emptyClass}>
+              Belum ada kelas. Buat kelas dulu.
+            </Text>
           ) : (
             <TouchableOpacity
               style={styles.classPicker}
-              onPress={() =>
-                navigation.push('AssistantClassList')
-              }
+              onPress={() => navigation.push('AssistantClassList')}
             >
               <Text style={styles.classPickerText}>
                 {state.classId
@@ -290,7 +304,9 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
                   <Text
                     style={[
                       styles.statusLabel,
-                      activeStatus === 'scheduled' && { color: colors.onPrimary },
+                      activeStatus === 'scheduled' && {
+                        color: colors.onPrimary,
+                      },
                     ]}
                   >
                     Terjadwal
@@ -365,7 +381,9 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
             <TouchableOpacity
               style={[styles.button, state.isEditing && styles.buttonPrimary]}
               onPress={handleSubmit}
-              accessibilityLabel={state.isEditing ? 'Simpan perubahan sesi' : 'Buat sesi baru'}
+              accessibilityLabel={
+                state.isEditing ? 'Simpan perubahan sesi' : 'Buat sesi baru'
+              }
             >
               <Text style={styles.buttonText}>
                 {state.submitting
@@ -439,7 +457,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   classPickerText: { ...typography.body, color: colors.ink },
-  emptyClass: { ...typography.body, color: colors.inkMuted, fontStyle: 'italic' },
+  emptyClass: {
+    ...typography.body,
+    color: colors.inkMuted,
+    fontStyle: 'italic',
+  },
   timeLabel: {
     ...typography.caption,
     color: colors.inkMuted,

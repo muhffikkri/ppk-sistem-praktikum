@@ -6,7 +6,12 @@ import { useState } from 'react';
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { LoginScreen, RegisterScreen, LandingScreen, RoleSelectionScreen } from '../features/auth';
+import {
+  LoginScreen,
+  RegisterScreen,
+  LandingScreen,
+  RoleSelectionScreen,
+} from '../features/auth';
 import {
   AssistantAllAttendanceScreen,
   AssistantAllSessionsScreen,
@@ -150,7 +155,10 @@ export function AppNavigator() {
         <AuthStack.Screen name="Landing" component={LandingScreen} />
         <AuthStack.Screen name="Login" component={LoginScreen} />
         <AuthStack.Screen name="Register" component={RegisterScreen} />
-        <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+        <AuthStack.Screen
+          name="RoleSelection"
+          component={RoleSelectionScreen}
+        />
       </AuthStack.Navigator>
     );
   }
@@ -160,7 +168,10 @@ export function AppNavigator() {
   if (needsRoleSelection) {
     return (
       <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-        <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+        <AuthStack.Screen
+          name="RoleSelection"
+          component={RoleSelectionScreen}
+        />
       </AuthStack.Navigator>
     );
   }
@@ -169,246 +180,246 @@ export function AppNavigator() {
     <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
       <StudentAttendanceProvider enabled={user?.role === 'student'}>
         <LeaveProvider db={db} user={user}>
-        <View style={styles.root}>
-        <Stack.Navigator
-          initialRouteName="Home"
+          <View style={styles.root}>
+            <Stack.Navigator
+              initialRouteName="Home"
 
-          screenOptions={({ route }) => ({
-            headerStyle: { backgroundColor: colors.panel },
+              screenOptions={({ route }) => ({
+                headerStyle: { backgroundColor: colors.panel },
 
-            headerTintColor: colors.violet,
+                headerTintColor: colors.violet,
 
-            headerShadowVisible: false,
+                headerShadowVisible: false,
 
-            headerBackButtonDisplayMode: 'minimal',
+                headerBackButtonDisplayMode: 'minimal',
 
-            contentStyle: { backgroundColor: colors.surface },
+                contentStyle: { backgroundColor: colors.surface },
 
-            headerRight: () => (
-              <Pressable
-                accessibilityRole="button"
+                headerRight: () => (
+                  <Pressable
+                    accessibilityRole="button"
 
-                accessibilityLabel="Buka profil"
+                    accessibilityLabel="Buka profil"
 
-                onPress={() => navigation.navigate('Profile')}
+                    onPress={() => navigation.navigate('Profile')}
 
-                style={({ pressed }) => [
-                  styles.changeRole,
+                    style={({ pressed }) => [
+                      styles.changeRole,
 
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={styles.changeRoleLabel}>Profil</Text>
-              </Pressable>
-            ),
-          })}
-        >
-          <Stack.Screen
-            name="Home"
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.changeRoleLabel}>Profil</Text>
+                  </Pressable>
+                ),
+              })}
+            >
+              <Stack.Screen
+                name="Home"
 
-            component={HomeScreen}
+                component={HomeScreen}
 
-            options={{
-              title: 'Beranda',
+                options={{
+                  title: 'Beranda',
 
-              headerRight: () => null,
+                  headerRight: () => null,
 
-              headerBackTitle: '',
+                  headerBackTitle: '',
 
-              headerShown: false,
-            }}
-          />
+                  headerShown: false,
+                }}
+              />
 
-          <Stack.Group screenOptions={{ title: 'Praktikan' }}>
-            <Stack.Screen
-              name="StudentSchedule"
+              <Stack.Group screenOptions={{ title: 'Praktikan' }}>
+                <Stack.Screen
+                  name="StudentSchedule"
 
-              component={StudentScheduleScreen}
+                  component={StudentScheduleScreen}
 
-              options={{ headerShown: false }}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentSessionDetail"
+
+                  component={StudentSessionDetailScreen}
+                />
+
+                <Stack.Screen
+                  name="StudentAttendanceHistory"
+
+                  component={StudentAttendanceHistoryScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentAllSessions"
+
+                  component={StudentAllSessionsScreen}
+                />
+
+                <Stack.Screen
+                  name="StudentAllAttendance"
+
+                  component={StudentAllAttendanceScreen}
+                />
+
+                <Stack.Screen
+                  name="StudentLeaveRequestForm"
+
+                  component={StudentLeaveRequestFormScreen}
+
+                  options={{ title: 'Ajukan Izin' }}
+                />
+
+                <Stack.Screen
+                  name="StudentLeaveList"
+
+                  component={StudentLeaveListScreen}
+
+                  options={{ title: 'Izin Saya' }}
+                />
+              </Stack.Group>
+
+              <Stack.Group screenOptions={{ title: 'Asisten' }}>
+                <Stack.Screen
+                  name="AssistantSchedule"
+
+                  component={AssistantScheduleScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AssistantSessionDetail"
+
+                  component={AssistantSessionDetailScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantAttendanceRoster"
+
+                  component={AssistantAttendanceRosterScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AssistantModuleList"
+
+                  component={AssistantModuleListScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantSettings"
+
+                  component={AssistantSettingsScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantAllSessions"
+
+                  component={AssistantAllSessionsScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantAllAttendance"
+
+                  component={AssistantAllAttendanceScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantClassList"
+
+                  component={AssistantClassListScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantClassForm"
+
+                  component={AssistantClassFormScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantSessionForm"
+
+                  component={AssistantSessionFormScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantLeaveReviewList"
+
+                  component={AssistantLeaveReviewListScreen}
+
+                  options={{ title: 'Pemeriksaan Izin' }}
+                />
+              </Stack.Group>
+
+              <Stack.Screen
+                name="Calendar"
+
+                component={CalendarScreen}
+
+                options={{
+                  headerTintColor: colors.inkMuted,
+
+                  headerStyle: { backgroundColor: colors.surface },
+
+                  title: 'Kalender',
+                }}
+              />
+
+              <Stack.Screen
+                name="Profile"
+
+                component={ProfileScreen}
+
+                options={{
+                  headerRight: () => null,
+
+                  headerTintColor: colors.inkMuted,
+
+                  headerStyle: { backgroundColor: colors.surface },
+                }}
+              />
+
+              <Stack.Screen
+                name="ProfileEdit"
+
+                component={ProfileEditScreen}
+
+                options={{
+                  headerTintColor: colors.inkMuted,
+
+                  headerStyle: { backgroundColor: colors.surface },
+
+                  title: 'Edit Profil',
+                }}
+              />
+            </Stack.Navigator>
+
+            <BottomDock
+              tabs={DOCK_TABS}
+
+              activeKey={activeKey}
+
+              onTabPress={onTabPress}
+
+              fab={{
+                glyph: 'document-text',
+
+                label: 'Izin',
+
+                onPress: () =>
+                  navigation.navigate(
+                    actorRole === 'asisten'
+                      ? 'AssistantLeaveReviewList'
+                      : 'StudentLeaveList',
+                  ),
+              }}
             />
-
-            <Stack.Screen
-              name="StudentSessionDetail"
-
-              component={StudentSessionDetailScreen}
-            />
-
-            <Stack.Screen
-              name="StudentAttendanceHistory"
-
-              component={StudentAttendanceHistoryScreen}
-
-              options={{ headerShown: false }}
-            />
-
-            <Stack.Screen
-              name="StudentAllSessions"
-
-              component={StudentAllSessionsScreen}
-            />
-
-            <Stack.Screen
-              name="StudentAllAttendance"
-
-              component={StudentAllAttendanceScreen}
-            />
-
-            <Stack.Screen
-              name="StudentLeaveRequestForm"
-
-              component={StudentLeaveRequestFormScreen}
-
-              options={{ title: 'Ajukan Izin' }}
-            />
-
-            <Stack.Screen
-              name="StudentLeaveList"
-
-              component={StudentLeaveListScreen}
-
-              options={{ title: 'Izin Saya' }}
-            />
-          </Stack.Group>
-
-          <Stack.Group screenOptions={{ title: 'Asisten' }}>
-            <Stack.Screen
-              name="AssistantSchedule"
-
-              component={AssistantScheduleScreen}
-
-              options={{ headerShown: false }}
-            />
-
-            <Stack.Screen
-              name="AssistantSessionDetail"
-
-              component={AssistantSessionDetailScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantAttendanceRoster"
-
-              component={AssistantAttendanceRosterScreen}
-
-              options={{ headerShown: false }}
-            />
-
-            <Stack.Screen
-              name="AssistantModuleList"
-
-              component={AssistantModuleListScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantSettings"
-
-              component={AssistantSettingsScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantAllSessions"
-
-              component={AssistantAllSessionsScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantAllAttendance"
-
-              component={AssistantAllAttendanceScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantClassList"
-
-              component={AssistantClassListScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantClassForm"
-
-              component={AssistantClassFormScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantSessionForm"
-
-              component={AssistantSessionFormScreen}
-            />
-
-            <Stack.Screen
-              name="AssistantLeaveReviewList"
-
-              component={AssistantLeaveReviewListScreen}
-
-              options={{ title: 'Pemeriksaan Izin' }}
-            />
-          </Stack.Group>
-
-          <Stack.Screen
-            name="Calendar"
-
-            component={CalendarScreen}
-
-            options={{
-              headerTintColor: colors.inkMuted,
-
-              headerStyle: { backgroundColor: colors.surface },
-
-              title: 'Kalender',
-            }}
-          />
-
-          <Stack.Screen
-            name="Profile"
-
-            component={ProfileScreen}
-
-            options={{
-              headerRight: () => null,
-
-              headerTintColor: colors.inkMuted,
-
-              headerStyle: { backgroundColor: colors.surface },
-            }}
-          />
-
-          <Stack.Screen
-            name="ProfileEdit"
-
-            component={ProfileEditScreen}
-
-            options={{
-              headerTintColor: colors.inkMuted,
-
-              headerStyle: { backgroundColor: colors.surface },
-
-              title: 'Edit Profil',
-            }}
-          />
-        </Stack.Navigator>
-
-        <BottomDock
-          tabs={DOCK_TABS}
-
-          activeKey={activeKey}
-
-          onTabPress={onTabPress}
-
-          fab={{
-            glyph: 'document-text',
-
-            label: 'Izin',
-
-            onPress: () =>
-              navigation.navigate(
-                actorRole === 'asisten'
-                  ? 'AssistantLeaveReviewList'
-                  : 'StudentLeaveList',
-              ),
-          }}
-        />
-        </View>
+          </View>
         </LeaveProvider>
       </StudentAttendanceProvider>
     </AssistantSessionsProvider>

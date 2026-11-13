@@ -68,7 +68,9 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
           title="Gagal memuat jadwal"
           message={error}
           tone="danger"
-          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+          action={
+            <Button label="Coba lagi" variant="outline" onPress={retry} />
+          }
         />
       </Screen>
     );

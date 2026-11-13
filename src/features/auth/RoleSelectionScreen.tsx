@@ -119,17 +119,29 @@ export function RoleSelectionScreen({ navigation }: Props) {
               ]}
             >
               <View style={styles.roleIconBox}>
-                <Ionicons name={option.icon as any} size={24} color={colors.primary} />
+                <Ionicons
+                  name={option.icon as any}
+                  size={24}
+                  color={colors.primary}
+                />
               </View>
-              <Text style={[styles.roleTitle, selected && styles.roleTitleActive]}>
+              <Text
+                style={[styles.roleTitle, selected && styles.roleTitleActive]}
+              >
                 {option.label}
               </Text>
-              <Text style={[styles.roleDesc, selected && styles.roleDescActive]}>
+              <Text
+                style={[styles.roleDesc, selected && styles.roleDescActive]}
+              >
                 {option.description}
               </Text>
               {selected && (
                 <View style={styles.checkmark}>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={colors.primary}
+                  />
                 </View>
               )}
             </Pressable>

@@ -38,7 +38,9 @@ export function LandingScreen({ navigation }: Props) {
         <View style={styles.header}>
           <View style={styles.systemBadge}>
             <View style={styles.statusDot} />
-            <Text style={styles.systemText}>FTI • LAB INTEGRATED SYSTEM v1.2</Text>
+            <Text style={styles.systemText}>
+              FTI • LAB INTEGRATED SYSTEM v1.2
+            </Text>
           </View>
           <View style={styles.logoContainer}>
             <Ionicons name="logo-ionic" size={28} color={colors.onPrimary} />
@@ -49,50 +51,54 @@ export function LandingScreen({ navigation }: Props) {
         <Card variant="panel" interactive={false} style={styles.heroCard}>
           <CardContent>
             <View style={styles.heroCardContent}>
-            <View style={styles.heroVisual}>
-              <View style={styles.heroImage} />
-              <View style={styles.liveTag}>
-                <View style={styles.liveTagIcon} />
-                <Text style={styles.liveTagText}>Lab RPL • Gedung B201</Text>
-              </View>
-              <View style={styles.heroBottom}>
-                <View style={styles.semesterChip}>
-                  <Text style={styles.semesterText}>SEMESTER GENAP</Text>
+              <View style={styles.heroVisual}>
+                <View style={styles.heroImage} />
+                <View style={styles.liveTag}>
+                  <View style={styles.liveTagIcon} />
+                  <Text style={styles.liveTagText}>Lab RPL • Gedung B201</Text>
                 </View>
-                <View style={styles.statusChip}>
-                  <Text style={styles.statusText}>Aktif Terjadwal</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.simCard}>
-              <View style={styles.simRow}>
-                <View style={styles.iconBox}>
-                  <Ionicons name="time" size={20} color={colors.primary} />
-                </View>
-                <View>
-                  <Text style={styles.simLabel}>Sesi Shift Terdekat</Text>
-                  <Text style={styles.simTime}>08:00 – 10:30</Text>
-                </View>
-                <View style={styles.verifiedPill}>
-                  <View style={styles.checkIcon} />
-                  <Text style={styles.verifiedText}>Presensi Terverifikasi</Text>
+                <View style={styles.heroBottom}>
+                  <View style={styles.semesterChip}>
+                    <Text style={styles.semesterText}>SEMESTER GENAP</Text>
+                  </View>
+                  <View style={styles.statusChip}>
+                    <Text style={styles.statusText}>Aktif Terjadwal</Text>
+                  </View>
                 </View>
               </View>
 
-              <View style={styles.pillRow}>
-                <View style={styles.pillLeft}>
-                  <View style={styles.desktopIcon} />
-                  <Text style={styles.pillText}>Bench #14 • Praktikum AI</Text>
+              <View style={styles.simCard}>
+                <View style={styles.simRow}>
+                  <View style={styles.iconBox}>
+                    <Ionicons name="time" size={20} color={colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={styles.simLabel}>Sesi Shift Terdekat</Text>
+                    <Text style={styles.simTime}>08:00 – 10:30</Text>
+                  </View>
+                  <View style={styles.verifiedPill}>
+                    <View style={styles.checkIcon} />
+                    <Text style={styles.verifiedText}>
+                      Presensi Terverifikasi
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.pillRight}>
-                  <View style={styles.avatar1} />
-                  <View style={styles.avatar2} />
+
+                <View style={styles.pillRow}>
+                  <View style={styles.pillLeft}>
+                    <View style={styles.desktopIcon} />
+                    <Text style={styles.pillText}>
+                      Bench #14 • Praktikum AI
+                    </Text>
+                  </View>
+                  <View style={styles.pillRight}>
+                    <View style={styles.avatar1} />
+                    <View style={styles.avatar2} />
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-        </CardContent>
+          </CardContent>
         </Card>
 
         {/* Copywriting */}

@@ -21,14 +21,8 @@ type Props = NativeStackScreenProps<
 >;
 
 export function StudentAttendanceHistoryScreen({ navigation }: Props) {
-  const {
-    attendanceHistory,
-    sessions,
-    currentStudent,
-    loading,
-    error,
-    retry,
-  } = useStudentAttendanceViewModel();
+  const { attendanceHistory, sessions, currentStudent, loading, error, retry } =
+    useStudentAttendanceViewModel();
 
   const sorted = [...attendanceHistory].sort(
     (a, b) =>
@@ -57,7 +51,9 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
           title="Gagal memuat jadwal"
           message={error}
           tone="danger"
-          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+          action={
+            <Button label="Coba lagi" variant="outline" onPress={retry} />
+          }
         />
       </Screen>
     );

@@ -165,28 +165,43 @@ export async function addParticipantByEmail(
     const classDoc = doc(db, 'classes', classId);
     const classSnap = await getDoc(classDoc);
     if (!classSnap.exists()) {
-      return { ok: false, reason: 'class_not_found', message: 'Kelas tidak ditemukan' };
+      return {
+        ok: false,
+        reason: 'class_not_found',
+        message: 'Kelas tidak ditemukan',
+      };
     }
 
     const classData = classSnap.data() as PracticalClass;
 
     // Cari user berdasarkan email di collection users
-    const usersSnap = await getDocs(query(usersCol, where('email', '==', email)));
+    const usersSnap = await getDocs(
+      query(usersCol, where('email', '==', email)),
+    );
     if (usersSnap.empty) {
-      return { ok: false, reason: 'user_not_found', message: 'User dengan email tersebut tidak terdaftar' };
+      return {
+        ok: false,
+        reason: 'user_not_found',
+        message: 'User dengan email tersebut tidak terdaftar',
+      };
     }
 
     const userDoc = usersSnap.docs[0];
     const userData = userDoc.data() as UserProfile;
 
     if (userData.role !== 'student') {
-      return { ok: false, reason: 'validation_error', message: 'Email tersebut bukan akun praktikan' };
+      return {
+        ok: false,
+        reason: 'validation_error',
+        message: 'Email tersebut bukan akun praktikan',
+      };
     }
 
     // Tambahkan participantIds ke kelas
-    const updatedParticipantIds = [...(classData.participantIds || []), userData.uid].filter(
-      (id, idx, self) => self.indexOf(id) === idx,
-    );
+    const updatedParticipantIds = [
+      ...(classData.participantIds || []),
+      userData.uid,
+    ].filter((id, idx, self) => self.indexOf(id) === idx);
 
     const updatedAt = new Date().toISOString();
 
@@ -231,11 +246,15 @@ export async function removeParticipant(
     const classDoc = doc(db, 'classes', classId);
     const classSnap = await getDoc(classDoc);
     if (!classSnap.exists()) {
-      return { ok: false, reason: 'class_not_found', message: 'Kelas tidak ditemukan' };
+      return {
+        ok: false,
+        reason: 'class_not_found',
+        message: 'Kelas tidak ditemukan',
+      };
     }
-    const updatedParticipantIds = ((classSnap.data() as PracticalClass).participantIds || []).filter(
-      (id: string) => id !== studentUid,
-    );
+    const updatedParticipantIds = (
+      (classSnap.data() as PracticalClass).participantIds || []
+    ).filter((id: string) => id !== studentUid);
     // Sync participantIds ke kelas & semua sesinya secara atomik.
     const sessionsSnap = await getDocs(
       query(sessionsCol, where('assistantIds', 'array-contains', actorUid)),
@@ -275,16 +294,28 @@ export async function createSession(
     const starts = new Date(input.startsAt);
     const ends = new Date(input.endsAt);
     if (isNaN(starts.getTime()) || isNaN(ends.getTime())) {
-      return { ok: false, reason: 'validation_error', message: 'Waktu sesi tidak valid' };
+      return {
+        ok: false,
+        reason: 'validation_error',
+        message: 'Waktu sesi tidak valid',
+      };
     }
     if (ends <= starts) {
-      return { ok: false, reason: 'validation_error', message: 'endsAt harus setelah startsAt' };
+      return {
+        ok: false,
+        reason: 'validation_error',
+        message: 'endsAt harus setelah startsAt',
+      };
     }
 
     const classDoc = doc(db, 'classes', input.classId);
     const classSnap = await getDoc(classDoc);
     if (!classSnap.exists()) {
-      return { ok: false, reason: 'class_not_found', message: 'Kelas tujuan tidak ditemukan' };
+      return {
+        ok: false,
+        reason: 'class_not_found',
+        message: 'Kelas tujuan tidak ditemukan',
+      };
     }
 
     const classData = classSnap.data() as Partial<PracticalClass>;
@@ -329,16 +360,28 @@ export async function updateSession(
     const sessionDoc = doc(db, 'sessions', sessionId);
     const snap = await getDoc(sessionDoc);
     if (!snap.exists()) {
-      return { ok: false, reason: 'session_not_found', message: 'Sesi tidak ditemukan' };
+      return {
+        ok: false,
+        reason: 'session_not_found',
+        message: 'Sesi tidak ditemukan',
+      };
     }
 
     const starts = new Date(input.startsAt);
     const ends = new Date(input.endsAt);
     if (isNaN(starts.getTime()) || isNaN(ends.getTime())) {
-      return { ok: false, reason: 'validation_error', message: 'Waktu sesi tidak valid' };
+      return {
+        ok: false,
+        reason: 'validation_error',
+        message: 'Waktu sesi tidak valid',
+      };
     }
     if (ends <= starts) {
-      return { ok: false, reason: 'validation_error', message: 'endsAt harus setelah startsAt' };
+      return {
+        ok: false,
+        reason: 'validation_error',
+        message: 'endsAt harus setelah startsAt',
+      };
     }
 
     const payload: Record<string, unknown> = {
@@ -357,7 +400,9 @@ export async function updateSession(
   }
 }
 
-export async function deleteSession(sessionId: string): Promise<AsyncActionResult> {
+export async function deleteSession(
+  sessionId: string,
+): Promise<AsyncActionResult> {
   try {
     await deleteDoc(doc(db, 'sessions', sessionId));
     return { ok: true };
@@ -368,12 +413,18 @@ export async function deleteSession(sessionId: string): Promise<AsyncActionResul
 
 // Session control: open/close
 
-export async function openSession(sessionId: string): Promise<AsyncActionResult> {
+export async function openSession(
+  sessionId: string,
+): Promise<AsyncActionResult> {
   try {
     const sessionDoc = doc(db, 'sessions', sessionId);
     const snap = await getDoc(sessionDoc);
     if (!snap.exists()) {
-      return { ok: false, reason: 'session_not_found', message: 'Sesi tidak ditemukan' };
+      return {
+        ok: false,
+        reason: 'session_not_found',
+        message: 'Sesi tidak ditemukan',
+      };
     }
 
     const session = { id: snap.id, ...(snap.data() ?? {}) } as Session;
@@ -400,12 +451,18 @@ export async function openSession(sessionId: string): Promise<AsyncActionResult>
   }
 }
 
-export async function closeSession(sessionId: string): Promise<AsyncActionResult> {
+export async function closeSession(
+  sessionId: string,
+): Promise<AsyncActionResult> {
   try {
     const sessionDoc = doc(db, 'sessions', sessionId);
     const snap = await getDoc(sessionDoc);
     if (!snap.exists()) {
-      return { ok: false, reason: 'session_not_found', message: 'Sesi tidak ditemukan' };
+      return {
+        ok: false,
+        reason: 'session_not_found',
+        message: 'Sesi tidak ditemukan',
+      };
     }
 
     const session = { id: snap.id, ...(snap.data() ?? {}) } as Session;
@@ -446,12 +503,18 @@ export function subscribeClasses(
     where('assistantIds', 'array-contains', uid),
     orderBy('createdAt', 'desc'),
   );
-  return onSnapshot(q, (snap: any) => {
-    const classes = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as PracticalClass));
-    onClasses(classes);
-  }, (err: any) => {
-    onError(err.message || 'Gagal memuat kelas');
-  });
+  return onSnapshot(
+    q,
+    (snap: any) => {
+      const classes = snap.docs.map(
+        (d: any) => ({ id: d.id, ...d.data() }) as PracticalClass,
+      );
+      onClasses(classes);
+    },
+    (err: any) => {
+      onError(err.message || 'Gagal memuat kelas');
+    },
+  );
 }
 
 export function subscribeSessions(
@@ -464,12 +527,18 @@ export function subscribeSessions(
     where('assistantIds', 'array-contains', uid),
     orderBy('startsAt', 'asc'),
   );
-  return onSnapshot(q, (snap: any) => {
-    const sessions = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Session));
-    onSessions(sessions);
-  }, (err: any) => {
-    onError(err.message || 'Gagal memuat sesi');
-  });
+  return onSnapshot(
+    q,
+    (snap: any) => {
+      const sessions = snap.docs.map(
+        (d: any) => ({ id: d.id, ...d.data() }) as Session,
+      );
+      onSessions(sessions);
+    },
+    (err: any) => {
+      onError(err.message || 'Gagal memuat sesi');
+    },
+  );
 }
 
 export function subscribeAttendanceForSession(
@@ -477,14 +546,21 @@ export function subscribeAttendanceForSession(
   onData: (records: AttendanceRecord[]) => void,
   onError: (msg: string) => void,
 ) {
-  const q = query(attendanceCol, where('sessionId', '==', sessionId), orderBy('checkedInAt', 'asc'));
-  return onSnapshot(q, (snap: any) => {
-    const records = snap.docs.map((d: any) =>
-      normalizeAttendanceRecord(d.id, d.data()),
-    );
-    onData(records);
-  }, (err: any) => {
-    onError(err.message || 'Gagal memuat kehadiran');
-  });
+  const q = query(
+    attendanceCol,
+    where('sessionId', '==', sessionId),
+    orderBy('checkedInAt', 'asc'),
+  );
+  return onSnapshot(
+    q,
+    (snap: any) => {
+      const records = snap.docs.map((d: any) =>
+        normalizeAttendanceRecord(d.id, d.data()),
+      );
+      onData(records);
+    },
+    (err: any) => {
+      onError(err.message || 'Gagal memuat kehadiran');
+    },
+  );
 }
-

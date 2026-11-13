@@ -432,7 +432,11 @@ export function CalendarScreen({ navigation }: Props) {
           message={studentError}
           tone="danger"
           action={
-            <Button label="Coba lagi" variant="outline" onPress={retryStudent} />
+            <Button
+              label="Coba lagi"
+              variant="outline"
+              onPress={retryStudent}
+            />
           }
         />
       </Screen>
@@ -595,201 +599,205 @@ export function CalendarScreen({ navigation }: Props) {
         />
       ) : (
         <View style={styles.gridContainer}>
-        {viewMode === 'week' ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.weekScrollContent}
-          >
-            <View style={styles.weekGrid}>
-              {/* Header row: time gutter + day headers */}
-              <View style={styles.headerRow}>
-                <View style={[styles.timeGutter, styles.timeGutterHeader]}>
-                  <Text style={styles.gmtLabel}>GMT+7</Text>
-                </View>
-                {days.map((day) => {
-                  const key = day.toDateString();
-                  const count = (byDay.get(key) ?? []).length;
-                  const isToday = sameDay(day, today);
-                  const weekend = isWeekend(day);
-                  return (
-                    <Pressable
-                      key={key}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Lihat ${WEEKDAY_FULL[(day.getDay() + 6) % 7]}, ${day.getDate()} ${MONTHS_FULL[day.getMonth()]}`}
-                      onPress={() => {
-                        setViewMode('day');
-                        setSelectedDay(day);
-                      }}
-                      style={({ pressed }) => [
-                        styles.dayHeader,
-                        isToday && styles.dayHeaderToday,
-                        weekend && styles.dayHeaderWeekend,
-                        pressed && { opacity: 0.85 },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.dayHeaderLabel,
-                          isToday && styles.dayHeaderLabelToday,
-                        ]}
-                      >
-                        {WEEKDAY_SHORT[(day.getDay() + 6) % 7]}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.dayHeaderNumber,
-                          isToday && styles.dayHeaderNumberToday,
-                        ]}
-                      >
-                        {day.getDate()}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.dayHeaderCount,
-                          isToday && styles.dayHeaderCountToday,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {weekend
-                          ? 'Off'
-                          : count > 0
-                            ? `${count} Sesi`
-                            : 'Kosong'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {/* Time gutter + columns (horizontally aligned) */}
-              <View style={styles.bodyRow}>
-                <View style={styles.timeGutter}>
-                  {hours.map((hour) => (
-                    <View
-                      key={hour}
-                      style={[
-                        styles.timeCell,
-                        { height: PX_PER_HOUR },
-                        hour === 12 && styles.timeCellBreak,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.timeLabel,
-                          hour === 12 && styles.timeLabelMuted,
-                        ]}
-                      >
-                        {pad2(hour)}:00
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-                <View style={styles.columnsWrap}>
-                  {days.map((day) => renderDayColumn(day))}
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        ) : (
-          <View style={styles.dayView}>
-            <View style={styles.dayViewHeader}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Hari sebelumnya"
-                onPress={() => setSelectedDay((d) => addDays(d, -1))}
-                style={({ pressed }) => [
-                  styles.navArrow,
-                  pressed && styles.navArrowPressed,
-                ]}
-              >
-                <Ionicons
-                  name="chevron-back"
-                  size={18}
-                  color={colors.inkMuted}
-                />
-              </Pressable>
-              <View style={styles.dayViewTitle}>
-                <Text style={styles.dayViewLabel}>
-                  {WEEKDAY_FULL[(selectedDay.getDay() + 6) % 7]}
-                </Text>
-                <Text style={styles.dayViewNumber}>
-                  {selectedDay.getDate()} {MONTHS_FULL[selectedDay.getMonth()]}
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Hari berikutnya"
-                onPress={() => setSelectedDay((d) => addDays(d, 1))}
-                style={({ pressed }) => [
-                  styles.navArrow,
-                  pressed && styles.navArrowPressed,
-                ]}
-              >
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.inkMuted}
-                />
-              </Pressable>
-            </View>
+          {viewMode === 'week' ? (
             <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingBottom: (insets?.bottom ?? 0) + 24,
-              }}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.weekScrollContent}
             >
-              <View style={styles.bodyRow}>
-                <View style={styles.timeGutter}>
-                  {hours.map((hour) => (
-                    <View
-                      key={hour}
-                      style={[
-                        styles.timeCell,
-                        { height: PX_PER_HOUR },
-                        hour === 12 && styles.timeCellBreak,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.timeLabel,
-                          hour === 12 && styles.timeLabelMuted,
+              <View style={styles.weekGrid}>
+                {/* Header row: time gutter + day headers */}
+                <View style={styles.headerRow}>
+                  <View style={[styles.timeGutter, styles.timeGutterHeader]}>
+                    <Text style={styles.gmtLabel}>GMT+7</Text>
+                  </View>
+                  {days.map((day) => {
+                    const key = day.toDateString();
+                    const count = (byDay.get(key) ?? []).length;
+                    const isToday = sameDay(day, today);
+                    const weekend = isWeekend(day);
+                    return (
+                      <Pressable
+                        key={key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Lihat ${WEEKDAY_FULL[(day.getDay() + 6) % 7]}, ${day.getDate()} ${MONTHS_FULL[day.getMonth()]}`}
+                        onPress={() => {
+                          setViewMode('day');
+                          setSelectedDay(day);
+                        }}
+                        style={({ pressed }) => [
+                          styles.dayHeader,
+                          isToday && styles.dayHeaderToday,
+                          weekend && styles.dayHeaderWeekend,
+                          pressed && { opacity: 0.85 },
                         ]}
                       >
-                        {pad2(hour)}:00
-                      </Text>
-                    </View>
-                  ))}
+                        <Text
+                          style={[
+                            styles.dayHeaderLabel,
+                            isToday && styles.dayHeaderLabelToday,
+                          ]}
+                        >
+                          {WEEKDAY_SHORT[(day.getDay() + 6) % 7]}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.dayHeaderNumber,
+                            isToday && styles.dayHeaderNumberToday,
+                          ]}
+                        >
+                          {day.getDate()}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.dayHeaderCount,
+                            isToday && styles.dayHeaderCountToday,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {weekend
+                            ? 'Off'
+                            : count > 0
+                              ? `${count} Sesi`
+                              : 'Kosong'}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
-                <View style={styles.columnsWrap}>
-                  {renderDayColumn(selectedDay)}
+
+                {/* Time gutter + columns (horizontally aligned) */}
+                <View style={styles.bodyRow}>
+                  <View style={styles.timeGutter}>
+                    {hours.map((hour) => (
+                      <View
+                        key={hour}
+                        style={[
+                          styles.timeCell,
+                          { height: PX_PER_HOUR },
+                          hour === 12 && styles.timeCellBreak,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.timeLabel,
+                            hour === 12 && styles.timeLabelMuted,
+                          ]}
+                        >
+                          {pad2(hour)}:00
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={styles.columnsWrap}>
+                    {days.map((day) => renderDayColumn(day))}
+                  </View>
                 </View>
               </View>
             </ScrollView>
-          </View>
-        )}
+          ) : (
+            <View style={styles.dayView}>
+              <View style={styles.dayViewHeader}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Hari sebelumnya"
+                  onPress={() => setSelectedDay((d) => addDays(d, -1))}
+                  style={({ pressed }) => [
+                    styles.navArrow,
+                    pressed && styles.navArrowPressed,
+                  ]}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={18}
+                    color={colors.inkMuted}
+                  />
+                </Pressable>
+                <View style={styles.dayViewTitle}>
+                  <Text style={styles.dayViewLabel}>
+                    {WEEKDAY_FULL[(selectedDay.getDay() + 6) % 7]}
+                  </Text>
+                  <Text style={styles.dayViewNumber}>
+                    {selectedDay.getDate()}{' '}
+                    {MONTHS_FULL[selectedDay.getMonth()]}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Hari berikutnya"
+                  onPress={() => setSelectedDay((d) => addDays(d, 1))}
+                  style={({ pressed }) => [
+                    styles.navArrow,
+                    pressed && styles.navArrowPressed,
+                  ]}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={colors.inkMuted}
+                  />
+                </Pressable>
+              </View>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingBottom: (insets?.bottom ?? 0) + 24,
+                }}
+              >
+                <View style={styles.bodyRow}>
+                  <View style={styles.timeGutter}>
+                    {hours.map((hour) => (
+                      <View
+                        key={hour}
+                        style={[
+                          styles.timeCell,
+                          { height: PX_PER_HOUR },
+                          hour === 12 && styles.timeCellBreak,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.timeLabel,
+                            hour === 12 && styles.timeLabelMuted,
+                          ]}
+                        >
+                          {pad2(hour)}:00
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={styles.columnsWrap}>
+                    {renderDayColumn(selectedDay)}
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          )}
 
-        {/* Legend */}
-        <View style={styles.legend}>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: colors.violet }]}
-            />
-            <Text style={styles.legendText}>Sesi Lab</Text>
+          {/* Legend */}
+          <View style={styles.legend}>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendDot, { backgroundColor: colors.violet }]}
+              />
+              <Text style={styles.legendText}>Sesi Lab</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendDot, { backgroundColor: colors.lime }]}
+              />
+              <Text style={styles.legendText}>Sesi terbuka</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View
+                style={[
+                  styles.legendDot,
+                  { backgroundColor: colors.dangerInk },
+                ]}
+              />
+              <Text style={styles.legendText}>Waktu sekarang</Text>
+            </View>
           </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: colors.lime }]}
-            />
-            <Text style={styles.legendText}>Sesi terbuka</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: colors.dangerInk }]}
-            />
-            <Text style={styles.legendText}>Waktu sekarang</Text>
-          </View>
-        </View>
         </View>
       )}
 

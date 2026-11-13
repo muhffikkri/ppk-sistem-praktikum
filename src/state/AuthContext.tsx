@@ -187,7 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNeedsRoleSelection(false);
 
     if (!isFirebaseConfigured) {
-      const message = 'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
+      const message =
+        'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
       setError(message);
       return { ok: false, reason: 'unknown_error', message };
     }

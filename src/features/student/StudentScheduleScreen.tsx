@@ -68,7 +68,9 @@ export function StudentScheduleScreen({ navigation }: Props) {
           title="Gagal memuat jadwal"
           message={error}
           tone="danger"
-          action={<Button label="Coba lagi" variant="outline" onPress={retry} />}
+          action={
+            <Button label="Coba lagi" variant="outline" onPress={retry} />
+          }
         />
       </Screen>
     );
@@ -115,69 +117,69 @@ export function StudentScheduleScreen({ navigation }: Props) {
         />
       ) : (
         <View style={styles.list}>
-        {sorted.map((session, index) => {
-          const record = getAttendanceForSession(session.id);
-          return (
-            <Pressable
-              key={session.id}
-              accessibilityRole="button"
-              accessibilityLabel={`${session.courseName}, ${formatSessionDate(session.startsAt)}, status ${statusLabel(session.status)}`}
-              accessibilityHint="Membuka detail sesi"
-              onPress={() =>
-                navigation.navigate('StudentSessionDetail', {
-                  sessionId: session.id,
-                })
-              }
-              style={({ pressed }) => [
-                styles.card,
-                index < sorted.length - 1 && styles.divider,
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={styles.cardTop}>
-                <Text style={styles.course} numberOfLines={2}>
-                  {session.courseName}
-                </Text>
-                <View
-                  style={[
-                    styles.statusPill,
-                    session.status === 'open' && styles.statusOpen,
-                    session.status === 'scheduled' && styles.statusScheduled,
-                    session.status === 'closed' && styles.statusClosed,
-                  ]}
-                >
-                  <Text
+          {sorted.map((session, index) => {
+            const record = getAttendanceForSession(session.id);
+            return (
+              <Pressable
+                key={session.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${session.courseName}, ${formatSessionDate(session.startsAt)}, status ${statusLabel(session.status)}`}
+                accessibilityHint="Membuka detail sesi"
+                onPress={() =>
+                  navigation.navigate('StudentSessionDetail', {
+                    sessionId: session.id,
+                  })
+                }
+                style={({ pressed }) => [
+                  styles.card,
+                  index < sorted.length - 1 && styles.divider,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={styles.cardTop}>
+                  <Text style={styles.course} numberOfLines={2}>
+                    {session.courseName}
+                  </Text>
+                  <View
                     style={[
-                      styles.statusText,
-                      session.status === 'open' && styles.statusTextOpen,
-                      session.status === 'scheduled' &&
-                        styles.statusTextScheduled,
-                      session.status === 'closed' && styles.statusTextClosed,
+                      styles.statusPill,
+                      session.status === 'open' && styles.statusOpen,
+                      session.status === 'scheduled' && styles.statusScheduled,
+                      session.status === 'closed' && styles.statusClosed,
                     ]}
                   >
-                    {statusLabel(session.status)}
+                    <Text
+                      style={[
+                        styles.statusText,
+                        session.status === 'open' && styles.statusTextOpen,
+                        session.status === 'scheduled' &&
+                          styles.statusTextScheduled,
+                        session.status === 'closed' && styles.statusTextClosed,
+                      ]}
+                    >
+                      {statusLabel(session.status)}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.metaRow}>
+                  <Text style={styles.meta}>
+                    {formatSessionDate(session.startsAt)}
+                  </Text>
+                  <Text style={styles.meta}>
+                    {formatTimeRange(session.startsAt, session.endsAt)}
                   </Text>
                 </View>
-              </View>
-              <View style={styles.metaRow}>
-                <Text style={styles.meta}>
-                  {formatSessionDate(session.startsAt)}
-                </Text>
-                <Text style={styles.meta}>
-                  {formatTimeRange(session.startsAt, session.endsAt)}
-                </Text>
-              </View>
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>
-                  {record ? 'Sudah presensi' : 'Belum presensi'}
-                </Text>
-                <Text style={styles.chevron} accessible={false}>
-                  Detail ›
-                </Text>
-              </View>
-            </Pressable>
-          );
-        })}
+                <View style={styles.footer}>
+                  <Text style={styles.footerText}>
+                    {record ? 'Sudah presensi' : 'Belum presensi'}
+                  </Text>
+                  <Text style={styles.chevron} accessible={false}>
+                    Detail ›
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
       )}
     </Screen>

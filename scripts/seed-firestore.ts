@@ -10,19 +10,10 @@
  * Requires Firebase config in .env (EXPO_PUBLIC_FIREBASE_*).
  */
 
-import {
-  doc,
-  setDoc,
-  collection,
-  writeBatch,
-} from 'firebase/firestore';
+import { doc, setDoc, collection, writeBatch } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import type {
-  PracticalClass,
-  Session,
-  UserProfile,
-} from '../src/domain/types';
+import type { PracticalClass, Session, UserProfile } from '../src/domain/types';
 
 // Firebase config from environment
 const firebaseConfig = {
@@ -36,9 +27,9 @@ const firebaseConfig = {
 
 const isConfigured = Boolean(
   firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId &&
-    firebaseConfig.appId,
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.appId,
 );
 
 if (!isConfigured) {
@@ -104,7 +95,11 @@ const demoClasses: PracticalClass[] = [
     courseName: 'Praktikum Sistem Terdistribusi',
     groupName: 'Kelas 3SE1 - Kelompok A',
     assistantIds: ['user-asisten-01', 'user-asisten-02'],
-    participantIds: ['user-praktikan-01', 'user-praktikan-02', 'user-praktikan-03'],
+    participantIds: [
+      'user-praktikan-01',
+      'user-praktikan-02',
+      'user-praktikan-03',
+    ],
     createdBy: 'user-asisten-02',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -156,7 +151,11 @@ const demoSessions: Session[] = [
     status: 'closed',
     openedAt: addDays(now, -2),
     closedAt: addDays(now, -2),
-    participantIds: ['user-praktikan-01', 'user-praktikan-02', 'user-praktikan-03'],
+    participantIds: [
+      'user-praktikan-01',
+      'user-praktikan-02',
+      'user-praktikan-03',
+    ],
     assistantIds: ['user-asisten-01', 'user-asisten-02'],
     createdBy: 'user-asisten-01',
     createdAt: addDays(now, -5),
@@ -207,7 +206,11 @@ const demoSessions: Session[] = [
     status: 'scheduled',
     openedAt: null,
     closedAt: null,
-    participantIds: ['user-praktikan-01', 'user-praktikan-02', 'user-praktikan-03'],
+    participantIds: [
+      'user-praktikan-01',
+      'user-praktikan-02',
+      'user-praktikan-03',
+    ],
     assistantIds: ['user-asisten-01', 'user-asisten-02'],
     createdBy: 'user-asisten-01',
     createdAt: addDays(now, -4),

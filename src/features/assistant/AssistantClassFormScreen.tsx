@@ -11,13 +11,7 @@ import {
 } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import {
-  colors,
-  radius,
-  Screen,
-  Button,
-  typography,
-} from '../../shared/ui';
+import { colors, radius, Screen, Button, typography } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import type { ClassInput } from '../../domain/types';
 import {
@@ -66,11 +60,17 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
     }
   }, [classId, getClassById]);
 
-  const setField = <K extends keyof ClassFormState>(key: K, value: ClassFormState[K]) =>
-    setState((prev) => ({ ...prev, [key]: value }));
+  const setField = <K extends keyof ClassFormState>(
+    key: K,
+    value: ClassFormState[K],
+  ) => setState((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = async () => {
-    if (!state.courseCode.trim() || !state.courseName.trim() || !state.groupName.trim()) {
+    if (
+      !state.courseCode.trim() ||
+      !state.courseName.trim() ||
+      !state.groupName.trim()
+    ) {
       setState((prev) => ({ ...prev, error: 'Semua field wajib diisi' }));
       return;
     }
@@ -86,19 +86,28 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
       if (classId) {
         const result = await updateClass(classId, input);
         if (!result.ok) {
-          setState((prev) => ({ ...prev, error: result.message || 'Gagal memperbarui kelas' }));
+          setState((prev) => ({
+            ...prev,
+            error: result.message || 'Gagal memperbarui kelas',
+          }));
           return;
         }
       } else {
         const result = await createClass(input);
         if (!result.ok) {
-          setState((prev) => ({ ...prev, error: result.message || 'Gagal membuat kelas' }));
+          setState((prev) => ({
+            ...prev,
+            error: result.message || 'Gagal membuat kelas',
+          }));
           return;
         }
       }
       navigation.goBack();
     } catch (e: any) {
-      setState((prev) => ({ ...prev, error: e.message || 'Gagal menyimpan kelas' }));
+      setState((prev) => ({
+        ...prev,
+        error: e.message || 'Gagal menyimpan kelas',
+      }));
     } finally {
       setState((prev) => ({ ...prev, submitting: false }));
     }
@@ -109,7 +118,10 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
     if (!email || !classId) return;
     const result = await addParticipantByEmail(classId, email);
     if (!result.ok) {
-      setState((prev) => ({ ...prev, error: result.message || 'Gagal menambahkan peserta' }));
+      setState((prev) => ({
+        ...prev,
+        error: result.message || 'Gagal menambahkan peserta',
+      }));
       return;
     }
     setParticipantEmail('');
@@ -125,7 +137,10 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
         onPress: async () => {
           const result = await removeParticipant(classId, uid);
           if (!result.ok) {
-            setState((prev) => ({ ...prev, error: result.message || 'Gagal menghapus peserta' }));
+            setState((prev) => ({
+              ...prev,
+              error: result.message || 'Gagal menghapus peserta',
+            }));
           }
         },
       },
@@ -142,7 +157,9 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{classId ? 'Edit Kelas' : 'Tambah Kelas'}</Text>
+          <Text style={styles.headerTitle}>
+            {classId ? 'Edit Kelas' : 'Tambah Kelas'}
+          </Text>
           <Button
             label="Batal"
             variant="soft"
@@ -202,7 +219,9 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
             {selectedClass.participantIds.length > 0 ? (
               selectedClass.participantIds.map((uid: string, i: number) => (
                 <View key={uid} style={styles.participantItem}>
-                  <Text style={styles.participantName}>{`Peserta ${i + 1} (${uid})`}</Text>
+                  <Text
+                    style={styles.participantName}
+                  >{`Peserta ${i + 1} (${uid})`}</Text>
                   <Button
                     label="Hapus"
                     variant="destructive"
@@ -239,7 +258,13 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
         {/* Submit Button */}
         <View style={styles.submitButtonWrapper}>
           <Button
-            label={state.submitting ? 'Menyimpan...' : classId ? 'Perbarui Kelas' : 'Buat Kelas'}
+            label={
+              state.submitting
+                ? 'Menyimpan...'
+                : classId
+                  ? 'Perbarui Kelas'
+                  : 'Buat Kelas'
+            }
             variant={classId ? 'primary' : 'accent'}
             disabled={state.submitting}
             loading={state.submitting}
