@@ -1,8 +1,19 @@
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
-import { Banner, Button, Screen } from '../../shared/ui';
+import type { AiClassificationResult } from '../../domain/types';
+import { Banner, Button, ConfirmSheet, Screen } from '../../shared/ui';
 import { ListFeedback, RequestCard, styles } from './components';
 import { useAssistantLeaveViewModel } from './useAssistantLeaveViewModel';
+
+function aiPredictionLabel(prediction: AiClassificationResult): string {
+  if (prediction.status !== 'classified') return 'tidak tersedia';
+
+  const confidence =
+    prediction.confidence !== null
+      ? ` (${Math.round(prediction.confidence * 100)}%)`
+      : '';
+  return `${prediction.category ?? '-'}${confidence}`;
+}
 
 export function AssistantLeaveReviewListScreen() {
   const vm = useAssistantLeaveViewModel();
@@ -12,6 +23,11 @@ export function AssistantLeaveReviewListScreen() {
     approve: boolean;
   } | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const activeItem = confirmation
+    ? vm.leaveRequests.find((item) => item.id === confirmation.id)
+    : undefined;
+
   async function confirm() {
     if (!confirmation) return;
     const result = await (
@@ -22,6 +38,7 @@ export function AssistantLeaveReviewListScreen() {
       setConfirmation(null);
     }
   }
+
   return (
     <Screen>
       <Text style={styles.title}>Pemeriksaan Izin</Text>
@@ -38,63 +55,56 @@ export function AssistantLeaveReviewListScreen() {
           <RequestCard item={item} />
           {item.status === 'pending' ? (
             <>
-              <TextInput
-                accessibilityLabel={`Catatan untuk ${item.studentName}`}
-                placeholder="Catatan asisten (opsional)"
-                multiline
-                style={styles.input}
-                value={notes[item.id] ?? ''}
-                editable={!vm.reviewingId}
-                onChangeText={(note) =>
-                  setNotes((current) => ({ ...current, [item.id]: note }))
-                }
+              <Button
+                label="Terima"
+                disabled={!!vm.reviewingId}
+                onPress={() => {
+                  setFeedback(null);
+                  setConfirmation({ id: item.id, approve: true });
+                }}
               />
-              {confirmation?.id === item.id ? (
-                <>
-                  <Text style={styles.body}>
-                    Konfirmasi {confirmation.approve ? 'terima' : 'tolak'}{' '}
-                    pengajuan {item.studentName}?
-                  </Text>
-                  <Button
-                    label="Simpan Keputusan"
-                    loading={vm.reviewingId === item.id}
-                    disabled={!!vm.reviewingId}
-                    onPress={() => {
-                      void confirm();
-                    }}
-                  />
-                  <Button
-                    label="Batal"
-                    variant="outline"
-                    disabled={!!vm.reviewingId}
-                    onPress={() => setConfirmation(null)}
-                  />
-                </>
-              ) : (
-                <>
-                  <Button
-                    label="Terima"
-                    disabled={!!vm.reviewingId}
-                    onPress={() => {
-                      setFeedback(null);
-                      setConfirmation({ id: item.id, approve: true });
-                    }}
-                  />
-                  <Button
-                    label="Tolak"
-                    variant="destructive"
-                    disabled={!!vm.reviewingId}
-                    onPress={() => {
-                      setFeedback(null);
-                      setConfirmation({ id: item.id, approve: false });
-                    }}
-                  />
-                </>
-              )}
+              <Button
+                label="Tolak"
+                variant="destructive"
+                disabled={!!vm.reviewingId}
+                onPress={() => {
+                  setFeedback(null);
+                  setConfirmation({ id: item.id, approve: false });
+                }}
+              />
             </>
           ) : null}
         </View>
       ))}
+
+      {confirmation && activeItem ? (
+        <ConfirmSheet
+          visible
+          title={
+            confirmation.approve ? 'Terima pengajuan?' : 'Tolak pengajuan?'
+          }
+          description={`${activeItem.studentName} · ${activeItem.courseName} · ${activeItem.groupName}. Prediksi AI (bukan keputusan): ${aiPredictionLabel(activeItem.aiPrediction)}.`}
+          tone={confirmation.approve ? 'default' : 'danger'}
+          confirmLabel="Simpan Keputusan"
+          loading={vm.reviewingId === activeItem.id}
+          onConfirm={() => {
+            void confirm();
+          }}
+          onCancel={() => setConfirmation(null)}
+        >
+          <TextInput
+            accessibilityLabel={`Catatan untuk ${activeItem.studentName}`}
+            placeholder="Catatan asisten (opsional)"
+            multiline
+            style={styles.input}
+            value={notes[activeItem.id] ?? ''}
+            editable={!vm.reviewingId}
+            onChangeText={(note) =>
+              setNotes((current) => ({ ...current, [activeItem.id]: note }))
+            }
+          />
+        </ConfirmSheet>
+      ) : null}
     </Screen>
   );
 }
