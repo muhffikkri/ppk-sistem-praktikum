@@ -286,7 +286,7 @@ export function AppNavigator() {
                 />
               </Stack.Group>
 
-              <Stack.Group screenOptions={{ title: 'Asisten' }}>
+              <Stack.Group screenOptions={{ headerShown: false }}>
                 <Stack.Screen
                   name="AssistantSchedule"
 
@@ -344,7 +344,7 @@ export function AppNavigator() {
 
                   component={AssistantLeaveReviewListScreen}
 
-                  options={{ title: 'Pemeriksaan Izin' }}
+                  options={{ headerShown: false }}
                 />
               </Stack.Group>
 
