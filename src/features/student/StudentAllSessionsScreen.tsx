@@ -1,59 +1,65 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import type { Session } from '../../domain/types';
 import {
-  Banner,
-  Button,
-  colors,
   EmptyState,
-  radius,
+  ErrorState,
+  Header,
+  ListRow,
+  LoadingState,
   Screen,
-  typography,
+  SegmentedControl,
+  spacing,
+  StatusBadge,
+  TopBar,
+  type BadgeTone,
 } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentAllSessions'>;
 
-function statusTone(status: string) {
-  switch (status) {
-    case 'open':
-      return { label: 'Terbuka', tone: 'violet' as const, live: true };
-    case 'scheduled':
-      return { label: 'Terjadwal', tone: 'lavender' as const, live: false };
-    default:
-      return { label: 'Tertutup', tone: 'neutral' as const, live: false };
-  }
-}
+type StatusFilter = 'all' | Session['status'];
+
+const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'Semua' },
+  { value: 'open', label: 'Terbuka' },
+  { value: 'scheduled', label: 'Terjadwal' },
+  { value: 'closed', label: 'Tertutup' },
+];
+
+const STATUS_LABEL: Record<Session['status'], string> = {
+  open: 'Terbuka',
+  scheduled: 'Terjadwal',
+  closed: 'Tertutup',
+};
+
+const STATUS_TONE: Record<Session['status'], BadgeTone> = {
+  open: 'violet',
+  scheduled: 'lavender',
+  closed: 'neutral',
+};
 
 export function StudentAllSessionsScreen({ navigation }: Props) {
-  const {
-    sessions,
-    getAttendanceForSession,
-    currentStudent,
-    loading,
-    error,
-    retry,
-  } = useStudentAttendanceViewModel();
+  const { sessions, loading, error, retry } = useStudentAttendanceViewModel();
+  const [filter, setFilter] = useState<StatusFilter>('all');
 
   const sorted = [...sessions].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
   );
+  const visible =
+    filter === 'all'
+      ? sorted
+      : sorted.filter((session) => session.status === filter);
 
   if (loading) {
     return (
       <Screen>
-        <View style={styles.stateBlock}>
-          <ActivityIndicator color={colors.violet} />
-          <Text style={styles.stateText}>Memuat jadwal…</Text>
-        </View>
+        <TopBar title="Semua sesi" onBack={() => navigation.goBack()} />
+        <LoadingState label="Memuat sesi…" />
       </Screen>
     );
   }
@@ -61,112 +67,57 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
-        <Banner
-          title="Gagal memuat jadwal"
-          message={error}
-          tone="danger"
-          action={
-            <Button label="Coba lagi" variant="outline" onPress={retry} />
-          }
-        />
+        <TopBar title="Semua sesi" onBack={() => navigation.goBack()} />
+        <ErrorState title="Gagal memuat sesi" message={error} onRetry={retry} />
       </Screen>
     );
   }
 
   return (
     <Screen>
-      {/* Praktikan header — clean sans, bold title */}
-      <View style={styles.headerBlock}>
-        <Text style={styles.eyebrow}>MODE PRAKTIKAN · SEMUA SESI</Text>
-        <Text style={styles.pageTitle}>Semua Sesi</Text>
-        <Text style={styles.pageSub}>
-          {currentStudent?.displayName ?? '-'} · {sorted.length} sesi minggu ini
-        </Text>
-      </View>
+      <TopBar title="Semua sesi" onBack={() => navigation.goBack()} />
+      <Header
+        title="Semua sesi"
+        description={`${sorted.length} sesi praktikum terdaftar`}
+      />
 
-      {sorted.length === 0 ? (
+      <SegmentedControl
+        options={FILTER_OPTIONS}
+        value={filter}
+        onChange={setFilter}
+        accessibilityLabel="Filter status sesi"
+      />
+
+      {visible.length === 0 ? (
         <EmptyState
-          title="Belum ada jadwal"
-          description="Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas."
+          title="Tidak ada sesi"
+          description={
+            filter === 'all'
+              ? 'Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas.'
+              : 'Tidak ada sesi dengan status ini.'
+          }
         />
       ) : (
         <View style={styles.list}>
-          {sorted.map((session, index) => {
-            const record = getAttendanceForSession(session.id);
-            const st = statusTone(session.status);
-            return (
-              <Pressable
-                key={session.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${session.courseName}, ${formatSessionDate(session.startsAt)}, ${record ? 'sudah presensi' : 'belum presensi'}`}
-                onPress={() =>
-                  navigation.navigate('StudentSessionDetail', {
-                    sessionId: session.id,
-                  })
-                }
-                style={({ pressed }) => [
-                  styles.card,
-                  index < sorted.length - 1 && styles.divider,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <View style={styles.cardTop}>
-                  <Text style={styles.course} numberOfLines={2}>
-                    {session.courseName}
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusPill,
-                      {
-                        backgroundColor:
-                          st.tone === 'violet'
-                            ? colors.violet
-                            : st.tone === 'lavender'
-                              ? colors.lavender
-                              : colors.surface,
-                        borderColor:
-                          st.tone === 'violet'
-                            ? colors.violet
-                            : st.tone === 'lavender'
-                              ? colors.lavender
-                              : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        {
-                          color:
-                            st.tone === 'violet'
-                              ? colors.panel
-                              : st.tone === 'lavender'
-                                ? colors.violet
-                                : colors.inkMuted,
-                        },
-                      ]}
-                    >
-                      {st.label}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.metaRow}>
-                  <Text style={styles.meta}>
-                    {formatSessionDate(session.startsAt)}
-                  </Text>
-                  <Text style={styles.meta}>
-                    {formatTimeRange(session.startsAt, session.endsAt)}
-                  </Text>
-                </View>
-                <View style={styles.footer}>
-                  <Text style={styles.footerText}>
-                    {record ? `Sudah presensi` : 'Belum presensi'}
-                  </Text>
-                  <Text style={styles.chevron}>Detail ›</Text>
-                </View>
-              </Pressable>
-            );
-          })}
+          {visible.map((session) => (
+            <ListRow
+              key={session.id}
+              title={session.courseName}
+              meta={`${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
+              accessibilityHint="Membuka detail sesi"
+              onPress={() =>
+                navigation.navigate('StudentSessionDetail', {
+                  sessionId: session.id,
+                })
+              }
+              trailing={
+                <StatusBadge
+                  label={STATUS_LABEL[session.status]}
+                  tone={STATUS_TONE[session.status]}
+                />
+              }
+            />
+          ))}
         </View>
       )}
     </Screen>
@@ -174,68 +125,5 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  headerBlock: { gap: 4 },
-  eyebrow: { ...typography.overline, color: colors.violet },
-  pageTitle: {
-    ...typography.body,
-    fontFamily: 'Plus Jakarta Sans',
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: -0.5,
-  },
-  pageSub: { ...typography.label, color: colors.inkMuted },
-  stateBlock: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 48,
-  },
-  stateText: { ...typography.body, color: colors.inkMuted },
-
-  list: {
-    backgroundColor: colors.panel,
-    borderRadius: radius['3xl'],
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  card: { padding: 18, gap: 8 },
-  divider: { borderBottomWidth: 1, borderBottomColor: colors.borderSubtle },
-  pressed: { backgroundColor: colors.lavenderSubtle },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  course: {
-    flex: 1,
-    flexShrink: 1,
-    ...typography.bodyStrong,
-    color: colors.ink,
-    fontSize: 16,
-  },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.full,
-    borderWidth: 1,
-  },
-  statusText: { ...typography.caption, fontWeight: '700' },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    columnGap: 16,
-    rowGap: 4,
-  },
-  meta: { ...typography.label, color: colors.inkMuted },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  footerText: { ...typography.label, color: colors.inkMuted },
-  chevron: { ...typography.label, color: colors.violet, fontWeight: '600' },
+  list: { gap: spacing.sm },
 });
