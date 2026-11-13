@@ -79,6 +79,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
 
       {sorted.length === 0 ? (
         <EmptyState
+          icon="calendar-outline"
           title="Belum ada jadwal"
           description="Jadwal praktikum akan muncul di sini setelah asisten menambahkanmu ke kelas."
         />

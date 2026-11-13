@@ -90,6 +90,7 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
 
       {visible.length === 0 ? (
         <EmptyState
+          icon="calendar-outline"
           title="Tidak ada sesi"
           description={
             filter === 'all'

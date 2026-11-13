@@ -64,6 +64,7 @@ export function StudentLeaveSessionPicker({
       />
       {!loading && !error && sessions.length === 0 ? (
         <EmptyState
+          icon="document-text-outline"
           title="Belum ada sesi terdaftar"
           description="Sesi akan tersedia setelah asisten mendaftarkan Anda sebagai peserta praktikum."
         />

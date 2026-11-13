@@ -91,6 +91,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
       <Screen>
         <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
         <EmptyState
+          icon="calendar-outline"
           title="Sesi tidak ditemukan"
           description="Sesi tidak ditemukan atau kamu bukan peserta kelas ini."
           action={

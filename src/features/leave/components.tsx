@@ -108,6 +108,7 @@ export function ListFeedback({
       ) : null}
       {!loading && !error && empty ? (
         <EmptyState
+          icon="document-text-outline"
           title="Belum ada pengajuan izin"
           description="Pengajuan izin akan muncul di sini setelah dikirim oleh praktikan."
         />

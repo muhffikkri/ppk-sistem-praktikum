@@ -75,6 +75,7 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
 
       {sorted.length === 0 ? (
         <EmptyState
+          icon="time-outline"
           title="Belum ada riwayat presensi"
           description="Presensi yang kamu lakukan akan muncul di sini."
           action={
