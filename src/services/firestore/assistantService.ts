@@ -440,7 +440,18 @@ export function subscribeAttendanceForSession(
 ) {
   const q = query(attendanceCol, where('sessionId', '==', sessionId), orderBy('checkedInAt', 'asc'));
   return onSnapshot(q, (snap: any) => {
-    const records = snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as AttendanceRecord));
+    const records = snap.docs.map((d: any) => {
+      const data = d.data();
+      const checkedInAt = data.checkedInAt;
+      return {
+        ...data,
+        id: d.id,
+        checkedInAt:
+          typeof checkedInAt?.toDate === 'function'
+            ? checkedInAt.toDate().toISOString()
+            : checkedInAt,
+      } as AttendanceRecord;
+    });
     onData(records);
   }, (err: any) => {
     onError(err.message || 'Gagal memuat kehadiran');

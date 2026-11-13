@@ -84,6 +84,11 @@ type AssistantAction =
   | { type: 'SET_CLASSES'; classes: PracticalClass[] }
   | { type: 'SET_SESSIONS'; sessions: Session[] }
   | { type: 'SET_STUDENTS'; students: UserProfile[] }
+  | {
+      type: 'SET_ATTENDANCE';
+      sessionId: string;
+      records: AttendanceRecord[];
+    }
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'SET_ERROR'; error: string | null };
 
@@ -95,6 +100,7 @@ interface AssistantSessionsState {
   sessions: Session[];
   classes: PracticalClass[];
   studentsDirectory: UserProfile[];
+  attendanceBySession: Record<string, AttendanceRecord[]>;
   loading: boolean;
   error: string | null;
 }
@@ -107,6 +113,7 @@ const initialState: AssistantSessionsState = {
   sessions: [],
   classes: [],
   studentsDirectory: [],
+  attendanceBySession: {},
   loading: true,
   error: null,
 };
@@ -126,6 +133,14 @@ function assistantReducer(
       return { ...state, sessions: action.sessions };
     case 'SET_STUDENTS':
       return { ...state, studentsDirectory: action.students };
+    case 'SET_ATTENDANCE':
+      return {
+        ...state,
+        attendanceBySession: {
+          ...state.attendanceBySession,
+          [action.sessionId]: action.records,
+        },
+      };
     case 'SET_LOADING':
       return { ...state, loading: action.loading };
     case 'SET_ERROR':
@@ -151,7 +166,7 @@ export const AssistantSessionsProvider = ({
   const { user } = useAuth();
   const [state, dispatch] = useReducer(assistantReducer, initialState);
   const [retryCounter, setRetryCounter] = useState(0);
-  const attendanceCacheRef = useRef<Record<string, AttendanceRecord[]>>({});
+  const attendanceUnsubsRef = useRef<Map<string, () => void>>(new Map());
   const studentsCacheRef = useRef<Map<string, UserProfile>>(new Map());
   const classesReadyRef = useRef(false);
   const sessionsReadyRef = useRef(false);
@@ -245,30 +260,53 @@ export const AssistantSessionsProvider = ({
     };
   }, [user?.uid, retryCounter]);
 
+  const sessionIds = state.sessions.map((s) => s.id).join(',');
+
+  // Keep one attendance listener per session and drop listeners for
+  // sessions that are no longer visible.
+  useEffect(() => {
+    const currentIds = sessionIds ? sessionIds.split(',') : [];
+    const activeIds = new Set(currentIds);
+
+    attendanceUnsubsRef.current.forEach((unsubscribe, id) => {
+      if (!activeIds.has(id)) {
+        unsubscribe();
+        attendanceUnsubsRef.current.delete(id);
+      }
+    });
+
+    currentIds.forEach((sessionId) => {
+      if (attendanceUnsubsRef.current.has(sessionId)) return;
+
+      const unsubscribe = subscribeAttendanceForSession(
+        sessionId,
+        (records) =>
+          dispatch({ type: 'SET_ATTENDANCE', sessionId, records }),
+        (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+      );
+      attendanceUnsubsRef.current.set(sessionId, unsubscribe);
+    });
+  }, [sessionIds]);
+
+  // Close every attendance listener on unmount/logout.
+  useEffect(() => {
+    return () => {
+      attendanceUnsubsRef.current.forEach((unsubscribe) => unsubscribe());
+      attendanceUnsubsRef.current.clear();
+    };
+  }, []);
+
   const getSessionById = (sessionId: string) =>
     state.sessions.find((s) => s.id === sessionId);
 
   const getAttendanceForSession = (sessionId: string) =>
-    attendanceCacheRef.current[sessionId] ?? [];
+    state.attendanceBySession[sessionId] ?? [];
 
   const subscribeAttendance = (
     sessionId: string,
     onData: (records: AttendanceRecord[]) => void,
     onError: (msg: string) => void,
-  ) => {
-    attendanceCacheRef.current[sessionId] = [];
-    const unsub = subscribeAttendanceForSession(
-      sessionId,
-      (records) => {
-        attendanceCacheRef.current[sessionId] = records;
-        onData(records);
-      },
-      onError,
-    );
-    return () => {
-      unsub();
-    };
-  };
+  ) => subscribeAttendanceForSession(sessionId, onData, onError);
 
   const viewModel: AssistantSessionsViewModel = {
     ...state,
