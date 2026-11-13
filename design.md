@@ -221,14 +221,49 @@ Min-height 48, radius `2xl` (18), padding horizontal 24.
 | `outline`     | `panel` + `border`| `ink`         | `surface`      |
 | `destructive` | `dangerSoft`      | `dangerInk`   | `dangerBorder` |
 
-Icon-only: 40×40, radius `lg`. Loading: spinner + label "…".
+Ukuran `size`: `md` (default, min-height 48, padding 24) dan `sm`
+(min-height 40, padding 16) untuk aksi di dalam kartu/banner. Label
+`bodyStrong` (`sm`: `label`), selalu satu baris. Ikon hanya lewat prop
+`icon` (nama Ionicons) — tidak ada glyph unicode. Loading:
+`ActivityIndicator` + label tetap tampil.
 Semua tombol wajib `accessibilityRole="button"`.
+
+### IconButton — Section 02 (icon states)
+
+40×40 (hit-slop sampai 44), radius `lg`, ikon Ionicons 20.
+Variant `outline` (default, panel + `border`), `soft` (lavender, ikon
+violet), `ghost` (tanpa latar). `accessibilityLabel` **wajib** secara
+tipe — ikon tidak punya teks untuk dibacakan.
+
+### TopBar
+
+Untuk layar push (detail, form): `IconButton` kembali (bila `onBack`
+diberikan, label default "Kembali") + judul `bodyStrong` satu baris +
+slot `trailing`. Tinggi minimum 44.
+
+### Header
+
+`eyebrow` (overline violet, opsional) + `title` (`display`) +
+`accent` (opsional, potongan judul `displayAccent` italic violet —
+maks. 1× per layar, hanya judul halaman utama) + `description` (body
+muted). `dark` mengganti semua baris ke `onPrimary` / `onInkMuted`.
+
+### SectionHeader
+
+`overline` muted di kiri + aksi teks kecil opsional di kanan
+(`captionStrong` violet, mis. "Lihat semua"). Dipakai antar section,
+bukan di setiap kartu.
 
 ### Form controls — Section 03
 
-- **Input floating pill:** panel putih, radius `2xl`, padding 12.
-  Label kecil uppercase di dalam field. Focused → border 2px `violet`
-  + `shadow.subtle`. Error → border `danger` + latar `dangerSoft/20`.
+- **Input floating pill (`TextField`):** panel putih, radius `2xl`,
+  padding 12. Label kecil uppercase (`overline`) di dalam field.
+  Focused → border 2px `violet` + `shadow.subtle` (label ikut violet).
+  Error → border `danger` + latar `dangerSoft` + pesan `caption`
+  danger di bawah; `hint` (caption muted) tampil bila tidak ada error.
+  Props: `label`, `error?`, `hint?`, `rightAccessory?` (mis.
+  `IconButton` lihat password), plus prop `TextInput` (`value`,
+  `onChangeText`, `secureTextEntry`, `multiline`, …).
 - **Search bar:** `surface` + `border`, radius `2xl`, ikon kaca + shortcut ⌘K.
 - **Dropdown:** panel + `border`, label kecil atas + nilai bold bawah.
 - **Segmented switch:** container `surface`, item aktif `ink` (teks putih),
@@ -256,10 +291,15 @@ closed→`neutral`.
 
 ### Attendance rows — Section 06
 
-Row: panel + `border`, radius `2xl`, padding 12, tinggi ~64.
-Avatar bulat 36 (initials, latar tint per status). Nama `bodyStrong`,
-meta `caption` (`inkMuted`). Trailing: badge status + menu (⋮).
-Row "late" pakai avatar `pink`, "izin" pakai `lavender`.
+`ListRow`: panel + `border`, radius `2xl`, padding 12, min-height 64.
+Slot `leading` (biasanya `Avatar`), `title` `bodyStrong` dan `meta`
+`caption` muted (keduanya satu baris), slot `trailing` (badge status,
+chevron). Dengan `onPress` seluruh row menjadi `Pressable`
+(pressed → border violet + `lavenderSubtle`).
+
+`Avatar`: lingkaran 36 (opsi 44), inisial dari nama **asli** (kata
+pertama + terakhir). Tone `lavender` (default, teks violet), `pink`
+(terlambat, teks `pinkInk`), `lime` (hadir, teks ink).
 
 ### Analytics — Section 07
 
@@ -276,6 +316,29 @@ judul `bodyStrong`, pesan `caption`. Tone `success` / `warning` /
 kecil outline.
 Empty state: blok `surface` **dashed border**, ikon panel 48 di tengah,
 judul `bodyStrong`, deskripsi `body` (max 240px).
+
+`LoadingState`: satu-satunya blok loading — spinner violet + label
+body muted (default "Memuat…"), di tengah.
+`ErrorState`: `Banner` danger (judul default "Gagal memuat data",
+pesan dari service) + `Button` outline `sm` "Coba lagi" bila
+`onRetry` diberikan.
+
+### Screen
+
+Kolom konten satu-satunya per layar; `withDock={false}` untuk layar
+auth. `contentStyle` hanya untuk layout kolom, mis.
+`{ flexGrow: 1, justifyContent: 'space-between' }` agar tombol menempel
+di bawah pada HP tinggi tetapi tetap bisa discroll di HP pendek
+(contoh: `LandingScreen`).
+
+### Guard otomatis
+
+`npm run check:ui [-- <path|glob> …]` (`scripts/check-ui-tokens.ts`)
+menolak literal hex/rgba di luar `src/theme`, `fontSize`/`fontFamily`/
+`fontWeight`/`fontStyle` di luar `src/theme` & `src/shared/ui`, `Text`
+dari `react-native` di layar, dan copy di luar SRS (QR, Beacon, Shift,
+SIAKAD, SSO, …). `--report` mencetak jumlah pelanggaran per file tanpa
+gagal.
 
 ### Bottom dock (mobile)
 
@@ -376,9 +439,10 @@ Sebelum menambah/mengubah UI:
 - [ ] Baca `spec/design-sticker-sheet.md` (raw) + file ini.
 - [ ] Semua warna/spacing/radius/typo dari `src/theme/tokens.ts`,
       bukan literal baru.
-- [ ] Gunakan primitif `shared/ui` (Card, Button, StatusBadge, Banner,
-      Header, Screen, EmptyState) — buat primitif baru hanya jika
-      belum ada.
+- [ ] Gunakan primitif `shared/ui` (Text, Button, IconButton, TopBar,
+      Header, SectionHeader, TextField, ListRow, Avatar, Card,
+      StatusBadge, Banner, LoadingState, ErrorState, Screen, EmptyState)
+      — buat primitif baru hanya jika belum ada.
 - [ ] Tidak ada konten karangan (angka, nama, lokasi, fitur di luar SRS).
 - [ ] Jalankan `npm run typecheck`, `npm run lint`, dan
       `npm run format:check` sebelum selesai.
