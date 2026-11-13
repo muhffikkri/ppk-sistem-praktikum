@@ -94,7 +94,23 @@ function mapFirebaseAuthError(err: unknown): {
         reason: 'forbidden',
         message: 'Akses ke data profil ditolak oleh aturan keamanan.',
       };
+    case 'auth/operation-not-allowed':
+      return {
+        reason: 'forbidden',
+        message:
+          'Metode login ini belum diaktifkan di Firebase Authentication.',
+      };
+    case 'auth/configuration-not-found':
+    case 'auth/invalid-api-key':
+    case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
+      return {
+        reason: 'unknown_error',
+        message: 'Konfigurasi Firebase tidak valid. Periksa isi file .env.',
+      };
     default:
+      if (__DEV__) {
+        console.warn('[Auth] unmapped error:', code || err);
+      }
       return {
         reason: 'unknown_error',
         message: 'Terjadi kesalahan pada layanan autentikasi. Coba lagi.',
