@@ -12,6 +12,8 @@ export type ListRowProps = {
   leading?: ReactNode;
   /** Trailing slot: status badge, chevron, menu. */
   trailing?: ReactNode;
+  /** Destructive rows (e.g. Keluar) render the title in danger ink. */
+  tone?: 'default' | 'danger';
   /** Makes the whole row pressable. */
   onPress?: () => void;
   accessibilityLabel?: string;
@@ -24,6 +26,7 @@ export function ListRow({
   meta,
   leading,
   trailing,
+  tone = 'default',
   onPress,
   accessibilityLabel,
   accessibilityHint,
@@ -32,7 +35,11 @@ export function ListRow({
     <>
       {leading}
       <View style={styles.text}>
-        <Text variant="bodyStrong" numberOfLines={1}>
+        <Text
+          variant="bodyStrong"
+          tone={tone === 'danger' ? 'danger' : 'ink'}
+          numberOfLines={1}
+        >
           {title}
         </Text>
         {meta ? (

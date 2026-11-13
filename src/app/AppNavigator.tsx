@@ -361,13 +361,7 @@ export function AppNavigator() {
 
                 component={ProfileScreen}
 
-                options={{
-                  headerRight: () => null,
-
-                  headerTintColor: colors.inkMuted,
-
-                  headerStyle: { backgroundColor: colors.surface },
-                }}
+                options={{ headerShown: false }}
               />
 
               <Stack.Screen
