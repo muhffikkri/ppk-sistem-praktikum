@@ -9,7 +9,15 @@ import {
   View,
 } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
-import { colors, radius, Screen, Button, typography } from '../../shared/ui';
+import {
+  Banner,
+  Button,
+  colors,
+  radius,
+  Screen,
+  SelectField,
+  typography,
+} from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSessionForm'>;
@@ -201,22 +209,31 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
 
         {/* Class Selection (editable) */}
         <View style={styles.formGroup}>
-          <Text style={styles.formLabel}>Kelas</Text>
           {classes.length === 0 ? (
-            <Text style={styles.emptyClass}>
-              Belum ada kelas. Buat kelas dulu.
-            </Text>
+            <>
+              <Banner
+                tone="warning"
+                title="Belum ada kelas"
+                message="Buat kelas dulu sebelum membuat sesi."
+              />
+              <Button
+                label="Buat kelas"
+                variant="soft"
+                onPress={() => navigation.navigate('AssistantClassForm', {})}
+              />
+            </>
           ) : (
-            <TouchableOpacity
-              style={styles.classPicker}
-              onPress={() => navigation.push('AssistantClassList')}
-            >
-              <Text style={styles.classPickerText}>
-                {state.classId
-                  ? `${classes.find((c: any) => c.id === state.classId)?.courseName} - ${classes.find((c: any) => c.id === state.classId)?.groupName}`
-                  : 'Pilih kelas'}
-              </Text>
-            </TouchableOpacity>
+            <SelectField
+              label="Kelas"
+              placeholder="Pilih kelas"
+              value={state.classId || null}
+              options={classes.map((c) => ({
+                value: c.id,
+                label: `${c.courseName} · ${c.groupName}`,
+                description: `${c.participantIds.length} peserta`,
+              }))}
+              onChange={(id) => setField('classId', id)}
+            />
           )}
         </View>
 
