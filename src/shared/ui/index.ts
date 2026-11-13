@@ -1,3 +1,9 @@
+export {
+  Avatar,
+  initialsOf,
+  type AvatarProps,
+  type AvatarTone,
+} from './Avatar';
 export { Banner } from './Banner';
 export { BottomDock, type DockTab } from './BottomDock';
 export { Button } from './Button';
@@ -6,6 +12,7 @@ export { ConfirmSheet } from './ConfirmSheet';
 export { EmptyState } from './EmptyState';
 export { Header } from './Header';
 export { IconButton, type IconButtonProps, type IconName } from './IconButton';
+export { ListRow, type ListRowProps } from './ListRow';
 export { Screen } from './Screen';
 export { SectionHeader, type SectionHeaderProps } from './SectionHeader';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';

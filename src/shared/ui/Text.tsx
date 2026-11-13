@@ -9,12 +9,20 @@ import { colors, typography } from '../../theme/tokens';
 export type TextVariant = keyof typeof typography;
 
 export type TextTone =
-  'ink' | 'muted' | 'violet' | 'onDark' | 'onDarkMuted' | 'success' | 'danger';
+  | 'ink'
+  | 'muted'
+  | 'violet'
+  | 'pink'
+  | 'onDark'
+  | 'onDarkMuted'
+  | 'success'
+  | 'danger';
 
 const toneColor: Record<TextTone, string> = {
   ink: colors.ink,
   muted: colors.inkMuted,
   violet: colors.violet,
+  pink: colors.pinkInk,
   onDark: colors.onPrimary,
   onDarkMuted: colors.onInkMuted,
   success: colors.successInk,
