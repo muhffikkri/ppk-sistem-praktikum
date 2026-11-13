@@ -28,6 +28,15 @@ import {
   StudentSessionDetailScreen,
 } from '../features/student';
 
+import {
+  AssistantLeaveReviewListScreen,
+  LeaveProvider,
+  StudentLeaveListScreen,
+  StudentLeaveRequestFormScreen,
+} from '../features/leave';
+
+import { db } from '../services/firebase';
+
 import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
 
 import { useActorRole, useAuth } from '../state';
@@ -159,6 +168,7 @@ export function AppNavigator() {
   return (
     <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
       <StudentAttendanceProvider enabled={user?.role === 'student'}>
+        <LeaveProvider db={db} user={user}>
         <View style={styles.root}>
         <Stack.Navigator
           initialRouteName="Home"
@@ -243,6 +253,22 @@ export function AppNavigator() {
 
               component={StudentAllAttendanceScreen}
             />
+
+            <Stack.Screen
+              name="StudentLeaveRequestForm"
+
+              component={StudentLeaveRequestFormScreen}
+
+              options={{ title: 'Ajukan Izin' }}
+            />
+
+            <Stack.Screen
+              name="StudentLeaveList"
+
+              component={StudentLeaveListScreen}
+
+              options={{ title: 'Izin Saya' }}
+            />
           </Stack.Group>
 
           <Stack.Group screenOptions={{ title: 'Asisten' }}>
@@ -309,6 +335,14 @@ export function AppNavigator() {
 
               component={AssistantSessionFormScreen}
             />
+
+            <Stack.Screen
+              name="AssistantLeaveReviewList"
+
+              component={AssistantLeaveReviewListScreen}
+
+              options={{ title: 'Pemeriksaan Izin' }}
+            />
           </Stack.Group>
 
           <Stack.Screen
@@ -373,6 +407,7 @@ export function AppNavigator() {
           }}
         />
         </View>
+        </LeaveProvider>
       </StudentAttendanceProvider>
     </AssistantSessionsProvider>
   );
