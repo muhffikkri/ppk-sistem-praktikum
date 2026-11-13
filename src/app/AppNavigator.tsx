@@ -417,12 +417,15 @@ export function AppNavigator() {
 
                 label: 'Izin',
 
-                onPress: () =>
+                onPress: () => {
+                  // Izin bukan tab dock: kosongkan key agar tab lama tidak menyala.
+                  setActiveKey('');
                   navigation.navigate(
                     actorRole === 'asisten'
                       ? 'AssistantLeaveReviewList'
                       : 'StudentLeaveList',
-                  ),
+                  );
+                },
               }}
             />
           </View>
