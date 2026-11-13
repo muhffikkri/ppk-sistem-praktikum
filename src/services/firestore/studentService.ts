@@ -1,21 +1,22 @@
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  query, 
-  where, 
-  onSnapshot, 
-  setDoc, 
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  query,
+  setDoc,
   Timestamp,
-  QuerySnapshot 
+  where,
 } from 'firebase/firestore';
-import { db } from '../../config/firebase'; 
+
+import { db } from '../../config/firebase';
 
 export interface Session {
   id: string;
   courseName: string;
   groupName: string;
   status: 'scheduled' | 'open' | 'closed';
+  classId?: string;
   participantIds: string[];
 }
 
@@ -26,8 +27,9 @@ export interface AttendanceRecord {
   checkedInAt: Timestamp | string;
 }
 
+// Mendapatkan daftar sesi student secara real-time
 export function subscribeStudentSessions(
-  studentId: string, 
+  studentId: string,
   onUpdate: (sessions: Session[]) => void,
   onError: (error: Error) => void
 ) {
@@ -36,20 +38,23 @@ export function subscribeStudentSessions(
     where('participantIds', 'array-contains', studentId)
   );
 
-  return onSnapshot(q, 
-    (snapshot: QuerySnapshot) => {
-      const sessions: Session[] = snapshot.docs.map((docItem: any) => ({
-        id: docItem.id,
-        ...docItem.data()
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const sessions: Session[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
       })) as Session[];
+
       onUpdate(sessions);
-    }, 
-    (error: any) => {
+    },
+    (error) => {
       onError(error);
     }
   );
 }
 
+// Mendapatkan riwayat kehadiran student secara real-time
 export function subscribeStudentAttendance(
   studentId: string,
   onUpdate: (records: AttendanceRecord[]) => void,
@@ -60,21 +65,27 @@ export function subscribeStudentAttendance(
     where('studentId', '==', studentId)
   );
 
-  return onSnapshot(q,
-    (snapshot: QuerySnapshot) => {
-      const records: AttendanceRecord[] = snapshot.docs.map((docItem: any) => ({
-        id: docItem.id,
-        ...docItem.data()
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const records: AttendanceRecord[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
       })) as AttendanceRecord[];
+
       onUpdate(records);
     },
-    (error: any) => {
+    (error) => {
       onError(error);
     }
   );
 }
 
-export async function checkInStudent(sessionId: string, studentId: string): Promise<{ ok: boolean; reason?: string }> {
+// Check-in presensi student
+export async function checkInStudent(
+  sessionId: string,
+  studentId: string
+): Promise<{ ok: boolean; reason?: string }> {
   try {
     const sessionRef = doc(db, 'sessions', sessionId);
     const sessionSnap = await getDoc(sessionRef);
@@ -85,10 +96,12 @@ export async function checkInStudent(sessionId: string, studentId: string): Prom
 
     const sessionData = sessionSnap.data() as Session;
 
+    // Sesi harus sedang dibuka
     if (sessionData.status !== 'open') {
       return { ok: false, reason: 'invalid_status' };
     }
 
+    // ID dibuat berdasarkan session + student agar tidak bisa presensi dua kali
     const attendanceId = `${sessionId}_${studentId}`;
     const attendanceRef = doc(db, 'attendance', attendanceId);
     const attendanceSnap = await getDoc(attendanceRef);
@@ -106,6 +119,9 @@ export async function checkInStudent(sessionId: string, studentId: string): Prom
 
     return { ok: true };
   } catch (error: any) {
-    return { ok: false, reason: error.message || 'network_error' };
+    return {
+      ok: false,
+      reason: error.message || 'network_error',
+    };
   }
 }

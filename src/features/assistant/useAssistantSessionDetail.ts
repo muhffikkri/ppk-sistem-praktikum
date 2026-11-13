@@ -23,8 +23,8 @@ export type AssistantSessionDetailViewModel = {
   canClose: boolean;
   statusHint: string;
   feedback: AssistantFeedback | null;
-  openSession: () => void;
-  closeSession: () => void;
+  openSession: () => Promise<void>;
+  closeSession: () => Promise<void>;
   dismissFeedback: () => void;
 };
 
@@ -84,21 +84,21 @@ export function useAssistantSessionDetail(
   const session = viewModel.getSessionById(sessionId);
   const attendees = viewModel.getAttendanceForSession(sessionId);
 
-  const openSession = () => {
-    const result = viewModel.openSession(sessionId);
+  const openSession = async () => {
+    const result = await viewModel.openSession(sessionId);
     setLastAction(
       result.ok
         ? { type: 'opened' }
-        : { type: 'failed', reason: result.reason },
+        : { type: 'failed', reason: 'invalid_status' },
     );
   };
 
-  const closeSession = () => {
-    const result = viewModel.closeSession(sessionId);
+  const closeSession = async () => {
+    const result = await viewModel.closeSession(sessionId);
     setLastAction(
       result.ok
         ? { type: 'closed' }
-        : { type: 'failed', reason: result.reason },
+        : { type: 'failed', reason: 'invalid_status' },
     );
   };
 

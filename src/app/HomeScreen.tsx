@@ -19,7 +19,7 @@ import {
 } from '../shared/ui';
 import {
   useAssistantSessionsViewModel,
-  usePov,
+  useAuth,
   useStudentAttendanceViewModel,
 } from '../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
@@ -53,7 +53,8 @@ function initialsOf(name: string): string {
 }
 
 export function HomeScreen({ navigation }: Props) {
-  const { pov, setPov } = usePov();
+  const { user } = useAuth();
+  const isAsisten = user?.role === 'assistant';
 
   const { sessions, getAttendanceForSession } = useAssistantSessionsViewModel();
   const { sessions: studentSessions, attendanceHistory: studentHistory } =
@@ -61,7 +62,7 @@ export function HomeScreen({ navigation }: Props) {
 
   // Each role has its own session source: asisten manages lab sessions,
   // praktikan follows their own class schedule.
-  const roleSessions = pov === 'asisten' ? sessions : studentSessions;
+  const roleSessions = isAsisten ? sessions : studentSessions;
 
   const active =
     roleSessions.find((s) => s.status === 'open') ??
@@ -69,7 +70,7 @@ export function HomeScreen({ navigation }: Props) {
 
   // Role-aware "all" data: asisten sees full roster, praktikan sees own history.
   const allRecords =
-    pov === 'asisten' && active
+    isAsisten && active
       ? getAttendanceForSession(active.id).slice()
       : studentHistory.slice();
   const records = allRecords;
@@ -82,7 +83,7 @@ export function HomeScreen({ navigation }: Props) {
   const metrics = deriveMetrics(active, records);
 
   const onSeeAllAttendance = () => {
-    if (pov === 'asisten') {
+    if (isAsisten) {
       navigation.navigate('AssistantAllAttendance');
     } else {
       navigation.navigate('StudentAllAttendance');
@@ -90,7 +91,7 @@ export function HomeScreen({ navigation }: Props) {
   };
 
   const onSeeAllSessions = () => {
-    if (pov === 'asisten') {
+    if (isAsisten) {
       navigation.navigate('AssistantAllSessions');
     } else {
       navigation.navigate('StudentAllSessions');
@@ -111,8 +112,6 @@ export function HomeScreen({ navigation }: Props) {
     setView('tanggal');
   };
   const onBackToHome = () => setView('home');
-
-  const isAsisten = pov === 'asisten';
 
   // Menghari hari dalam bentuk nama lengkap saat view 'tanggal'
   const selectedDayName =
@@ -147,14 +146,15 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       ) : (
         <>
-          {/* Greeting + POV switch */}
+          {/* Greeting + active account role */}
           <View style={styles.greetingRow}>
             <View style={styles.greetingText}>
               <CardOverline>
                 {isAsisten ? 'Mode Asisten' : 'Mode Praktikan'}
               </CardOverline>
               <Text style={styles.greetingTitle}>
-                {isAsisten ? 'Selamat Datang, Kak Naufal' : 'Halo, Saburo'}
+                Halo,{' '}
+                {user?.displayName || (isAsisten ? 'Asisten' : 'Praktikan')}
               </Text>
             </View>
             <StatusBadge
@@ -163,33 +163,6 @@ export function HomeScreen({ navigation }: Props) {
               dot
               live={isAsisten}
             />
-          </View>
-
-          {/* POV segmented switch */}
-          <View style={styles.povBar}>
-            {(['praktikan', 'asisten'] as const).map((role) => (
-              <Pressable
-                key={role}
-                accessibilityRole="button"
-                accessibilityState={{ selected: pov === role }}
-                onPress={() => setPov(role)}
-                style={({ pressed }) => [
-                  styles.povItem,
-                  pov === role && styles.povItemActive,
-                  pressed && styles.povItemPressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.povLabel,
-                    pov === role && styles.povLabelActive,
-                  ]}
-                  accessibilityElementsHidden
-                >
-                  {role === 'praktikan' ? 'Praktikan' : 'Asisten'}
-                </Text>
-              </Pressable>
-            ))}
           </View>
 
           {/* Day strip — radio buttons that switch to tanggal view */}
@@ -585,27 +558,6 @@ const styles = StyleSheet.create({
   },
   greetingText: { gap: 4 },
   greetingTitle: { ...typography.title, color: colors.ink },
-
-  povBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.panel,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 4,
-    gap: 4,
-  },
-  povItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: radius.full,
-  },
-  povItemActive: { backgroundColor: colors.ink },
-  povItemPressed: { opacity: 0.85 },
-  povLabel: { ...typography.label, color: colors.inkMuted, fontWeight: '600' },
-  povLabelActive: { color: colors.onPrimary },
 
   dayStrip: {
     flexDirection: 'row',

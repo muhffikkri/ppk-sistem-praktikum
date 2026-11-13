@@ -6,7 +6,7 @@
 
 Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digunakan oleh banyak pengguna dengan akun masing-masing secara real-time dan persisten. Aplikasi mengintegrasikan:
 
-- **Firebase Authentication** sebagai sumber identitas dan autentikasi pengguna (`student` / `assistant`).
+- **Firebase Authentication** sebagai sumber identitas dan autentikasi pengguna (`student` / `assistant` / `admin`).
 - **Cloud Firestore** sebagai penyimpanan utama dan sinkronisasi data real-time untuk kelas, peserta, jadwal, sesi praktikum, presensi, dan pengajuan izin.
 - **API Model AI Pengajar** sebagai pemberi prediksi kategori alasan pada pengajuan izin (bersifat pendukung, bukan penentu keputusan).
 
@@ -15,6 +15,7 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
 - Menggantikan mode demo lokal dan data dummy terpisah dari Sprint 1 dengan akun nyata dan data bersama yang konsisten antar pengguna secara real-time.
 - Memungkinkan asisten mengelola data praktikum (kelas, peserta, jadwal, sesi), membuka/menutup sesi, memantau rekap kehadiran secara langsung, dan memeriksa pengajuan izin.
 - Memungkinkan praktikan melihat jadwal dan sesi terkait dirinya, melakukan presensi satu kali saat sesi terbuka, serta mengajukan dan memantau status izin yang diperkaya klasifikasi AI.
+- Memungkinkan admin mengelola kelas dan sesi praktikum.
 
 ## Persona & Peran Pengguna
 
@@ -22,6 +23,7 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
 | --- | --- | --- |
 | **Praktikan** | `student` | Registrasi/login/logout, melihat jadwal & sesi kelas yang diikuti, melakukan presensi saat sesi `open` (maksimal 1 kali per sesi), mengajukan izin beserta alasan, dan memantau status pengajuan izinnya. |
 | **Asisten** | `assistant` | Registrasi/login/logout, CRUD kelas, peserta, jadwal, dan sesi praktikum, membuka/menutup sesi, melihat rekap kehadiran real-time, serta memeriksa dan menerima/menolak pengajuan izin. |
+| **Admin** | `admin` | Registrasi/login/logout, CRUD kelas dan sesi praktikum (manajemen lengkap data praktikum). |
 
 > Mode pemilihan peran lokal (`PovContext` / demo switch) pada Sprint 1 dihapus dan digantikan oleh identitas serta peran dari akun yang terautentikasi.
 
@@ -31,12 +33,14 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
 
 - [ ] Pengguna dapat melakukan **registrasi** dengan nama lengkap, email, password, dan pemilihan peran (`Praktikan` atau `Asisten`).
 - [ ] Pengguna dapat melakukan **login** dengan email dan password.
+- [ ] Pengguna dapat melakukan **login dengan Google Authentication** (tombol "Masuk dengan Akun Google").
+- [ ] **Satu email, satu user, satu role:** Login dengan email/password atau Google pada email yang sama akan mengakses user yang sama dengan role yang sama (dijamin oleh Firebase account linking + profil Firestore tunggal per `uid`).
 - [ ] Pengguna dapat melakukan **logout** dari halaman profil/akun.
 - [ ] Profil pengguna (`uid`, `displayName`, `email`, `role`, `createdAt`) tersimpan di Firestore saat registrasi dan dimuat saat login.
 - [ ] Aplikasi menampilkan informasi dan menyediakan tindakan hanya sesuai peran pengguna yang sedang login.
 - [ ] Pengguna yang belum login diarahkan ke alur autentikasi dan tidak dapat mengakses layar atau data praktikum.
 
-**Diterima bila:** pengguna baru bisa mendaftar sebagai praktikan atau asisten, login/logout berjalan dengan persistensi sesi, dan antarmuka terkunci sesuai peran akun.
+**Diterima bila:** pengguna baru bisa mendaftar sebagai praktikan atau asisten; login (email & Google) berjalan dengan persistensi sesi; login dengan email dan Google pada email yang sama menghasilkan user dan role yang identik; dan antarmuka terkunci sesuai peran akun.
 
 ### R2 — Pengelolaan Data Praktikum (CRUD Asisten & Tampilan Praktikan)
 
@@ -45,9 +49,10 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
   - Kelas praktikum (mata praktikum, kode/nama kelas).
   - Peserta pada kelas (menambah dan menghapus praktikan terdaftar ke/dari kelas).
   - Jadwal dan sesi praktikum (kelas terkait, waktu mulai, waktu selesai, lokasi lab opsional).
+- [ ] **Admin** dapat melakukan CRUD kelas dan sesi praktikum untuk manajemen lengkap data praktikum.
 - [ ] **Praktikan** hanya dapat melihat jadwal dan informasi sesi dari kelas yang mengikutsertakan dirinya sebagai peserta.
 
-**Diterima bila:** asisten dapat membuat/mengubah/menghapus kelas, mengatur peserta, dan membuat/mengubah/menghapus jadwal sesi; praktikan yang terdaftar otomatis melihat jadwal sesi kelasnya.
+**Diterima bila:** asisten dan admin dapat membuat/mengubah/menghapus kelas, mengatur peserta, dan membuat/mengubah/menghapus jadwal sesi; praktikan yang terdaftar otomatis melihat jadwal sesi kelasnya.
 
 ### R3 — Presensi Terintegrasi
 
@@ -97,7 +102,7 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
 
 - [ ] Validasi input diterapkan di sisi UI/ViewModel untuk seluruh formulir (auth, CRUD praktikum, dan pengajuan izin).
 - [ ] Pesan kesalahan yang mudah dipahami ditampilkan saat terjadi kegagalan autentikasi, kesalahan komunikasi Firestore, maupun gangguan layanan AI.
-- [ ] Akses baca dan tulis ke Firestore dibatasi di server melalui **Firebase Security Rules** sesuai identitas (`request.auth.uid`) dan peran (`student` / `assistant`).
+- [ ] Akses baca dan tulis ke Firestore dibatasi di server melalui **Firebase Security Rules** sesuai identitas (`request.auth.uid`) dan peran (`student` / `assistant` / `admin`).
 - [ ] Seluruh kondisi antarmuka wajib berikut ditangani dengan jelas:
 
 | Kondisi | Perilaku yang Diharapkan |
@@ -112,7 +117,7 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
 
 ### Termasuk di Sprint 2
 
-- Firebase Authentication (register, login, logout, role `student`/`assistant`, persistensi sesi).
+- Firebase Authentication (register, login, logout, role `student`/`assistant`/`admin`, persistensi sesi, Google Authentication).
 - Cloud Firestore CRUD (kelas, peserta, jadwal/sesi) dan real-time listener.
 - Presensi terintegrasi + pencegahan presensi ganda.
 - Pengajuan izin, pemanggilan API model AI pengajar untuk klasifikasi alasan, dan pemeriksaan izin oleh asisten.
@@ -145,4 +150,3 @@ Mengembangkan aplikasi React Native (`ppk-mobile`) dari Sprint 1 agar dapat digu
 3. Aplikasi mengirim alasan ke API model AI pengajar, menampilkan kategori prediksi sebagai informasi pendukung, dan menyimpan pengajuan beserta hasil klasifikasi ke Firestore dengan status `pending`.
 4. Asisten login menggunakan akun ber-role `assistant`, membuka daftar pengajuan izin, meninjau alasan serta hasil klasifikasi AI, lalu memberikan keputusan **Terima** atau **Tolak**.
 5. Keputusan tersimpan di Firestore dan status pengajuan pada sisi praktikan langsung berubah sesuai keputusan asisten secara real-time.
-

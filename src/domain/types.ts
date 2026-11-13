@@ -3,7 +3,7 @@
  * Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
  */
 
-export type UserRole = 'student' | 'assistant';
+export type UserRole = 'student' | 'assistant' | 'admin';
 
 export type UserProfile = {
   uid: string;
@@ -107,12 +107,13 @@ export type ActionFailureReason =
 
 export type AsyncActionResult<T = void> =
   | (T extends void ? { ok: true } : { ok: true; data: T })
-  | { ok: false; reason: ActionFailureReason; message: string };
+  | { ok: false; reason: string; message: string };
 
 export type AuthContextValue = {
   authStatus: AuthStatus;
   user: UserProfile | null;
   error: string | null;
+  needsRoleSelection: boolean;
   login: (email: string, password: string) => Promise<AsyncActionResult>;
   register: (input: {
     displayName: string;
@@ -120,6 +121,8 @@ export type AuthContextValue = {
     password: string;
     role: UserRole;
   }) => Promise<AsyncActionResult>;
+  loginWithGoogle: () => Promise<AsyncActionResult>;
+  setUserRole: (role: UserRole) => Promise<AsyncActionResult>;
   logout: () => Promise<AsyncActionResult>;
   updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
   clearError: () => void;
