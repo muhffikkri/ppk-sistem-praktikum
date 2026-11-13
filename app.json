@@ -35,6 +35,18 @@
     "updates": {
       "url": "https://u.expo.dev/736d7efd-ad41-4fa4-a147-57e6bf106ce6"
     },
-    "plugins": ["expo-status-bar", "expo-font"]
+    "plugins": [
+      "expo-status-bar",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F2F9"
+        }
+      ]
+    ]
   }
 }
