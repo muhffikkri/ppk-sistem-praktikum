@@ -132,6 +132,20 @@ export function AssistantScheduleScreen({ navigation }: Props) {
       </Text>
       <View style={styles.seeAllRow}>
         <Button
+          label="Buat sesi"
+          variant="primary"
+          icon="add"
+          onPress={() => navigation.navigate('AssistantSessionForm', {})}
+          accessibilityHint="Membuat sesi praktikum baru"
+        />
+        <Button
+          label="Kelola kelas"
+          variant="outline"
+          icon="people-outline"
+          onPress={() => navigation.navigate('AssistantClassList')}
+          accessibilityHint="Membuat kelas dan menambahkan peserta"
+        />
+        <Button
           label="Lihat Kalender"
           variant="soft"
           icon="calendar"
@@ -245,7 +259,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   heroPrimaryWrap: { flex: 1 },
-  seeAllRow: { marginBottom: 8 },
+  seeAllRow: { marginBottom: 8, gap: 8 },
   panelTitle: { ...typography.subtitle, color: colors.ink },
   panelMeta: {
     ...typography.label,
