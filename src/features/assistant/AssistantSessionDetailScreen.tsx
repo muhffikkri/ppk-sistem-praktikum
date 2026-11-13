@@ -1,10 +1,12 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
   Button,
   Card,
+  ConfirmSheet,
   EmptyState,
   Header,
   LegacyStatusBadge,
@@ -44,6 +46,9 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
     dismissFeedback,
   } = useAssistantSessionDetail(sessionId);
 
+  const [sheet, setSheet] = useState<'open' | 'close' | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   if (!session) {
     return (
       <Screen>
@@ -61,6 +66,26 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
       </Screen>
     );
   }
+
+  const totalParticipants = Math.max(
+    session.participantIds?.length ?? 0,
+    attendees.length,
+  );
+
+  const confirmAction = async () => {
+    if (!sheet) return;
+    setSubmitting(true);
+    try {
+      if (sheet === 'open') {
+        await openSession();
+      } else {
+        await closeSession();
+      }
+    } finally {
+      setSubmitting(false);
+      setSheet(null);
+    }
+  };
 
   return (
     <Screen>
@@ -113,14 +138,14 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
           <Button
             label="Buka sesi"
             accessibilityHint="Mengubah status sesi menjadi terbuka"
-            onPress={openSession}
+            onPress={() => setSheet('open')}
           />
         ) : null}
         {canClose ? (
           <Button
             label="Tutup sesi"
             accessibilityHint="Mengubah status sesi menjadi tertutup. Sesi tidak dapat dibuka kembali."
-            onPress={closeSession}
+            onPress={() => setSheet('close')}
           />
         ) : null}
         <Button
@@ -131,6 +156,23 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
           }
         />
       </View>
+
+      <ConfirmSheet
+        visible={sheet !== null}
+        title={sheet === 'open' ? 'Buka sesi sekarang?' : 'Tutup sesi?'}
+        description={
+          sheet === 'open'
+            ? `${session.courseName} · ${session.groupName} · ${formatTimeRange(session.startsAt, session.endsAt)}. Praktikan dapat langsung melakukan presensi.`
+            : `Praktikan tidak bisa presensi lagi. Tercatat ${attendees.length} dari ${totalParticipants} peserta.`
+        }
+        tone={sheet === 'close' ? 'danger' : 'default'}
+        confirmLabel={sheet === 'open' ? 'Buka sesi' : 'Tutup sesi'}
+        loading={submitting}
+        onConfirm={() => {
+          void confirmAction();
+        }}
+        onCancel={() => setSheet(null)}
+      />
     </Screen>
   );
 }
