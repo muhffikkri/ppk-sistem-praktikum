@@ -114,69 +114,84 @@ export const shadow = {
   },
 } as const;
 
+// Registered family names — one per weight. Keys in src/theme/fonts.ts must
+// match. Android cannot pick a weight from `fontWeight` for custom fonts, so
+// typography tokens select the weight through the family and never set
+// `fontWeight`.
 export const fontFamily = {
-  display: 'Fraunces', // editorial serif, headings & numerals
-  sans: 'Plus Jakarta Sans', // clean modern sans, UI body
+  display: 'Fraunces_400Regular', // editorial serif, headings & numerals
+  displayItalic: 'Fraunces_400Regular_Italic',
+  displaySemibold: 'Fraunces_600SemiBold',
+  displayBold: 'Fraunces_700Bold',
+  sans: 'PlusJakartaSans_400Regular', // clean modern sans, UI body
+  sansMedium: 'PlusJakartaSans_500Medium',
+  sansSemibold: 'PlusJakartaSans_600SemiBold',
+  sansBold: 'PlusJakartaSans_700Bold',
 } as const;
 
 // Sticker sheet type scale (px).
 export const typography = {
   display: {
-    fontFamily: fontFamily.display,
+    fontFamily: fontFamily.displayBold,
     fontSize: 28,
     lineHeight: 34,
-    fontWeight: '700',
     letterSpacing: -0.84, // -0.03em editorial
+  },
+  // Italic accent fragment inside a display title (max once per screen).
+  displayAccent: {
+    fontFamily: fontFamily.displayItalic,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.84,
   },
   displayHero: {
     fontFamily: fontFamily.display,
     fontSize: 30,
     lineHeight: 36,
-    fontWeight: '400',
     letterSpacing: -0.6, // hero time "08:00 — 10:30"
   },
   title: {
-    fontFamily: fontFamily.display,
+    fontFamily: fontFamily.displaySemibold,
     fontSize: 24,
     lineHeight: 30,
-    fontWeight: '600',
+    letterSpacing: -0.48,
   },
   subtitle: {
     fontFamily: fontFamily.display,
     fontSize: 18,
     lineHeight: 26,
-    fontWeight: '400',
-    letterSpacing: -0.36,
+    letterSpacing: -0.36, // -0.02em
   },
   body: {
     fontFamily: fontFamily.sans,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '400',
   },
   bodyStrong: {
-    fontFamily: fontFamily.sans,
+    fontFamily: fontFamily.sansSemibold,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
   },
   label: {
-    fontFamily: fontFamily.sans,
+    fontFamily: fontFamily.sansMedium,
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
   },
   caption: {
     fontFamily: fontFamily.sans,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 16,
-    fontWeight: '400',
+  },
+  captionStrong: {
+    fontFamily: fontFamily.sansSemibold,
+    fontSize: 12,
+    lineHeight: 16,
   },
   overline: {
-    fontFamily: fontFamily.sans,
+    fontFamily: fontFamily.sansBold,
     fontSize: 10,
     lineHeight: 14,
-    fontWeight: '700',
-    letterSpacing: 0.8, // 0.08em uppercase spec labels
+    letterSpacing: 0.8, // 0.08em
+    textTransform: 'uppercase',
   },
 } as const;
