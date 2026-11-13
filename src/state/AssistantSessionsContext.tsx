@@ -188,6 +188,9 @@ export const AssistantSessionsProvider = ({
 
   // Set up real-time listeners scoped to the signed-in assistant.
   useEffect(() => {
+    // Profil praktikan milik akun sebelumnya tidak boleh terbawa ke akun lain.
+    studentsCacheRef.current.clear();
+
     if (!enabled) {
       dispatch({ type: 'RESET' });
       return;
