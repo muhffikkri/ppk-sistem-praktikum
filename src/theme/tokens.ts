@@ -15,6 +15,7 @@ export const colors = {
   pink: '#FFC2D9', // decorative accent (late / warning tint)
   ink: '#17141F', // primary text, dark surface, bottom dock
   inkMuted: '#5D586C', // secondary text
+  inkSubtle: '#9A95A8', // placeholder / disabled text
   pinkInk: '#8A0F41', // text on pink chips
   onPrimary: '#FFFFFF', // text/icons on violet & ink blocks
   onInkMuted: 'rgba(255,255,255,0.7)', // secondary text on violet & ink

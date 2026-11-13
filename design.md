@@ -110,6 +110,7 @@ sebagai ikon.
 | `pink`          | `#FFC2D9` | Aksen dekoratif, tint "late/warning"    |
 | `ink`           | `#17141F` | Teks utama, permukaan gelap, bottom dock |
 | `inkMuted`      | `#5D586C` | Teks sekunder, caption                  |
+| `inkSubtle`     | `#9A95A8` | Placeholder / disabled text             |
 | `surface`       | `#F4F2F9` | Canvas aplikasi (latar layar)          |
 | `panel`         | `#FFFFFF` | Kartu, input, modal (permukaan putih)   |
 | `border`        | `#E7E3F2` | Garis tepi utama                        |

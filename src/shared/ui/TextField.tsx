@@ -66,7 +66,7 @@ export function TextField({
             ref={inputRef}
             accessibilityLabel={label}
             accessibilityHint={error ?? hint}
-            placeholderTextColor={colors.inkMuted}
+            placeholderTextColor={colors.inkSubtle}
             selectionColor={colors.violet}
             cursorColor={colors.violet}
             multiline={multiline}
