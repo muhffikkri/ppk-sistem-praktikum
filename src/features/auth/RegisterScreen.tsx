@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -10,6 +11,7 @@ import {
   Button,
   Card,
   CardContent,
+  colors,
   Header,
   IconButton,
   Screen,
@@ -194,26 +196,31 @@ export function RegisterScreen({ navigation }: Props) {
               return (
                 <Card
                   key={option.value}
-                  variant={selected ? 'heroViolet' : 'panel'}
+                  variant="panel"
                   accessibilityState={{ selected }}
                   disabled={submitting}
                   onPress={() => setRole(option.value)}
-                  style={styles.roleCard}
+                  style={[
+                    styles.roleCard,
+                    selected ? styles.roleSelected : styles.roleIdle,
+                  ]}
                 >
                   <CardContent>
-                    <Text
-                      variant="bodyStrong"
-                      tone={selected ? 'onDark' : 'ink'}
-                    >
+                    <Text variant="bodyStrong" tone="ink">
                       {option.label}
                     </Text>
-                    <Text
-                      variant="caption"
-                      tone={selected ? 'onDarkMuted' : 'muted'}
-                    >
+                    <Text variant="caption" tone="muted">
                       {option.description}
                     </Text>
                   </CardContent>
+                  {selected ? (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={colors.violet}
+                      style={styles.check}
+                    />
+                  ) : null}
                 </Card>
               );
             })}
@@ -255,6 +262,13 @@ const styles = StyleSheet.create({
   fields: { gap: spacing.md },
   roleBlock: { gap: spacing.xs },
   roleRow: { flexDirection: 'row', gap: spacing.md },
-  roleCard: { flex: 1 },
+  roleCard: { flex: 1, borderWidth: 2 },
+  // Same 2px border in both states so the card height never jumps.
+  roleSelected: {
+    backgroundColor: colors.lavenderSubtle,
+    borderColor: colors.violet,
+  },
+  roleIdle: { borderColor: colors.border },
+  check: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   actions: { gap: spacing.sm },
 });

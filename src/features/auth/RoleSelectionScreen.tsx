@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
@@ -101,7 +102,10 @@ export function RoleSelectionScreen({ navigation }: Props) {
               key={option.value}
               variant="panel"
               interactive={false}
-              style={selected ? styles.roleSelected : undefined}
+              style={[
+                styles.roleBase,
+                selected ? styles.roleSelected : styles.roleIdle,
+              ]}
             >
               <CardContent>
                 <CardOverline>{option.overline}</CardOverline>
@@ -109,6 +113,14 @@ export function RoleSelectionScreen({ navigation }: Props) {
                 <Text variant="body" tone="muted">
                   {option.description}
                 </Text>
+                {selected ? (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={colors.violet}
+                    style={styles.check}
+                  />
+                ) : null}
                 <View style={styles.roleAction}>
                   <Button
                     label={selected ? 'Terpilih' : 'Pilih'}
@@ -151,7 +163,14 @@ export function RoleSelectionScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   roles: { gap: spacing.md },
-  roleSelected: { borderWidth: 2, borderColor: colors.violet },
+  // Same 2px border in both states so the card height never jumps.
+  roleBase: { borderWidth: 2 },
+  roleSelected: {
+    backgroundColor: colors.lavenderSubtle,
+    borderColor: colors.violet,
+  },
+  roleIdle: { borderColor: colors.border },
+  check: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   roleAction: { marginTop: spacing.xs },
   actions: { gap: spacing.sm },
 });
