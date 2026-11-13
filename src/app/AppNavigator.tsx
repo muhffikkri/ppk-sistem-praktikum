@@ -88,7 +88,7 @@ const AuthStack = createNativeStackNavigator<{
 }>();
 
 export function AppNavigator() {
-  const { authStatus, logout, needsRoleSelection } = useAuth();
+  const { authStatus, user, logout, needsRoleSelection } = useAuth();
   const actorRole = useActorRole();
 
   const [activeKey, setActiveKey] = useState<string>('Home');
@@ -144,14 +144,12 @@ export function AppNavigator() {
   // When unauthenticated or loading, show auth stack (Landing → Login/Register)
   if (authStatus === 'unauthenticated' || authStatus === 'loading') {
     return (
-      <AssistantSessionsProvider>
-        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-          <AuthStack.Screen name="Landing" component={LandingScreen} />
-          <AuthStack.Screen name="Login" component={LoginScreen} />
-          <AuthStack.Screen name="Register" component={RegisterScreen} />
-          <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
-        </AuthStack.Navigator>
-      </AssistantSessionsProvider>
+      <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+        <AuthStack.Screen name="Landing" component={LandingScreen} />
+        <AuthStack.Screen name="Login" component={LoginScreen} />
+        <AuthStack.Screen name="Register" component={RegisterScreen} />
+        <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+      </AuthStack.Navigator>
     );
   }
 
@@ -159,16 +157,14 @@ export function AppNavigator() {
   // show RoleSelectionScreen before entering the app.
   if (needsRoleSelection) {
     return (
-      <AssistantSessionsProvider>
-        <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-          <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
-        </AuthStack.Navigator>
-      </AssistantSessionsProvider>
+      <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+        <AuthStack.Screen name="RoleSelection" component={RoleSelectionScreen} />
+      </AuthStack.Navigator>
     );
   }
 
   return (
-    <AssistantSessionsProvider>
+    <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
       <View style={styles.root}>
         <Stack.Navigator
           initialRouteName="Home"

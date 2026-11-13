@@ -45,6 +45,16 @@ const unauthenticated = (): {
   message: 'Silakan login ulang.',
 });
 
+const forbidden = (): {
+  ok: false;
+  reason: string;
+  message: string;
+} => ({
+  ok: false,
+  reason: 'forbidden',
+  message: 'Aksi khusus asisten.',
+});
+
 // ============================================================
 // AssistantSessionsViewModel — Firestore-backed (Sprint 2)
 // ============================================================
@@ -90,7 +100,8 @@ type AssistantAction =
       records: AttendanceRecord[];
     }
   | { type: 'SET_LOADING'; loading: boolean }
-  | { type: 'SET_ERROR'; error: string | null };
+  | { type: 'SET_ERROR'; error: string | null }
+  | { type: 'RESET' };
 
 // ============================================================
 // State
@@ -145,6 +156,8 @@ function assistantReducer(
       return { ...state, loading: action.loading };
     case 'SET_ERROR':
       return { ...state, error: action.error };
+    case 'RESET':
+      return { ...initialState, loading: false };
     default:
       return state;
   }
@@ -160,8 +173,10 @@ const AssistantSessionsContext = createContext<AssistantSessionsViewModel | unde
 
 export const AssistantSessionsProvider = ({
   children,
+  enabled,
 }: {
   children: ReactNode;
+  enabled: boolean;
 }) => {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(assistantReducer, initialState);
@@ -173,9 +188,14 @@ export const AssistantSessionsProvider = ({
 
   // Set up real-time listeners scoped to the signed-in assistant.
   useEffect(() => {
+    if (!enabled) {
+      dispatch({ type: 'RESET' });
+      return;
+    }
+
     const uid = user?.uid;
     if (!uid) {
-      dispatch({ type: 'SET_LOADING', loading: false });
+      dispatch({ type: 'RESET' });
       return;
     }
 
@@ -258,7 +278,7 @@ export const AssistantSessionsProvider = ({
       classesUnsubscribe();
       sessionsUnsubscribe();
     };
-  }, [user?.uid, retryCounter]);
+  }, [enabled, user?.uid, retryCounter]);
 
   const sessionIds = state.sessions.map((s) => s.id).join(',');
 
@@ -312,23 +332,44 @@ export const AssistantSessionsProvider = ({
     ...state,
     getSessionById,
     getAttendanceForSession,
-    openSession,
-    closeSession,
+    openSession: (sessionId) =>
+      enabled ? openSession(sessionId) : Promise.resolve(forbidden()),
+    closeSession: (sessionId) =>
+      enabled ? closeSession(sessionId) : Promise.resolve(forbidden()),
     createSession: (input) =>
-      user
-        ? createSession(user.uid, input)
-        : Promise.resolve(unauthenticated()),
-    updateSession,
-    deleteSession,
-    addParticipantByEmail,
-    removeParticipant,
+      !enabled
+        ? Promise.resolve(forbidden())
+        : user
+          ? createSession(user.uid, input)
+          : Promise.resolve(unauthenticated()),
+    updateSession: (sessionId, input) =>
+      enabled ? updateSession(sessionId, input) : Promise.resolve(forbidden()),
+    deleteSession: (sessionId) =>
+      enabled ? deleteSession(sessionId) : Promise.resolve(forbidden()),
+    addParticipantByEmail: (classId, email) =>
+      enabled
+        ? addParticipantByEmail(classId, email)
+        : Promise.resolve(forbidden()),
+    removeParticipant: (classId, studentUid) =>
+      enabled
+        ? removeParticipant(classId, studentUid)
+        : Promise.resolve(forbidden()),
     getClassById: (classId: string) => state.classes.find((c) => c.id === classId),
-    subscribeAttendanceForSession: subscribeAttendance,
+    subscribeAttendanceForSession: (sessionId, onData, onError) =>
+      enabled ? subscribeAttendance(sessionId, onData, onError) : () => {},
     createClass: (input) =>
-      user ? createClass(user.uid, input) : Promise.resolve(unauthenticated()),
-    updateClass,
-    deleteClass,
-    retry: () => setRetryCounter((c) => c + 1),
+      !enabled
+        ? Promise.resolve(forbidden())
+        : user
+          ? createClass(user.uid, input)
+          : Promise.resolve(unauthenticated()),
+    updateClass: (classId, input) =>
+      enabled ? updateClass(classId, input) : Promise.resolve(forbidden()),
+    deleteClass: (classId) =>
+      enabled ? deleteClass(classId) : Promise.resolve(forbidden()),
+    retry: () => {
+      if (enabled) setRetryCounter((c) => c + 1);
+    },
   };
 
   return <AssistantSessionsContext.Provider value={viewModel}>{children}</AssistantSessionsContext.Provider>;
