@@ -44,8 +44,11 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   } = useStudentAttendanceViewModel();
   const { getLeaveForSession } = useStudentLeaveViewModel();
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [confirmVisible, setConfirmVisible] = useState(false);
-  const [successTime, setSuccessTime] = useState<string | null>(null);
+  // Satu Modal untuk konfirmasi & sukses: iOS tidak bisa menampilkan Modal
+  // kedua selagi Modal pertama masih beranimasi menutup.
+  const [sheet, setSheet] = useState<
+    { kind: 'confirm' } | { kind: 'success'; time: string } | null
+  >(null);
 
   if (loading) {
     return (
@@ -94,13 +97,13 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 
   const onCheckIn = async () => {
     const result = await checkIn(session.id);
-    setConfirmVisible(false);
     if (!result.ok) {
+      setSheet(null);
       setFeedback({ kind: 'error', message: result.message });
       return;
     }
     setFeedback(null);
-    setSuccessTime(formatClock(new Date().toISOString()));
+    setSheet({ kind: 'success', time: formatClock(new Date().toISOString()) });
   };
 
   return (
@@ -165,7 +168,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
             leadingIcon="✓"
             disabled={submittingSessionId === session.id}
             accessibilityHint="Mencatat kehadiran di sesi ini"
-            onPress={() => setConfirmVisible(true)}
+            onPress={() => setSheet({ kind: 'confirm' })}
           />
         ) : (
           <Text style={styles.hint}>
@@ -200,29 +203,29 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
         {currentStudent?.email ?? '-'} • {currentStudent?.displayName ?? '-'}
       </Text>
 
-      <ConfirmSheet
-        visible={confirmVisible}
-        title="Konfirmasi presensi"
-        description={`${session.courseName} · ${session.groupName}. Waktu kehadiran akan dicatat sekarang.`}
-        confirmLabel="Presensi"
-        loading={submittingSessionId === session.id}
-        onConfirm={() => {
-          void onCheckIn();
-        }}
-        onCancel={() => setConfirmVisible(false)}
-      />
-
-      <ConfirmSheet
-        visible={successTime !== null}
-        title="Presensi berhasil"
-        description={
-          successTime ? `Tercatat pukul ${successTime}.` : undefined
-        }
-        confirmLabel="Selesai"
-        cancelLabel=""
-        onConfirm={() => setSuccessTime(null)}
-        onCancel={() => setSuccessTime(null)}
-      />
+      {sheet?.kind === 'success' ? (
+        <ConfirmSheet
+          visible
+          title="Presensi berhasil"
+          description={`Tercatat pukul ${sheet.time}.`}
+          confirmLabel="Selesai"
+          cancelLabel=""
+          onConfirm={() => setSheet(null)}
+          onCancel={() => setSheet(null)}
+        />
+      ) : (
+        <ConfirmSheet
+          visible={sheet?.kind === 'confirm'}
+          title="Konfirmasi presensi"
+          description={`${session.courseName} · ${session.groupName}. Waktu kehadiran akan dicatat sekarang.`}
+          confirmLabel="Presensi"
+          loading={submittingSessionId === session.id}
+          onConfirm={() => {
+            void onCheckIn();
+          }}
+          onCancel={() => setSheet(null)}
+        />
+      )}
     </Screen>
   );
 }
