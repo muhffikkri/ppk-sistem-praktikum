@@ -353,13 +353,7 @@ export function AppNavigator() {
 
                 component={CalendarScreen}
 
-                options={{
-                  headerTintColor: colors.inkMuted,
-
-                  headerStyle: { backgroundColor: colors.surface },
-
-                  title: 'Kalender',
-                }}
+                options={{ headerShown: false }}
               />
 
               <Stack.Screen
