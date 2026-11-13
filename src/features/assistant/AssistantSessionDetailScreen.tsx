@@ -1,20 +1,27 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Banner,
   Button,
-  Card,
   ConfirmSheet,
   EmptyState,
   Header,
-  LegacyStatusBadge,
+  InfoRow,
   Screen,
-  colors,
-  typography,
+  spacing,
+  StatCard,
+  StatRow,
+  StatusBadge,
+  Text,
+  TopBar,
 } from '../../shared/ui';
-import { FeedbackBanner } from './components/FeedbackBanner';
+import {
+  sessionStatusLabel,
+  sessionStatusTone,
+} from './components/AssistantSessionCard';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 import { useAssistantSessionDetail } from './useAssistantSessionDetail';
 
@@ -22,15 +29,6 @@ type Props = NativeStackScreenProps<
   RootStackParamList,
   'AssistantSessionDetail'
 >;
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
-  );
-}
 
 export function AssistantSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
@@ -45,23 +43,17 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
     closeSession,
     dismissFeedback,
   } = useAssistantSessionDetail(sessionId);
-
   const [sheet, setSheet] = useState<'open' | 'close' | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!session) {
     return (
-      <Screen>
+      <Screen withDock={false}>
+        <TopBar onBack={() => navigation.goBack()} />
         <EmptyState
+          icon="alert-circle-outline"
           title="Sesi tidak ditemukan"
-          description="Sesi ini tidak tersedia pada data demo asisten."
-          action={
-            <Button
-              label="Kembali ke jadwal"
-              variant="outline"
-              onPress={() => navigation.goBack()}
-            />
-          }
+          description="Sesi ini tidak tersedia atau sudah dihapus."
         />
       </Screen>
     );
@@ -88,69 +80,63 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
   };
 
   return (
-    <Screen>
-      <Header
-        eyebrow="MODE ASISTEN · DETAIL SESI"
-        title={session.courseName}
-        description={session.groupName}
+    <Screen withDock={false}>
+      <TopBar
+        onBack={() => navigation.goBack()}
+        trailing={
+          <StatusBadge
+            label={sessionStatusLabel[session.status]}
+            tone={sessionStatusTone[session.status]}
+          />
+        }
       />
+      <Header title={session.courseName} description={session.groupName} />
 
       {feedback ? (
-        <FeedbackBanner feedback={feedback} onDismiss={dismissFeedback} />
+        <Banner
+          title={feedback.kind === 'success' ? 'Berhasil' : 'Gagal'}
+          message={feedback.message}
+          tone={feedback.kind === 'success' ? 'success' : 'danger'}
+          onDismiss={dismissFeedback}
+        />
       ) : null}
 
-      <Card>
-        <View style={styles.cardInner}>
-          <View style={styles.statusRow}>
-            <Text style={styles.infoLabel}>Status</Text>
-            <LegacyStatusBadge status={session.status} />
-          </View>
-          <InfoRow
-            label="Tanggal"
-            value={formatSessionDate(session.startsAt)}
-          />
-          <InfoRow
-            label="Waktu"
-            value={formatTimeRange(session.startsAt, session.endsAt)}
-          />
-          {session.openedAt ? (
-            <InfoRow
-              label="Dibuka pukul"
-              value={formatClock(session.openedAt)}
-            />
-          ) : null}
-          {session.closedAt ? (
-            <InfoRow
-              label="Ditutup pukul"
-              value={formatClock(session.closedAt)}
-            />
-          ) : null}
-          <InfoRow
-            label="Jumlah hadir"
-            value={`${attendees.length} praktikan`}
-          />
-        </View>
-      </Card>
+      <StatRow>
+        <StatCard variant="panel" value={attendees.length} label="Hadir" />
+        <StatCard variant="panel" value={totalParticipants} label="Peserta" />
+      </StatRow>
+
+      <View style={styles.info}>
+        <InfoRow label="Tanggal" value={formatSessionDate(session.startsAt)} />
+        <InfoRow
+          label="Waktu"
+          value={formatTimeRange(session.startsAt, session.endsAt)}
+        />
+        {session.openedAt ? (
+          <InfoRow label="Dibuka" value={formatClock(session.openedAt)} />
+        ) : null}
+        {session.closedAt ? (
+          <InfoRow label="Ditutup" value={formatClock(session.closedAt)} />
+        ) : null}
+      </View>
 
       <View style={styles.actions}>
-        <Text style={styles.hint}>{statusHint}</Text>
+        <Text variant="caption" tone="muted">
+          {statusHint}
+        </Text>
         {canOpen ? (
-          <Button
-            label="Buka sesi"
-            accessibilityHint="Mengubah status sesi menjadi terbuka"
-            onPress={() => setSheet('open')}
-          />
+          <Button label="Buka sesi" onPress={() => setSheet('open')} />
         ) : null}
         {canClose ? (
           <Button
             label="Tutup sesi"
-            accessibilityHint="Mengubah status sesi menjadi tertutup. Sesi tidak dapat dibuka kembali."
+            variant="outline"
             onPress={() => setSheet('close')}
           />
         ) : null}
         <Button
           label={`Lihat rekap kehadiran (${attendees.length})`}
-          variant="outline"
+          variant="soft"
           onPress={() =>
             navigation.navigate('AssistantAttendanceRoster', { sessionId })
           }
@@ -178,30 +164,6 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  cardInner: {
-    padding: 18,
-    gap: 14,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 16,
-  },
-  infoLabel: { ...typography.label, color: colors.inkMuted },
-  infoValue: {
-    flex: 1,
-    flexShrink: 1,
-    textAlign: 'right',
-    ...typography.bodyStrong,
-    color: colors.ink,
-  },
-  actions: { gap: 12 },
-  hint: { ...typography.body, color: colors.inkMuted },
+  info: { gap: spacing.sm },
+  actions: { gap: spacing.sm },
 });
