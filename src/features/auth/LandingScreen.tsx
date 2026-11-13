@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
 import { isFirebaseConfigured } from '../../services/firebase';
@@ -8,13 +9,23 @@ import {
   Banner,
   Button,
   colors,
+  Header,
+  type IconName,
+  radius,
   Screen,
   spacing,
-  typography,
+  Text,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Landing'>;
+
+// Only features that exist in Sprint 2 (docs/sprint-2-prd.md).
+const FEATURES: { icon: IconName; label: string }[] = [
+  { icon: 'calendar-outline', label: 'Jadwal sesi per kelas' },
+  { icon: 'checkmark-circle-outline', label: 'Presensi saat sesi dibuka' },
+  { icon: 'document-text-outline', label: 'Pengajuan izin ke asisten' },
+];
 
 export function LandingScreen({ navigation }: Props) {
   const { loginWithGoogle, error, clearError } = useAuth();
@@ -25,66 +36,76 @@ export function LandingScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen withDock={false}>
+    <Screen withDock={false} contentStyle={styles.fill}>
       <StatusBar style="dark" />
-      <View style={styles.container}>
-        {/* Copywriting */}
-        <View style={styles.copySection}>
-          <Text style={styles.headline}>
-            Satu ritme praktikum,{' '}
-            <Text style={styles.headlineEmphasis}>di setiap sudut lab.</Text>
-          </Text>
-          <Text style={styles.subhead}>
-            Lihat jadwal sesi, catat kehadiran saat sesi dibuka, dan ajukan izin
-            bila berhalangan.
+
+      <View style={styles.intro}>
+        <View style={styles.wordmark}>
+          <View style={styles.dot} />
+          <Text variant="overline" tone="violet">
+            LabPresensi
           </Text>
         </View>
 
-        {/* Firebase Warning */}
+        <Header
+          title="Presensi praktikum,"
+          accent="tanpa kertas absen."
+          description="Lihat jadwal sesi, catat kehadiran saat sesi dibuka, dan ajukan izin bila berhalangan."
+        />
+
+        <View style={styles.features}>
+          {FEATURES.map((feature) => (
+            <View key={feature.label} style={styles.feature}>
+              <Ionicons name={feature.icon} size={20} color={colors.violet} />
+              <Text variant="body">{feature.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.actions}>
         {!isFirebaseConfigured ? (
           <Banner
-            title="Konfigurasi Firebase belum diisi"
-            message="Salin .env.example menjadi .env dan isi EXPO_PUBLIC_FIREBASE_* sebelum login."
             tone="warning"
+            title="Konfigurasi Firebase belum diisi"
+            message="Salin .env.example menjadi .env dan isi EXPO_PUBLIC_FIREBASE_* sebelum masuk."
           />
         ) : null}
-
-        {/* Error Banner */}
         {error ? (
           <Banner
-            title="Gagal"
-            message={error}
             tone="danger"
+            title="Gagal masuk"
+            message={error}
             onDismiss={clearError}
           />
         ) : null}
 
-        {/* Action Buttons */}
-        <View style={styles.actionsSection}>
-          <Button
-            label="Masuk dengan Email Kampus"
-            variant="primary"
-            icon="mail-outline"
-            onPress={() => navigation.navigate('Login')}
-          />
+        <Button
+          label="Masuk dengan email"
+          icon="mail-outline"
+          onPress={() => navigation.navigate('Login')}
+        />
+        <Button
+          label="Masuk dengan Google"
+          variant="outline"
+          icon="logo-google"
+          onPress={handleGoogleLogin}
+        />
 
-          <Button
-            label="Masuk dengan Akun Google"
-            variant="outline"
-            icon="logo-google"
-            onPress={handleGoogleLogin}
-          />
-
-          <View style={styles.registerRow}>
-            <Text style={styles.registerText}>Belum memiliki akun?</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Registrasi Akun Baru"
-              onPress={() => navigation.navigate('Register')}
-            >
-              <Text style={styles.registerLinkText}>Registrasi Akun Baru</Text>
-            </Pressable>
-          </View>
+        <View style={styles.register}>
+          <Text variant="caption" tone="muted">
+            Belum punya akun?
+          </Text>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Daftar akun baru"
+            onPress={() => navigation.navigate('Register')}
+            style={styles.registerLink}
+          >
+            <Text variant="bodyStrong" tone="violet">
+              Daftar
+            </Text>
+          </Pressable>
         </View>
       </View>
     </Screen>
@@ -92,47 +113,23 @@ export function LandingScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surface,
+  fill: { flexGrow: 1, justifyContent: 'space-between' },
+  intro: { gap: spacing['2xl'], paddingTop: spacing['3xl'] },
+  wordmark: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.full,
+    backgroundColor: colors.lime,
   },
-  copySection: {
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.lg,
-    gap: spacing.xs,
-  },
-  headline: {
-    ...typography.title,
-    color: colors.ink,
-    fontWeight: 'normal',
-  },
-  headlineEmphasis: {
-    color: colors.primary,
-    fontStyle: 'italic',
-  },
-  subhead: {
-    ...typography.body,
-    color: colors.inkMuted,
-    lineHeight: 22,
-  },
-  actionsSection: {
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.lg,
-    gap: spacing.md,
-  },
-  registerRow: {
+  features: { gap: spacing.md },
+  feature: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  actions: { gap: spacing.md },
+  register: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
   },
-  registerText: {
-    ...typography.body,
-    color: colors.inkMuted,
-  },
-  registerLinkText: {
-    ...typography.label,
-    color: colors.primary,
-    fontWeight: '500',
-  },
+  registerLink: { minHeight: 44, justifyContent: 'center' },
 });
