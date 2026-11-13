@@ -17,6 +17,11 @@ export { InfoRow, type InfoRowProps } from './InfoRow';
 export { ListRow, type ListRowProps } from './ListRow';
 export { LoadingState, type LoadingStateProps } from './LoadingState';
 export { Screen } from './Screen';
+export {
+  SegmentedControl,
+  type SegmentedControlProps,
+  type SegmentedOption,
+} from './SegmentedControl';
 export { SectionHeader, type SectionHeaderProps } from './SectionHeader';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';
 export { Text, type TextProps, type TextTone, type TextVariant } from './Text';
