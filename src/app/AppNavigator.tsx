@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useState } from 'react';
 
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   LoginScreen,
@@ -40,7 +40,7 @@ import {
 
 import { db } from '../services/firebase';
 
-import { BottomDock, colors, typography, type DockTab } from '../shared/ui';
+import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
 
 import { useActorRole, useAuth } from '../state';
 
@@ -59,7 +59,7 @@ import { ProfileScreen } from './ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// 5-slot dock: [Beranda] [Jadwal] [QR FAB] [Presensi] [Akun]
+// 4 tab dock; FAB Izin berada di tengah.
 
 // Uses Ionicons from @expo/vector-icons.
 
@@ -207,7 +207,7 @@ export function AppNavigator() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={styles.changeRoleLabel}>Profil</Text>
+                    <Text variant="label" tone="violet">Profil</Text>
                   </Pressable>
                 ),
               })}
@@ -417,10 +417,4 @@ const styles = StyleSheet.create({
   },
 
   pressed: { backgroundColor: colors.lavenderSubtle },
-
-  changeRoleLabel: {
-    ...typography.label,
-
-    color: colors.violet,
-  },
 });
