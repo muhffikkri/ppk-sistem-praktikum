@@ -9,6 +9,7 @@ export { IconButton, type IconButtonProps, type IconName } from './IconButton';
 export { Screen } from './Screen';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';
 export { Text, type TextProps, type TextTone, type TextVariant } from './Text';
+export { TextField, type TextFieldProps } from './TextField';
 export { TopBar, type TopBarProps } from './TopBar';
 export {
   colors,
