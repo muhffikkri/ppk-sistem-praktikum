@@ -238,7 +238,7 @@ export function AppNavigator() {
             }}
           />
 
-          <Stack.Group screenOptions={{ title: 'Praktikan ┬╖ Demo' }}>
+          <Stack.Group screenOptions={{ title: 'Praktikan' }}>
             <Stack.Screen
               name="StudentSchedule"
 
@@ -274,7 +274,7 @@ export function AppNavigator() {
             />
           </Stack.Group>
 
-          <Stack.Group screenOptions={{ title: 'Asisten ┬╖ Demo' }}>
+          <Stack.Group screenOptions={{ title: 'Asisten' }}>
             <Stack.Screen
               name="AssistantSchedule"
 
