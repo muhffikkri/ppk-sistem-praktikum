@@ -85,10 +85,10 @@ const demoUsers: UserProfile[] = [
     createdAt: new Date().toISOString(),
   },
   {
-    uid: 'user-admin-01',
-    displayName: 'Admin PKL',
-    email: 'admin@kampus.ac.id',
-    role: 'admin',
+    uid: 'user-asisten-02',
+    displayName: 'Asisten Koordinator',
+    email: 'asisten.koordinator@kampus.ac.id',
+    role: 'assistant',
     createdAt: new Date().toISOString(),
   },
 ];
@@ -103,9 +103,9 @@ const demoClasses: PracticalClass[] = [
     courseCode: 'IF3121',
     courseName: 'Praktikum Sistem Terdistribusi',
     groupName: 'Kelas 3SE1 - Kelompok A',
-    assistantIds: ['user-asisten-01'],
+    assistantIds: ['user-asisten-01', 'user-asisten-02'],
     participantIds: ['user-praktikan-01', 'user-praktikan-02', 'user-praktikan-03'],
-    createdBy: 'user-admin-01',
+    createdBy: 'user-asisten-02',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -114,9 +114,9 @@ const demoClasses: PracticalClass[] = [
     courseCode: 'IF3122',
     courseName: 'Praktikum Basis Data Lanjut',
     groupName: 'Kelas 3SE2 - Kelompok B',
-    assistantIds: ['user-asisten-01'],
+    assistantIds: ['user-asisten-01', 'user-asisten-02'],
     participantIds: ['user-praktikan-01', 'user-praktikan-02'],
-    createdBy: 'user-admin-01',
+    createdBy: 'user-asisten-02',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -125,9 +125,9 @@ const demoClasses: PracticalClass[] = [
     courseCode: 'IF3123',
     courseName: 'Praktikum Jaringan Komputer',
     groupName: 'Kelas 3SE3 - Kelompok C',
-    assistantIds: ['user-asisten-01'],
+    assistantIds: ['user-asisten-01', 'user-asisten-02'],
     participantIds: ['user-praktikan-03'],
-    createdBy: 'user-admin-01',
+    createdBy: 'user-asisten-02',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -157,7 +157,7 @@ const demoSessions: Session[] = [
     openedAt: addDays(now, -2),
     closedAt: addDays(now, -2),
     participantIds: ['user-praktikan-01', 'user-praktikan-02', 'user-praktikan-03'],
-    assistantIds: ['user-asisten-01'],
+    assistantIds: ['user-asisten-01', 'user-asisten-02'],
     createdBy: 'user-asisten-01',
     createdAt: addDays(now, -5),
   },
@@ -174,7 +174,7 @@ const demoSessions: Session[] = [
     openedAt: addDays(now, -1),
     closedAt: null,
     participantIds: ['user-praktikan-01', 'user-praktikan-02'],
-    assistantIds: ['user-asisten-01'],
+    assistantIds: ['user-asisten-01', 'user-asisten-02'],
     createdBy: 'user-asisten-01',
     createdAt: addDays(now, -4),
   },
@@ -191,7 +191,7 @@ const demoSessions: Session[] = [
     openedAt: null,
     closedAt: null,
     participantIds: ['user-praktikan-03'],
-    assistantIds: ['user-asisten-01'],
+    assistantIds: ['user-asisten-01', 'user-asisten-02'],
     createdBy: 'user-asisten-01',
     createdAt: addDays(now, -3),
   },
@@ -208,7 +208,7 @@ const demoSessions: Session[] = [
     openedAt: null,
     closedAt: null,
     participantIds: ['user-praktikan-01', 'user-praktikan-02', 'user-praktikan-03'],
-    assistantIds: ['user-asisten-01'],
+    assistantIds: ['user-asisten-01', 'user-asisten-02'],
     createdBy: 'user-asisten-01',
     createdAt: addDays(now, -4),
   },
@@ -249,7 +249,7 @@ async function seed() {
   console.log('🔑 Akun demo:');
   console.log('   Praktikan: budi@kampus.ac.id');
   console.log('   Asisten: asisten.rpl@kampus.ac.id');
-  console.log('   Admin: admin@kampus.ac.id');
+  console.log('   Asisten Koordinator: asisten.koordinator@kampus.ac.id');
 }
 
 seed().catch((err) => {

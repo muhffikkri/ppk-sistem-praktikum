@@ -65,7 +65,7 @@ const DOCK_TABS: DockTab[] = [
 ];
 
 const DOCK_ROUTE_FOR_POV: Record<
-  'praktikan' | 'asisten' | 'admin',
+  'praktikan' | 'asisten',
   { Schedule: keyof RootStackParamList; Attendance: keyof RootStackParamList }
 > = {
   praktikan: {
@@ -78,12 +78,6 @@ const DOCK_ROUTE_FOR_POV: Record<
     Schedule: 'AssistantSchedule',
 
     Attendance: 'AssistantAttendanceRoster',
-  },
-
-  admin: {
-    Schedule: 'AssistantClassList',
-
-    Attendance: 'AssistantAllAttendance',
   },
 };
 
@@ -117,7 +111,6 @@ export function AppNavigator() {
       const roleMap: Record<UserRole, Pov> = {
         student: 'praktikan',
         assistant: 'asisten',
-        admin: 'asisten',
       };
       setPov(roleMap[user.role]);
     }

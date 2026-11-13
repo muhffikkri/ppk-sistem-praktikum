@@ -3,7 +3,7 @@
  * Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
  */
 
-export type UserRole = 'student' | 'assistant' | 'admin';
+export type UserRole = 'student' | 'assistant';
 
 export type UserProfile = {
   uid: string;

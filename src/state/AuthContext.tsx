@@ -34,8 +34,6 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const ADMIN_EMAIL = process.env.EXPO_PUBLIC_ADMIN_EMAIL ?? '';
-
 function mapFirebaseAuthError(err: unknown): {
   reason: ActionFailureReason;
   message: string;
@@ -135,11 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (snap.exists()) {
             const data = snap.data() as Partial<UserProfile>;
             // Role disimpan di Firestore dan dipakai sebagai kebenaran tunggal.
-            // Admin role juga dapat ditetapkan melalui EXPO_PUBLIC_ADMIN_EMAIL.
-            let role: UserRole = 'student';
-            if (data.role === 'assistant') role = 'assistant';
-            else if (data.role === 'admin') role = 'admin';
-            else if (ADMIN_EMAIL && data.email === ADMIN_EMAIL) role = 'admin';
+            const role: UserRole =
+              data.role === 'assistant' ? 'assistant' : 'student';
             setUser({
               uid: firebaseUser.uid,
               displayName:
@@ -192,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNeedsRoleSelection(false);
 
     if (!isFirebaseConfigured) {
-      const message = 'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+      const message = 'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
       setError(message);
       return { ok: false, reason: 'unknown_error', message };
     }
@@ -224,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!isFirebaseConfigured) {
         const message =
-          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
         setError(message);
         return { ok: false, reason: 'unknown_error', message };
       }
@@ -264,7 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!isFirebaseConfigured) {
         const message =
-          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
         setError(message);
         return { ok: false, reason: 'unknown_error', message };
       }
@@ -332,7 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!isFirebaseConfigured) {
         const message =
-          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
         setError(message);
         return { ok: false, reason: 'unknown_error', message };
       }
@@ -344,11 +339,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, reason: 'unauthenticated', message };
       }
 
-      // Admin role can only be assigned if email matches EXPO_PUBLIC_ADMIN_EMAIL.
-      if (role === 'admin' && !(ADMIN_EMAIL && currentUser.email === ADMIN_EMAIL)) {
-        const message = 'Role admin hanya dapat ditetapkan melalui konfigurasi .env.';
+      if (role !== 'student' && role !== 'assistant') {
+        const message = 'Peran tidak valid.';
         setError(message);
-        return { ok: false, reason: 'forbidden', message };
+        return { ok: false, reason: 'validation_error', message };
       }
 
       try {
