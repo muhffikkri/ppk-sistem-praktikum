@@ -18,11 +18,9 @@ import {
   AssistantAttendanceRosterScreen,
   AssistantClassFormScreen,
   AssistantClassListScreen,
-  AssistantModuleListScreen,
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
   AssistantSessionFormScreen,
-  AssistantSettingsScreen,
 } from '../features/assistant';
 
 import {
@@ -309,18 +307,6 @@ export function AppNavigator() {
                   component={AssistantAttendanceRosterScreen}
 
                   options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="AssistantModuleList"
-
-                  component={AssistantModuleListScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantSettings"
-
-                  component={AssistantSettingsScreen}
                 />
 
                 <Stack.Screen

@@ -16,8 +16,6 @@ export type RootStackParamList = {
   AssistantSchedule: undefined;
   AssistantSessionDetail: { sessionId: string };
   AssistantAttendanceRoster: { sessionId: string };
-  AssistantModuleList: undefined;
-  AssistantSettings: undefined;
   AssistantAllSessions: undefined;
   AssistantAllAttendance: undefined;
   AssistantClassList: undefined;

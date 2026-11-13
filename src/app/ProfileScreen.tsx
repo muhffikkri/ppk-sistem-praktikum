@@ -57,18 +57,6 @@ export function ProfileScreen({ navigation }: Props) {
           glyph: '✦',
           onPress: () => navigation.navigate('AssistantAllAttendance'),
         },
-        {
-          label: 'Modul & Materi',
-          sub: 'Daftar modul praktikum',
-          glyph: '≡',
-          onPress: () => navigation.navigate('AssistantModuleList'),
-        },
-        {
-          label: 'Pengaturan',
-          sub: 'Preferensi akun & tampilan',
-          glyph: '⚙',
-          onPress: () => navigation.navigate('AssistantSettings'),
-        },
       ]
     : [
         {
