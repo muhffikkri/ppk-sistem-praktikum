@@ -7,6 +7,7 @@ export { EmptyState } from './EmptyState';
 export { Header } from './Header';
 export { Screen } from './Screen';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';
+export { Text, type TextProps, type TextTone, type TextVariant } from './Text';
 export {
   colors,
   token,
