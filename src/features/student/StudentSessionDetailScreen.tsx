@@ -1,235 +1,87 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from 'react-native';
+import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
 
-import type { RootStackParamList } from '../../app/navigation';
-import type { Session } from '../../domain/types';
-import {
-  Banner,
-  Button,
-  Card,
-  CardContent,
-  ConfirmSheet,
-  EmptyState,
-  ErrorState,
-  Header,
-  InfoRow,
-  LoadingState,
-  Screen,
-  spacing,
-  Text,
-  TopBar,
-} from '../../shared/ui';
-import { useStudentAttendanceViewModel } from '../../state';
-import { useStudentLeaveViewModel } from '../leave';
-import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
-
-type Props = NativeStackScreenProps<RootStackParamList, 'StudentSessionDetail'>;
-
-type Feedback =
-  { kind: 'ok'; message: string } | { kind: 'error'; message: string } | null;
-
-const LEAVE_STATUS_LABEL = {
-  pending: 'Menunggu',
-  approved: 'Diterima',
-  rejected: 'Ditolak',
-} as const;
-
-const SESSION_STATUS_LABEL: Record<Session['status'], string> = {
-  open: 'Terbuka',
-  scheduled: 'Terjadwal',
-  closed: 'Tertutup',
-};
-
-export function StudentSessionDetailScreen({ route, navigation }: Props) {
+export function StudentSessionDetailScreen({ route, navigation }: any) {
   const { sessionId } = route.params;
-  const {
-    getSessionById,
-    getAttendanceForSession,
-    checkIn,
-    submittingSessionId,
-    loading,
-    error,
-    retry,
-  } = useStudentAttendanceViewModel();
-  const { getLeaveForSession } = useStudentLeaveViewModel();
-  const [feedback, setFeedback] = useState<Feedback>(null);
-  // Satu Modal untuk konfirmasi & sukses: iOS tidak bisa menampilkan Modal
-  // kedua selagi Modal pertama masih beranimasi menutup.
-  const [sheet, setSheet] = useState<
-    { kind: 'confirm' } | { kind: 'success'; time: string } | null
-  >(null);
+  const { getSessionById, getAttendanceForSession, checkIn, loading } = useStudentAttendanceViewModel();
+
+  const session = getSessionById(sessionId);
+  const attendance = getAttendanceForSession(sessionId);
 
   if (loading) {
     return (
-      <Screen>
-        <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
-        <LoadingState label="Memuat jadwal…" />
-      </Screen>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
     );
   }
-
-  if (error) {
-    return (
-      <Screen>
-        <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
-        <ErrorState
-          title="Gagal memuat jadwal"
-          message={error}
-          onRetry={retry}
-        />
-      </Screen>
-    );
-  }
-
-  const session = getSessionById(sessionId);
-  const record = getAttendanceForSession(sessionId);
-  const existingLeave = getLeaveForSession(sessionId);
 
   if (!session) {
     return (
-      <Screen>
-        <TopBar title="Detail sesi" onBack={() => navigation.goBack()} />
-        <EmptyState
-          icon="calendar-outline"
-          title="Sesi tidak ditemukan"
-          description="Sesi tidak ditemukan atau kamu bukan peserta kelas ini."
-          action={
-            <Button
-              label="Kembali ke jadwal"
-              variant="outline"
-              onPress={() => navigation.goBack()}
-            />
-          }
-        />
-      </Screen>
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Sesi praktikum tidak ditemukan.</Text>
+      </View>
     );
   }
 
-  const onCheckIn = async () => {
-    const result = await checkIn(session.id);
-    if (!result.ok) {
-      setSheet(null);
-      setFeedback({ kind: 'error', message: result.message });
-      return;
+  const isAlreadyCheckedIn = attendance !== undefined;
+  const isOpen = session.status === 'open';
+
+  const handleCheckIn = async () => {
+    const result = await checkIn(sessionId);
+    if (result.ok) {
+      Alert.alert('Sukses', 'Presensi berhasil dicatat secara real-time!');
+    } else {
+      if (result.reason === 'already_checked_in') {
+        Alert.alert('Perhatian', 'Anda sudah melakukan presensi pada sesi ini.');
+      } else if (result.reason === 'invalid_status') {
+        Alert.alert('Gagal', 'Sesi belum dibuka atau sudah ditutup.');
+      } else {
+        Alert.alert('Gagal', `Terjadi kesalahan: ${result.reason}`);
+      }
     }
-    setFeedback(null);
-    setSheet({ kind: 'success', time: formatClock(new Date().toISOString()) });
   };
 
   return (
-    <Screen>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header title={session.courseName} description={session.groupName} />
+    <View style={styles.container}>
+      <Text style={styles.title}>{session.courseName}</Text>
+      <Text style={styles.info}>Kelas: {session.groupName}</Text>
+      <Text style={styles.info}>Status: <Text style={styles.bold}>{session.status.toUpperCase()}</Text></Text>
 
-      {feedback ? (
-        <Banner
-          title={feedback.kind === 'ok' ? 'Berhasil' : 'Gagal presensi'}
-          message={feedback.message}
-          tone={feedback.kind === 'ok' ? 'success' : 'danger'}
-          onDismiss={() => setFeedback(null)}
-        />
-      ) : null}
-
-      <Card interactive={false}>
-        <CardContent>
-          <InfoRow
-            label="Status"
-            value={SESSION_STATUS_LABEL[session.status]}
-          />
-          <InfoRow
-            label="Tanggal"
-            value={formatSessionDate(session.startsAt)}
-          />
-          <InfoRow
-            label="Waktu"
-            value={formatTimeRange(session.startsAt, session.endsAt)}
-          />
-          <InfoRow
-            label="Presensi kamu"
-            value={
-              record ? `Hadir ${formatClock(record.checkedInAt)}` : 'Belum'
-            }
-          />
-        </CardContent>
-      </Card>
-
-      <View style={styles.actions}>
-        {record ? (
-          <Banner
-            title="Presensi tercatat"
-            message={`Presensi tercatat pukul ${formatClock(record.checkedInAt)}.`}
-            tone="success"
-          />
-        ) : session.status === 'open' ? (
+      {isAlreadyCheckedIn ? (
+        <View style={styles.successBox}>
+          <Text style={styles.successText}>✓ Anda Sudah Hadir</Text>
+        </View>
+      ) : (
+        <View style={styles.actionContainer}>
           <Button
-            label={
-              submittingSessionId === session.id
-                ? 'Memproses…'
-                : 'Presensi sekarang'
-            }
-            variant="accent"
-            icon="checkmark"
-            disabled={submittingSessionId === session.id}
-            accessibilityHint="Mencatat kehadiran di sesi ini"
-            onPress={() => setSheet({ kind: 'confirm' })}
+            title={isOpen ? "Presensi Sekarang" : `Sesi ${session.status}`}
+            disabled={!isOpen}
+            onPress={handleCheckIn}
           />
-        ) : (
-          <Text tone="muted">
-            {session.status === 'scheduled'
-              ? 'Sesi belum dibuka'
-              : 'Sesi sudah ditutup'}
-          </Text>
-        )}
-        {existingLeave ? (
-          <Text tone="muted">
-            Status izin: {LEAVE_STATUS_LABEL[existingLeave.status]}
-          </Text>
-        ) : !record && session.status !== 'closed' ? (
-          <Button
-            label="Ajukan izin"
-            variant="outline"
-            onPress={() =>
-              navigation.navigate('StudentLeaveRequestForm', {
-                sessionId: session.id,
-              })
-            }
-          />
-        ) : null}
+        </View>
+      )}
+
+      <View style={styles.leaveButtonContainer}>
         <Button
-          label="Lihat riwayat kehadiran"
-          variant="outline"
-          onPress={() => navigation.navigate('StudentAttendanceHistory')}
+          title="Ajukan Izin Ketidakhadiran"
+          color="#ff9800"
+          onPress={() => navigation.navigate('StudentLeaveRequestForm', { sessionId })}
         />
       </View>
-
-      {sheet?.kind === 'success' ? (
-        <ConfirmSheet
-          visible
-          title="Presensi berhasil"
-          description={`Tercatat pukul ${sheet.time}.`}
-          confirmLabel="Selesai"
-          cancelLabel=""
-          onConfirm={() => setSheet(null)}
-          onCancel={() => setSheet(null)}
-        />
-      ) : (
-        <ConfirmSheet
-          visible={sheet?.kind === 'confirm'}
-          title="Konfirmasi presensi"
-          description={`${session.courseName} · ${session.groupName}. Waktu kehadiran akan dicatat sekarang.`}
-          confirmLabel="Presensi"
-          loading={submittingSessionId === session.id}
-          onConfirm={() => {
-            void onCheckIn();
-          }}
-          onCancel={() => setSheet(null)}
-        />
-      )}
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: { gap: spacing.md },
+  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { fontSize: 16, color: 'red' },
+  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  info: { fontSize: 16, marginBottom: 8, color: '#333' },
+  bold: { fontWeight: 'bold', color: '#007AFF' },
+  successBox: { marginTop: 20, backgroundColor: '#e6f4ea', padding: 16, borderRadius: 8 },
+  successText: { color: '#137333', fontWeight: 'bold', fontSize: 16 },
+  actionContainer: { marginTop: 20 },
+  leaveButtonContainer: { marginTop: 12 }
 });
