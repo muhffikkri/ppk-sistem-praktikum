@@ -8,16 +8,21 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
-import { db } from '../firebase';
 import { checkInRule } from '../../domain/attendanceRules';
 import {
-  AttendanceRecord,
   AsyncActionResult,
+  AttendanceRecord,
   PracticalClass,
   Session,
   UserProfile,
 } from '../../domain/types';
+import { db } from '../firebase';
 import { normalizeAttendanceRecord } from './normalize';
+export type {
+  AsyncActionResult, AttendanceRecord, PracticalClass,
+  Session,
+  UserProfile
+};
 
 const classesCol = collection(db, 'classes');
 const sessionsCol = collection(db, 'sessions');
