@@ -1,34 +1,28 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
 
-import type { UserProfile, UserRole } from '../domain/types';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import { useState } from 'react';
+
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import {
+  LoginScreen,
+  RegisterScreen,
+  LandingScreen,
+  RoleSelectionScreen,
+} from '../features/auth';
 import {
   AssistantAllAttendanceScreen,
   AssistantAllSessionsScreen,
   AssistantAttendanceRosterScreen,
   AssistantClassFormScreen,
   AssistantClassListScreen,
-  AssistantModuleListScreen,
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
   AssistantSessionFormScreen,
-  AssistantSettingsScreen,
 } from '../features/assistant';
-import { LoginScreen, RegisterScreen } from '../features/auth';
-import {
-  AssistantLeaveReviewListScreen,
-  LeaveProvider,
-  StudentLeaveListScreen,
-  StudentLeaveRequestFormScreen,
-} from '../features/leave';
+
 import {
   StudentAllAttendanceScreen,
   StudentAllSessionsScreen,
@@ -36,109 +30,111 @@ import {
   StudentScheduleScreen,
   StudentSessionDetailScreen,
 } from '../features/student';
+
+import {
+  AssistantLeaveReviewListScreen,
+  LeaveProvider,
+  StudentLeaveListScreen,
+  StudentLeaveRequestFormScreen,
+} from '../features/leave';
+
 import { db } from '../services/firebase';
-import {
-  Banner,
-  BottomDock,
-  colors,
-  spacing,
-  typography,
-  type DockTab,
-} from '../shared/ui';
-import { useAuth } from '../state';
-import {
-  AssistantSessionsProvider,
-  useAssistantSessionsV2,
-} from '../state/AssistantSessionsContext';
-import type { AuthStackParamList, RootStackParamList } from './navigation';
+
+import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
+
+import { useActorRole, useAuth } from '../state';
+
+import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
+import { StudentAttendanceProvider } from '../state/StudentAttendanceContext';
+
 import { CalendarScreen } from './CalendarScreen';
+
 import { HomeScreen } from './HomeScreen';
+
+import type { RootStackParamList } from './navigation';
+
+import { NotificationsScreen } from './NotificationsScreen';
+
 import { ProfileEditScreen } from './ProfileEditScreen';
+
 import { ProfileScreen } from './ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+
+// 4 tab dock; FAB Izin berada di tengah.
+
+// Uses Ionicons from @expo/vector-icons.
+
+// The Jadwal / Presensi keys are stable; their target routes depend on
+// the active POV (see DOCK_ROUTE_FOR_POV below).
 
 const DOCK_TABS: DockTab[] = [
   { key: 'Home', label: 'Beranda', glyph: 'grid' },
+
   { key: 'Schedule', label: 'Jadwal', glyph: 'calendar' },
+
   { key: 'Attendance', label: 'Presensi', glyph: 'finger-print' },
+
   { key: 'Profile', label: 'Akun', glyph: 'person' },
 ];
 
-const DOCK_ROUTE_FOR_ROLE: Record<
-  UserRole,
+const DOCK_ROUTE_FOR_POV: Record<
+  'praktikan' | 'asisten',
   { Schedule: keyof RootStackParamList; Attendance: keyof RootStackParamList }
 > = {
-  student: {
+  praktikan: {
     Schedule: 'StudentSchedule',
+
     Attendance: 'StudentAttendanceHistory',
   },
-  assistant: {
+
+  asisten: {
     Schedule: 'AssistantSchedule',
+
     Attendance: 'AssistantAllAttendance',
   },
 };
 
-function AuthLoadingView() {
-  return (
-    <View style={styles.loadingRoot}>
-      <ActivityIndicator size="large" color={colors.violet} />
-      <Text style={styles.loadingText}>Memuat sesi akun...</Text>
-    </View>
-  );
-}
+const AuthStack = createNativeStackNavigator<{
+  Landing: undefined;
+  Login: undefined;
+  Register: undefined;
+  RoleSelection: undefined;
+}>();
 
-function AuthNavigator() {
-  return (
-    <AuthStack.Navigator
-      initialRouteName="Login"
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.violet,
-        headerShadowVisible: false,
-        headerBackButtonDisplayMode: 'minimal',
-        contentStyle: { backgroundColor: colors.surface },
-      }}
-    >
-      <AuthStack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ headerShown: false }}
-      />
-      <AuthStack.Screen
-        name="Register"
-        component={RegisterScreen}
-        options={{ title: 'Daftar Akun' }}
-      />
-    </AuthStack.Navigator>
-  );
-}
+export function AppNavigator() {
+  const { authStatus, user, logout, needsRoleSelection } = useAuth();
+  const actorRole = useActorRole();
 
-function AuthenticatedNavigator({ user }: { user: UserProfile }) {
-  const { error, clearError } = useAuth();
-  const { sessions: assistantSessions } = useAssistantSessionsV2();
   const [activeKey, setActiveKey] = useState<string>('Home');
+
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
+
+    /** Reset the whole stack to a single top-level route used by the
+     *  bottom dock so it never surfaces a "back" chevron. */
     reset: (state: {
       index: number;
       routes: { name: string; params?: Record<string, unknown> }[];
     }) => void;
   };
 
-  const isAssistant = user.role === 'assistant';
-
+  // Resolve the stable dock keys to the route matching the active POV.
   const resolveRoute = (key: string): keyof RootStackParamList => {
+    const currentPov = actorRole;
     switch (key) {
       case 'Schedule':
-        return DOCK_ROUTE_FOR_ROLE[user.role].Schedule;
+        return DOCK_ROUTE_FOR_POV[currentPov].Schedule;
+
       case 'Attendance':
-        return DOCK_ROUTE_FOR_ROLE[user.role].Attendance;
+        return DOCK_ROUTE_FOR_POV[currentPov].Attendance;
+
       case 'Home':
         return 'Home';
+
       case 'Profile':
         return 'Profile';
+
       default:
         return key as keyof RootStackParamList;
     }
@@ -146,249 +142,289 @@ function AuthenticatedNavigator({ user }: { user: UserProfile }) {
 
   const onTabPress = (key: string) => {
     setActiveKey(key);
+
     const route = resolveRoute(key);
-    if (key === 'Attendance' && isAssistant) {
-      const targetSession =
-        assistantSessions.find((s) => s.status === 'open') ??
-        assistantSessions[0];
-      if (targetSession) {
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'AssistantAttendanceRoster',
-              params: { sessionId: targetSession.id },
-            },
-          ],
-        });
-        return;
-      }
-    }
+
     navigation.reset({ index: 0, routes: [{ name: route }] });
   };
 
-  return (
-    <View style={styles.root}>
-      {error ? (
-        <View style={styles.shellBanner}>
-          <Banner
-            title="Gangguan akun"
-            message={error}
-            tone="danger"
-            onDismiss={clearError}
-          />
-        </View>
-      ) : null}
+  // When unauthenticated or loading, show auth stack (Landing → Login/Register)
+  if (authStatus === 'unauthenticated' || authStatus === 'loading') {
+    return (
+      <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+        <AuthStack.Screen name="Landing" component={LandingScreen} />
+        <AuthStack.Screen name="Login" component={LoginScreen} />
+        <AuthStack.Screen name="Register" component={RegisterScreen} />
+        <AuthStack.Screen
+          name="RoleSelection"
+          component={RoleSelectionScreen}
+        />
+      </AuthStack.Navigator>
+    );
+  }
 
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.panel },
-          headerTintColor: colors.violet,
-          headerShadowVisible: false,
-          headerBackButtonDisplayMode: 'minimal',
-          contentStyle: { backgroundColor: colors.surface },
-          headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Buka profil"
-              onPress={() => navigation.navigate('Profile')}
-              style={({ pressed }) => [
-                styles.profileShortcut,
-                pressed && styles.pressed,
-              ]}
+  // When authenticated but role not yet selected (Google first-time login),
+  // show RoleSelectionScreen before entering the app.
+  if (needsRoleSelection) {
+    return (
+      <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+        <AuthStack.Screen
+          name="RoleSelection"
+          component={RoleSelectionScreen}
+        />
+      </AuthStack.Navigator>
+    );
+  }
+
+  return (
+    <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
+      <StudentAttendanceProvider enabled={user?.role === 'student'}>
+        <LeaveProvider db={db} user={user}>
+          <View style={styles.root}>
+            <Stack.Navigator
+              initialRouteName="Home"
+
+              screenOptions={({ route }) => ({
+                headerStyle: { backgroundColor: colors.panel },
+
+                headerTintColor: colors.violet,
+
+                headerShadowVisible: false,
+
+                headerBackButtonDisplayMode: 'minimal',
+
+                contentStyle: { backgroundColor: colors.surface },
+
+                headerRight: () => (
+                  <Pressable
+                    accessibilityRole="button"
+
+                    accessibilityLabel="Buka profil"
+
+                    onPress={() => navigation.navigate('Profile')}
+
+                    style={({ pressed }) => [
+                      styles.changeRole,
+
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text variant="label" tone="violet">Profil</Text>
+                  </Pressable>
+                ),
+              })}
             >
-              <Text style={styles.profileShortcutLabel}>Profil</Text>
-            </Pressable>
-          ),
-        }}
-      >
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            title: 'Beranda',
-            headerRight: () => null,
-            headerBackTitle: '',
-            headerShown: false,
-          }}
-        />
+              <Stack.Screen
+                name="Home"
 
-        {user.role === 'student' ? (
-          <Stack.Group screenOptions={{ title: 'Praktikan' }}>
-            <Stack.Screen
-              name="StudentSchedule"
-              component={StudentScheduleScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="StudentSessionDetail"
-              component={StudentSessionDetailScreen}
-            />
-            <Stack.Screen
-              name="StudentAttendanceHistory"
-              component={StudentAttendanceHistoryScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="StudentAllSessions"
-              component={StudentAllSessionsScreen}
-            />
-            <Stack.Screen
-              name="StudentAllAttendance"
-              component={StudentAllAttendanceScreen}
-            />
-            <Stack.Screen
-              name="StudentLeaveList"
-              component={StudentLeaveListScreen}
-              options={{ title: 'Daftar Izin' }}
-            />
-            <Stack.Screen
-              name="StudentLeaveRequestForm"
-              component={StudentLeaveRequestFormScreen}
-              options={{ title: 'Ajukan Izin' }}
-            />
-          </Stack.Group>
-        ) : (
-          <Stack.Group screenOptions={{ title: 'Asisten' }}>
-            <Stack.Screen
-              name="AssistantSchedule"
-              component={AssistantScheduleScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="AssistantSessionDetail"
-              component={AssistantSessionDetailScreen}
-            />
-            <Stack.Screen
-              name="AssistantAttendanceRoster"
-              component={AssistantAttendanceRosterScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="AssistantClassList"
-              component={AssistantClassListScreen}
-              options={{ title: 'Kelola Kelas' }}
-            />
-            <Stack.Screen
-              name="AssistantClassForm"
-              component={AssistantClassFormScreen}
-              options={{ title: 'Form Kelas' }}
-            />
-            <Stack.Screen
-              name="AssistantSessionForm"
-              component={AssistantSessionFormScreen}
-              options={{ title: 'Form Sesi' }}
-            />
-            <Stack.Screen
-              name="AssistantLeaveReviewList"
-              component={AssistantLeaveReviewListScreen}
-              options={{ title: 'Pemeriksaan Izin' }}
-            />
-            <Stack.Screen
-              name="AssistantModuleList"
-              component={AssistantModuleListScreen}
-            />
-            <Stack.Screen
-              name="AssistantSettings"
-              component={AssistantSettingsScreen}
-            />
-            <Stack.Screen
-              name="AssistantAllSessions"
-              component={AssistantAllSessionsScreen}
-            />
-            <Stack.Screen
-              name="AssistantAllAttendance"
-              component={AssistantAllAttendanceScreen}
-            />
-          </Stack.Group>
-        )}
+                component={HomeScreen}
 
-        <Stack.Screen
-          name="Calendar"
-          component={CalendarScreen}
-          options={{
-            headerTintColor: colors.inkMuted,
-            headerStyle: { backgroundColor: colors.surface },
-            title: 'Kalender',
-          }}
-        />
-        <Stack.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            headerRight: () => null,
-            headerTintColor: colors.inkMuted,
-            headerStyle: { backgroundColor: colors.surface },
-          }}
-        />
-        <Stack.Screen
-          name="ProfileEdit"
-          component={ProfileEditScreen}
-          options={{
-            headerTintColor: colors.inkMuted,
-            headerStyle: { backgroundColor: colors.surface },
-            title: 'Edit Profil',
-          }}
-        />
-      </Stack.Navigator>
+                options={{
+                  title: 'Beranda',
 
-      <BottomDock
-        tabs={DOCK_TABS}
-        activeKey={activeKey}
-        onTabPress={onTabPress}
-      />
-    </View>
-  );
-}
+                  headerRight: () => null,
 
-export function AppNavigator() {
-  const { authStatus, user } = useAuth();
+                  headerBackTitle: '',
 
-  if (authStatus === 'loading') {
-    return <AuthLoadingView />;
-  }
+                  headerShown: false,
+                }}
+              />
 
-  if (authStatus === 'unauthenticated' || !user) {
-    return <AuthNavigator />;
-  }
+              <Stack.Group screenOptions={{ title: 'Praktikan' }}>
+                <Stack.Screen
+                  name="StudentSchedule"
 
-  return (
-    <AssistantSessionsProvider>
-      <LeaveProvider db={db} user={user}>
-        <AuthenticatedNavigator key={user.uid} user={user} />
-      </LeaveProvider>
+                  component={StudentScheduleScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentSessionDetail"
+
+                  component={StudentSessionDetailScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentAttendanceHistory"
+
+                  component={StudentAttendanceHistoryScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentAllSessions"
+
+                  component={StudentAllSessionsScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentAllAttendance"
+
+                  component={StudentAllAttendanceScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentLeaveRequestForm"
+
+                  component={StudentLeaveRequestFormScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentLeaveList"
+
+                  component={StudentLeaveListScreen}
+
+                  options={{ headerShown: false }}
+                />
+              </Stack.Group>
+
+              <Stack.Group screenOptions={{ headerShown: false }}>
+                <Stack.Screen
+                  name="AssistantSchedule"
+
+                  component={AssistantScheduleScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AssistantSessionDetail"
+
+                  component={AssistantSessionDetailScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantAttendanceRoster"
+
+                  component={AssistantAttendanceRosterScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AssistantAllSessions"
+
+                  component={AssistantAllSessionsScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantAllAttendance"
+
+                  component={AssistantAllAttendanceScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantClassList"
+
+                  component={AssistantClassListScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantClassForm"
+
+                  component={AssistantClassFormScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantSessionForm"
+
+                  component={AssistantSessionFormScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantLeaveReviewList"
+
+                  component={AssistantLeaveReviewListScreen}
+
+                  options={{ headerShown: false }}
+                />
+              </Stack.Group>
+
+              <Stack.Screen
+                name="Calendar"
+
+                component={CalendarScreen}
+
+                options={{ headerShown: false }}
+              />
+
+              <Stack.Screen
+                name="Profile"
+
+                component={ProfileScreen}
+
+                options={{ headerShown: false }}
+              />
+
+              <Stack.Screen
+                name="ProfileEdit"
+
+                component={ProfileEditScreen}
+
+                options={{ headerShown: false }}
+              />
+
+              <Stack.Screen
+                name="Notifications"
+
+                component={NotificationsScreen}
+
+                options={{ headerShown: false }}
+              />
+            </Stack.Navigator>
+
+            <BottomDock
+              tabs={DOCK_TABS}
+
+              activeKey={activeKey}
+
+              onTabPress={onTabPress}
+
+              fab={{
+                glyph: 'document-text',
+
+                label: 'Izin',
+
+                onPress: () => {
+                  // Izin bukan tab dock: kosongkan key agar tab lama tidak menyala.
+                  setActiveKey('');
+                  navigation.navigate(
+                    actorRole === 'asisten'
+                      ? 'AssistantLeaveReviewList'
+                      : 'StudentLeaveList',
+                  );
+                },
+              }}
+            />
+          </View>
+        </LeaveProvider>
+      </StudentAttendanceProvider>
     </AssistantSessionsProvider>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
-  loadingRoot: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    padding: spacing.xl,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.inkMuted,
-  },
-  shellBanner: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  profileShortcut: {
+
+  changeRole: {
     minHeight: 44,
+
     paddingHorizontal: 8,
+
     justifyContent: 'center',
+
     borderRadius: 8,
   },
+
   pressed: { backgroundColor: colors.lavenderSubtle },
-  profileShortcutLabel: {
-    ...typography.label,
-    color: colors.violet,
-  },
 });

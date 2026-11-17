@@ -1,9 +1,12 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
+  type UserCredential,
 } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import {
@@ -61,12 +64,19 @@ function mapFirebaseAuthError(err: unknown): {
     case 'auth/email-already-in-use':
       return {
         reason: 'validation_error',
-        message: 'Email sudah terdaftar. Silakan masuk dengan akun tersebut.',
+        message:
+          'Email sudah terdaftar. Silakan masuk dengan akun tersebut atau gunakan metode login yang sama.',
       };
     case 'auth/weak-password':
       return {
         reason: 'validation_error',
         message: 'Password terlalu lemah (minimal 6 karakter).',
+      };
+    case 'auth/credential-already-in-use':
+      return {
+        reason: 'validation_error',
+        message:
+          'Akun dengan email ini sudah terdaftar dengan metode login lain. Silakan gunakan metode login yang sama atau masuk dengan email dan password terlebih dahulu.',
       };
     case 'auth/too-many-requests':
       return {
@@ -84,7 +94,23 @@ function mapFirebaseAuthError(err: unknown): {
         reason: 'forbidden',
         message: 'Akses ke data profil ditolak oleh aturan keamanan.',
       };
+    case 'auth/operation-not-allowed':
+      return {
+        reason: 'forbidden',
+        message:
+          'Metode login ini belum diaktifkan di Firebase Authentication.',
+      };
+    case 'auth/configuration-not-found':
+    case 'auth/invalid-api-key':
+    case 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':
+      return {
+        reason: 'unknown_error',
+        message: 'Konfigurasi Firebase tidak valid. Periksa isi file .env.',
+      };
     default:
+      if (__DEV__) {
+        console.warn('[Auth] unmapped error:', code || err);
+      }
       return {
         reason: 'unknown_error',
         message: 'Terjadi kesalahan pada layanan autentikasi. Coba lagi.',
@@ -96,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [needsRoleSelection, setNeedsRoleSelection] = useState(false);
   const registeringRef = useRef(false);
 
   useEffect(() => {
@@ -121,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (snap) => {
           if (snap.exists()) {
             const data = snap.data() as Partial<UserProfile>;
+            // Role disimpan di Firestore dan dipakai sebagai kebenaran tunggal.
             const role: UserRole =
               data.role === 'assistant' ? 'assistant' : 'student';
             setUser({
@@ -147,12 +175,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          // Jika profil tidak ada di Firestore (mis. gagal penulisan sebelumnya), paksa unauthenticated.
+          // Jika profil tidak ada di Firestore (mis. login pertama kali dengan Google
+          // atau email yang belum pernah daftar), arahkan ke layar pemilihan peran.
           setUser(null);
-          setError(
-            'Profil akun tidak ditemukan di database. Silakan masuk ulang atau daftar kembali.',
-          );
-          setAuthStatus('unauthenticated');
+          setNeedsRoleSelection(true);
+          setAuthStatus('authenticated');
         },
         (snapshotError) => {
           const mapped = mapFirebaseAuthError(snapshotError);
@@ -171,6 +198,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const loginWithGoogle = useCallback(async (): Promise<AsyncActionResult> => {
+    setError(null);
+    setNeedsRoleSelection(false);
+
+    if (!isFirebaseConfigured) {
+      const message =
+        'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
+      setError(message);
+      return { ok: false, reason: 'unknown_error', message };
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result: UserCredential = await signInWithPopup(auth, provider);
+
+      // Setelah Google login berhasil, cek apakah profil sudah ada di Firestore.
+      // Jika sudah ada (mis. sebelumnya daftar dengan email/password), role akan
+      // diambil dari Firestore melalui onAuthStateChanged di atas.
+      // Jika belum ada, needsRoleSelection akan true dan user diarahkan ke RoleSelectionScreen.
+      return { ok: true };
+    } catch (err) {
+      const mapped = mapFirebaseAuthError(err);
+      setError(mapped.message);
+      return { ok: false, reason: mapped.reason, message: mapped.message };
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -181,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!isFirebaseConfigured) {
         const message =
-          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
         setError(message);
         return { ok: false, reason: 'unknown_error', message };
       }
@@ -221,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!isFirebaseConfigured) {
         const message =
-          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM/admin.';
+          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
         setError(message);
         return { ok: false, reason: 'unknown_error', message };
       }
@@ -283,6 +338,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const setUserRole = useCallback(
+    async (role: UserRole): Promise<AsyncActionResult> => {
+      setError(null);
+
+      if (!isFirebaseConfigured) {
+        const message =
+          'Konfigurasi Firebase belum diisi pada file .env. Hubungi PM.';
+        setError(message);
+        return { ok: false, reason: 'unknown_error', message };
+      }
+
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        const message = 'Pengguna belum masuk. Silakan login kembali.';
+        setError(message);
+        return { ok: false, reason: 'unauthenticated', message };
+      }
+
+      if (role !== 'student' && role !== 'assistant') {
+        const message = 'Peran tidak valid.';
+        setError(message);
+        return { ok: false, reason: 'validation_error', message };
+      }
+
+      try {
+        // Cek apakah profil sudah ada di Firestore (mis. user sudah pernah login
+        // dengan email/password sebelumnya dan baru saja login dengan Google).
+        // Role yang dipilih di RoleSelectionScreen akan ditulis ke Firestore,
+        // sehingga role konsisten terlepas dari metode login yang digunakan.
+        const profile: UserProfile = {
+          uid: currentUser.uid,
+          displayName:
+            currentUser.displayName || currentUser.email || 'Pengguna',
+          email: currentUser.email || '',
+          role,
+          createdAt: new Date().toISOString(),
+        };
+
+        await setDoc(doc(db, 'users', currentUser.uid), profile);
+        await updateProfile(currentUser, { displayName: profile.displayName });
+
+        setUser(profile);
+        setNeedsRoleSelection(false);
+        setAuthStatus('authenticated');
+        return { ok: true };
+      } catch (err) {
+        const mapped = mapFirebaseAuthError(err);
+        setError(mapped.message);
+        return { ok: false, reason: mapped.reason, message: mapped.message };
+      }
+    },
+    [],
+  );
+
   const logout = useCallback(async (): Promise<AsyncActionResult> => {
     setError(null);
     try {
@@ -333,8 +442,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authStatus,
       user,
       error,
+      needsRoleSelection,
       login,
       register,
+      loginWithGoogle,
+      setUserRole,
       logout,
       updateDisplayName,
       clearError,
@@ -343,8 +455,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authStatus,
       user,
       error,
+      needsRoleSelection,
       login,
       register,
+      loginWithGoogle,
+      setUserRole,
       logout,
       updateDisplayName,
       clearError,
@@ -362,3 +477,9 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
+export type ActorRole = 'praktikan' | 'asisten';
+
+export function useActorRole(): ActorRole {
+  const { user } = useAuth();
+  return user?.role === 'assistant' ? 'asisten' : 'praktikan';
+}

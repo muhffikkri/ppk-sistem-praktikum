@@ -17,7 +17,7 @@ const toneStyles: Record<
   { bg: string; fg: string; border?: string }
 > = {
   lime: { bg: colors.lime, fg: colors.ink },
-  pink: { bg: colors.pink, fg: '#8A0F41' },
+  pink: { bg: colors.pink, fg: colors.pinkInk },
   lavender: { bg: colors.lavender, fg: colors.violet },
   ink: { bg: colors.ink, fg: colors.panel },
   violet: { bg: colors.violet, fg: colors.panel },

@@ -17,7 +17,7 @@ import type {
   Session,
   UserProfile,
 } from '../../domain/types';
-import { classifyLeaveReason } from '../ai/leaveClassifier';
+import { classifyLeaveReason } from '../../../ai/leaveClassifier';
 
 export class LeaveError extends Error {
   constructor(

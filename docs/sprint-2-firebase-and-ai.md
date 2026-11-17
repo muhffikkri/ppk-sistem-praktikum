@@ -22,7 +22,6 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
-EXPO_PUBLIC_AI_CLASSIFIER_URL=
 ```
 
 ### Inisialisasi (`src/services/firebase.ts`)
@@ -60,7 +59,7 @@ Menyimpan identitas dan peran akun yang dibuat saat registrasi.
 | `uid` | `string` | Ya | Sama dengan `FirebaseAuth.User.uid` dan document ID. |
 | `displayName` | `string` | Ya | Nama lengkap pengguna. |
 | `email` | `string` | Ya | Email lowercase untuk login dan pencarian peserta oleh asisten. |
-| `role` | `'student' \| 'assistant'` | Ya | Peran akun (ditentukan saat registrasi, tidak dapat diubah sendiri oleh user). |
+| `role` | `'student' \| 'assistant' \| 'admin'` | Ya | Peran akun (ditentukan saat registrasi, tidak dapat diubah sendiri oleh user). |
 | `createdAt` | `string` | Ya | ISO 8601 UTC saat registrasi. |
 
 #### B. `classes/{classId}`
@@ -181,6 +180,10 @@ service cloud.firestore {
         && userDoc().data.role == role;
     }
 
+    function isAssistantOrAdmin() {
+      return hasRole('assistant') || hasRole('admin');
+    }
+
     function isAssistant() {
       return hasRole('assistant');
     }
@@ -214,10 +217,10 @@ service cloud.firestore {
 
     // 2. Kelas & Peserta
     match /classes/{classId} {
-      allow read: if isAssistant()
+      allow read: if isAssistantOrAdmin()
         || (isStudent() && request.auth.uid in resource.data.participantIds);
 
-      allow create: if isAssistant()
+      allow create: if isAssistantOrAdmin()
         && request.resource.data.createdBy == request.auth.uid
         && request.auth.uid in request.resource.data.assistantIds
         && request.resource.data.courseName is string
@@ -225,15 +228,15 @@ service cloud.firestore {
         && request.resource.data.groupName is string
         && request.resource.data.groupName.size() > 0;
 
-      allow update, delete: if isAssistant();
+      allow update, delete: if isAssistantOrAdmin();
     }
 
     // 3. Jadwal & Sesi Praktikum
     match /sessions/{sessionId} {
-      allow read: if isAssistant()
+      allow read: if isAssistantOrAdmin()
         || (isStudent() && request.auth.uid in resource.data.participantIds);
 
-      allow create: if isAssistant()
+      allow create: if isAssistantOrAdmin()
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == 'scheduled'
         && request.resource.data.openedAt == null
@@ -241,10 +244,10 @@ service cloud.firestore {
         && request.resource.data.startsAt is string
         && request.resource.data.endsAt is string;
 
-      allow update: if isAssistant()
+      allow update: if isAssistantOrAdmin()
         && request.resource.data.status in ['scheduled', 'open', 'closed'];
 
-      allow delete: if isAssistant();
+      allow delete: if isAssistantOrAdmin();
     }
 
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})
@@ -265,7 +268,7 @@ service cloud.firestore {
 
     // 5. Pengajuan Izin & Pemeriksaan Asisten
     match /leave_requests/{leaveId} {
-      allow read: if isAssistant()
+      allow read: if isAssistantOrAdmin()
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
       // Praktikan membuat izin: status WAJIB 'pending', belum direview, alasan tidak kosong,
@@ -280,9 +283,9 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
         && request.auth.uid in get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.participantIds;
 
-      // Asisten hanya memeriksa pengajuan 'pending' -> 'approved' | 'rejected',
+      // Asisten atau Admin hanya memeriksa pengajuan 'pending' -> 'approved' | 'rejected',
       // tanpa mengubah alasan, pengaju, sesi, atau prediksi AI awal.
-      allow update: if isAssistant()
+      allow update: if isAssistantOrAdmin()
         && resource.data.status == 'pending'
         && request.resource.data.status in ['approved', 'rejected']
         && request.resource.data.reviewedBy == request.auth.uid
@@ -330,6 +333,5 @@ export async function classifyLeaveReason(reason: string): Promise<AiClassificat
 ```
 
 - **Input:** `reason` (string alasan ketidakhadiran yang sudah di-trim).
-- **HTTP Request default:** `POST ${EXPO_PUBLIC_AI_CLASSIFIER_URL}` dengan header `Content-Type: application/json` dan body `{ text: reason, reason }` (kirim sesuai spesifikasi endpoint pengajar).
-- **Normalisasi response:** baca `data.category ?? data.label ?? data.prediction ?? null` dan `data.confidence ?? data.score ?? null`. Bila tidak ada kategori valid, perlakukan sebagai `'unavailable'`.
+- **Model lokal EDOM (default, tanpa API eksternal):** adapter memuat `ai/model-edom.json` + `ai/sentiment.js` dan memetakan label sentimen ke kategori: `positif` → `alasan_strong`, `netral` → `alasan_netral`, `negatif` → `alasan_weak`. Confidence dihitung dari margin antar skor LinearSVC (skala 0–1). Teks tanpa kata yang dikenal model menghasilkan `alasan_netral` (confidence 0.5); input kosong menghasilkan `unavailable`.
 

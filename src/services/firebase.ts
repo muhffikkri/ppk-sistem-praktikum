@@ -1,8 +1,9 @@
+/// <reference types="node" />
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as firebaseAuth from 'firebase/auth';
-import { Platform } from 'react-native';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 type AuthPersistenceFactory = (
   storage: typeof AsyncStorage,

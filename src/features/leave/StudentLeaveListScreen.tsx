@@ -1,9 +1,16 @@
-import { Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { View } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
+import {
+  EmptyState,
+  Header,
+  Screen,
+  SectionHeader,
+  spacing,
+  TopBar,
+} from '../../shared/ui';
+import { ListFeedback, RequestCard } from './components';
 import { StudentLeaveSessionPicker } from './StudentLeaveSessionPicker';
-import { Screen } from '../../shared/ui';
-import { ListFeedback, RequestCard, styles } from './components';
 import { useStudentLeaveViewModel } from './useStudentLeaveViewModel';
 
 export function StudentLeaveListScreen({
@@ -12,17 +19,33 @@ export function StudentLeaveListScreen({
   const vm = useStudentLeaveViewModel();
   return (
     <Screen>
-      <Text style={styles.title}>Pengajuan Izin Saya</Text>
+      <TopBar onBack={() => navigation.goBack()} />
+      <Header
+        title="Izin saya"
+        description="Ajukan izin per sesi dan pantau statusnya."
+      />
       <StudentLeaveSessionPicker
         onSelect={(sessionId) =>
           navigation.navigate('StudentLeaveRequestForm', { sessionId })
         }
       />
-      <Text style={styles.subtitle}>Riwayat Pengajuan</Text>
-      <ListFeedback {...vm} empty={vm.leaveRequests.length === 0} />
-      {vm.leaveRequests.map((item) => (
-        <RequestCard key={item.id} item={item} />
-      ))}
+      <View style={{ gap: spacing.md }}>
+        <SectionHeader title="Riwayat pengajuan" />
+        <ListFeedback
+          {...vm}
+          empty={vm.loading && vm.leaveRequests.length === 0}
+        />
+        {!vm.loading && !vm.error && vm.leaveRequests.length === 0 ? (
+          <EmptyState
+            icon="document-text-outline"
+            title="Belum ada pengajuan izin"
+            description="Pengajuanmu akan muncul di sini."
+          />
+        ) : null}
+        {vm.leaveRequests.map((item) => (
+          <RequestCard key={item.id} item={item} />
+        ))}
+      </View>
     </Screen>
   );
 }

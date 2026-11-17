@@ -20,8 +20,8 @@ import {
 type CardVariant =
   | 'panel' // white panel + border + card shadow (sticker sheet default card)
   | 'surface' // app canvas tint + border
-  | 'heroViolet' // deep violet gradient block (hero shift card)
-  | 'heroInk' // dark ink block (dark analytics / shift)
+  | 'heroViolet' // deep violet moment card (the one bright element per screen)
+  | 'heroInk' // dark ink moment card (dark analytics / shift)
   | 'lavender' // soft lavender block (shift variant)
   | 'pink'; // soft pink block (shift variant);
 export type CardProps = Omit<PressableProps, 'children' | 'style'> & {
@@ -134,11 +134,10 @@ const styles = StyleSheet.create({
   },
   titleDark: { color: colors.panel },
   overline: {
-    ...typography.overline,
+    ...typography.caption,
     color: colors.inkMuted,
-    textTransform: 'uppercase',
   },
-  overlineDark: { color: 'rgba(255,255,255,0.6)' },
+  overlineDark: { color: colors.onInkMuted },
   pressed: { opacity: 0.92 },
 
   panel: {

@@ -22,9 +22,9 @@ Provider sudah disambungkan di AppNavigator setelah pemeriksaan AuthGate:
 
 Ketiga route sudah didaftarkan sesuai role. Beranda dan tombol tengah dock membuka daftar izin praktikan atau pemeriksaan asisten. Daftar izin praktikan menyediakan pilihan sesi nyata dari Firestore (`participantIds array-contains uid`), sehingga alur izin bisa diakses sebelum jadwal Developer 3 siap. Layar jadwal/presensi lama masih memakai fixture Sprint 1. Developer 3 nantinya dapat menambahkan tombol dari detail sesi dengan ID Firestore yang sama.
 
-## API pengajar
+## Klasifikasi alasan (model lokal EDOM)
 
-Isi `EXPO_PUBLIC_AI_CLASSIFIER_URL`. Adapter mengirim POST JSON `{ text: reason, reason }`, menerima `category`/`label`/`prediction` dan `confidence`/`score` opsional (angka 0–1). Cocokkan mapper dengan spesifikasi pengajar saat diterima. Timeout 8 detik, kegagalan HTTP/jaringan/format/konfigurasi menjadi `unavailable`; penyimpanan izin tetap `pending`. Pratinjau tidak menyimpan data. Submit mengklasifikasikan ulang alasan terkini dan menyimpan hasil final.
+Klasifikasi alasan izin memakai model sentimen EDOM lokal di folder `ai/`: `ai/model-edom.json` (data LinearSVC), `ai/sentiment.js` (inference engine), `ai/leaveClassifier.ts` (adapter ke `AiClassificationResult`). Tanpa endpoint/API eksternal. Hasil: kategori `alasan_strong` / `alasan_netral` / `alasan_weak` + confidence 0–1. Teks tanpa kata yang dikenal model menghasilkan `alasan_netral` (confidence 0.5); input kosong menghasilkan `unavailable`. Pratinjau tidak menyimpan data. Submit mengklasifikasikan ulang alasan terkini dan menyimpan hasil final.
 
 ## Koordinasi Developer 2 / PM
 

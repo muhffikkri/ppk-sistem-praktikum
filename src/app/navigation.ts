@@ -1,7 +1,9 @@
 // Keep route names and params aligned with docs/sprint-2-shared-contract.md.
 export type AuthStackParamList = {
+  Landing: undefined;
   Login: undefined;
   Register: undefined;
+  RoleSelection: undefined;
 };
 
 export type RootStackParamList = {
@@ -14,8 +16,6 @@ export type RootStackParamList = {
   AssistantSchedule: undefined;
   AssistantSessionDetail: { sessionId: string };
   AssistantAttendanceRoster: { sessionId: string };
-  AssistantModuleList: undefined;
-  AssistantSettings: undefined;
   AssistantAllSessions: undefined;
   AssistantAllAttendance: undefined;
   AssistantClassList: undefined;
@@ -27,11 +27,12 @@ export type RootStackParamList = {
   Calendar: undefined;
   Profile: undefined;
   ProfileEdit: undefined;
+  Notifications: undefined;
 };
 
-export type ActorPov = 'praktikan' | 'asisten';
+import type { ActorRole } from '../state/AuthContext';
 
-export const POVLABEL: Record<ActorPov, string> = {
+export const POVLABEL: Record<ActorRole, string> = {
   praktikan: 'Praktikan',
   asisten: 'Asisten',
 };

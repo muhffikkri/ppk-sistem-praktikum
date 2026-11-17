@@ -1,318 +1,207 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Avatar,
   Banner,
   Button,
-  colors,
-  radius,
+  ConfirmSheet,
+  Header,
+  IconButton,
+  ListRow,
   Screen,
-  typography,
+  SectionHeader,
+  spacing,
+  Text,
+  TextField,
+  TopBar,
 } from '../../shared/ui';
-import { useAssistantSessionsV2 } from '../../state';
+import { useAssistantSessionsViewModel } from '../../state';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantClassForm'>;
 
 export function AssistantClassFormScreen({ route, navigation }: Props) {
   const {
-    classes,
-    studentsDirectory,
     getClassById,
     createClass,
     updateClass,
     addParticipantByEmail,
     removeParticipant,
-  } = useAssistantSessionsV2();
+    studentsDirectory,
+  } = useAssistantSessionsViewModel();
 
   const classId = route.params?.classId ?? null;
-  const existingClass = classId ? getClassById(classId) : undefined;
+  const existing = classId ? getClassById(classId) : undefined;
 
-  const [courseCode, setCourseCode] = useState(existingClass?.courseCode ?? '');
-  const [courseName, setCourseName] = useState(existingClass?.courseName ?? '');
-  const [groupName, setGroupName] = useState(existingClass?.groupName ?? '');
-  const [participantEmail, setParticipantEmail] = useState('');
+  const [courseCode, setCourseCode] = useState(existing?.courseCode ?? '');
+  const [courseName, setCourseName] = useState(existing?.courseName ?? '');
+  const [groupName, setGroupName] = useState(existing?.groupName ?? '');
+  const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removingUid, setRemovingUid] = useState<string | null>(null);
 
-  const currentClass = classId
-    ? (classes.find((c) => c.id === classId) ?? existingClass)
-    : undefined;
+  const missing = (value: string) =>
+    showErrors && !value.trim() ? 'Wajib diisi' : undefined;
 
   const handleSubmit = async () => {
     setError(null);
+    if (!courseCode.trim() || !courseName.trim() || !groupName.trim()) {
+      setShowErrors(true);
+      return;
+    }
+    const input = {
+      courseCode: courseCode.trim(),
+      courseName: courseName.trim(),
+      groupName: groupName.trim(),
+    };
     setSubmitting(true);
     try {
-      const payload = { courseCode, courseName, groupName };
       const result = classId
-        ? await updateClass(classId, payload)
-        : await createClass(payload);
-
+        ? await updateClass(classId, input)
+        : await createClass(input);
       if (!result.ok) {
-        setError(result.message);
+        setError(result.message || 'Gagal menyimpan kelas');
         return;
       }
       navigation.goBack();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menyimpan kelas');
     } finally {
       setSubmitting(false);
     }
   };
 
   const onAddParticipant = async () => {
-    if (!classId) return;
+    const value = email.trim();
+    if (!value || !classId) return;
     setError(null);
-    const result = await addParticipantByEmail(classId, participantEmail);
+    const result = await addParticipantByEmail(classId, value);
     if (!result.ok) {
-      setError(result.message);
+      setError(result.message || 'Gagal menambahkan peserta');
       return;
     }
-    setParticipantEmail('');
+    setEmail('');
   };
 
-  const onRemoveParticipant = async (uid: string) => {
-    if (!classId) return;
-    setError(null);
+  const onConfirmRemove = async () => {
+    if (!classId || !removingUid) return;
+    const uid = removingUid;
+    setRemovingUid(null);
     const result = await removeParticipant(classId, uid);
-    if (!result.ok) {
-      setError(result.message);
-    }
+    if (!result.ok) setError(result.message || 'Gagal menghapus peserta');
   };
 
-  const resolveStudentLabel = (uid: string, index: number) => {
-    const match = studentsDirectory.find((s) => s.uid === uid);
-    return match
-      ? `${match.displayName} (${match.email})`
-      : `Peserta ${index + 1}`;
-  };
+  const removing = studentsDirectory.find((s) => s.uid === removingUid);
 
   return (
-    <Screen>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>
-            {classId ? 'Edit Kelas' : 'Tambah Kelas'}
-          </Text>
-          <Button
-            label="Batal"
-            variant="soft"
-            onPress={() => navigation.goBack()}
-            accessibilityLabel="Batal membuat kelas"
+    <Screen withDock={false}>
+      <TopBar onBack={() => navigation.goBack()} />
+      <Header title={classId ? 'Edit kelas' : 'Buat kelas'} />
+
+      <View style={styles.form}>
+        <TextField
+          label="Kode mata kuliah"
+          value={courseCode}
+          onChangeText={setCourseCode}
+          placeholder="Mis. PPK-101"
+          autoCapitalize="characters"
+          error={missing(courseCode)}
+        />
+        <TextField
+          label="Nama mata kuliah"
+          value={courseName}
+          onChangeText={setCourseName}
+          placeholder="Mis. Praktikum Pemrograman"
+          error={missing(courseName)}
+        />
+        <TextField
+          label="Nama kelas / grup"
+          value={groupName}
+          onChangeText={setGroupName}
+          placeholder="Mis. Kelas A"
+          error={missing(groupName)}
+        />
+      </View>
+
+      {classId && existing ? (
+        <View style={styles.section}>
+          <SectionHeader
+            title={`Peserta · ${existing.participantIds.length}`}
           />
-        </View>
-
-        {error ? (
-          <View style={styles.bannerWrap}>
-            <Banner
-              title="Gagal memproses kelas"
-              message={error}
-              tone="danger"
-              onDismiss={() => setError(null)}
-            />
-          </View>
-        ) : null}
-
-        <View style={styles.formSection}>
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Kode Mata Kuliah</Text>
-            <TextInput
-              value={courseCode}
-              onChangeText={setCourseCode}
-              placeholder="Mis. PPK-101"
-              placeholderTextColor={colors.inkMuted}
-              style={styles.textInput}
-              editable={!submitting}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Nama Mata Kuliah</Text>
-            <TextInput
-              value={courseName}
-              onChangeText={setCourseName}
-              placeholder="Mis. Praktikum Sistem Terdistribusi"
-              placeholderTextColor={colors.inkMuted}
-              style={styles.textInput}
-              editable={!submitting}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Nama Kelas/Group</Text>
-            <TextInput
-              value={groupName}
-              onChangeText={setGroupName}
-              placeholder="Mis. Kelas A"
-              placeholderTextColor={colors.inkMuted}
-              style={styles.textInput}
-              editable={!submitting}
-            />
-          </View>
-
-          {classId ? (
-            <View style={styles.participantsSection}>
-              <Text style={styles.sectionTitle}>Peserta Terdaftar</Text>
-              {currentClass?.participantIds?.length ? (
-                currentClass.participantIds.map((uid, i) => (
-                  <View key={uid} style={styles.participantItem}>
-                    <Text style={styles.participantName}>
-                      {resolveStudentLabel(uid, i)}
-                    </Text>
-                    <Button
-                      label="Hapus"
-                      variant="destructive"
-                      onPress={() => onRemoveParticipant(uid)}
-                      accessibilityLabel="Hapus peserta"
+          {existing.participantIds.length === 0 ? (
+            <Text variant="body" tone="muted">
+              Belum ada peserta. Tambahkan lewat email praktikan.
+            </Text>
+          ) : (
+            existing.participantIds.map((uid) => {
+              const profile = studentsDirectory.find((s) => s.uid === uid);
+              return (
+                <ListRow
+                  key={uid}
+                  title={profile?.displayName ?? 'Profil belum termuat'}
+                  meta={profile?.email}
+                  leading={<Avatar name={profile?.displayName ?? '?'} />}
+                  trailing={
+                    <IconButton
+                      icon="trash-outline"
+                      variant="ghost"
+                      accessibilityLabel={`Hapus ${profile?.displayName ?? 'peserta'}`}
+                      onPress={() => setRemovingUid(uid)}
                     />
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>Tidak ada data peserta</Text>
-              )}
-
-              <View style={styles.addParticipantRow}>
-                <TextInput
-                  value={participantEmail}
-                  onChangeText={setParticipantEmail}
-                  placeholder="Email praktikan..."
-                  placeholderTextColor={colors.inkMuted}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  style={styles.participantInput}
+                  }
                 />
-                <TouchableOpacity
-                  style={styles.addParticipantBtn}
-                  onPress={onAddParticipant}
-                  accessibilityLabel="Tambah peserta baru"
-                >
-                  <Text style={styles.addParticipantText}>+ Tambah</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.submitButtonWrapper}>
-          <Button
-            label={
-              submitting
-                ? 'Menyimpan...'
-                : classId
-                  ? 'Perbarui Kelas'
-                  : 'Buat Kelas'
+              );
+            })
+          )}
+          <TextField
+            label="Email praktikan"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="nama@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onSubmitEditing={onAddParticipant}
+            rightAccessory={
+              <IconButton
+                icon="person-add-outline"
+                variant="soft"
+                accessibilityLabel="Tambah peserta"
+                disabled={!email.trim()}
+                onPress={onAddParticipant}
+              />
             }
-            disabled={submitting}
-            variant={submitting ? 'soft' : 'accent'}
-            loading={submitting}
-            onPress={handleSubmit}
-            accessibilityLabel={classId ? 'Perbarui kelas' : 'Buat kelas baru'}
           />
         </View>
-      </ScrollView>
+      ) : null}
+
+      {error ? <Banner tone="danger" title="Gagal" message={error} /> : null}
+
+      <Button
+        label={classId ? 'Simpan perubahan' : 'Buat kelas'}
+        loading={submitting}
+        disabled={submitting}
+        onPress={handleSubmit}
+      />
+
+      <ConfirmSheet
+        visible={removingUid !== null}
+        title="Hapus peserta?"
+        description={`${removing?.displayName ?? 'Peserta ini'} akan dikeluarkan dari kelas.`}
+        confirmLabel="Hapus"
+        tone="danger"
+        onConfirm={onConfirmRemove}
+        onCancel={() => setRemovingUid(null)}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    padding: 24,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  headerTitle: {
-    ...typography.display,
-    color: colors.ink,
-    letterSpacing: -1,
-  },
-  bannerWrap: {
-    marginBottom: 16,
-  },
-  formSection: {
-    gap: 20,
-  },
-  formGroup: {
-    flexDirection: 'column',
-    gap: 8,
-  },
-  formLabel: {
-    ...typography.caption,
-    color: colors.inkMuted,
-    marginBottom: 4,
-  },
-  textInput: {
-    ...typography.body,
-    color: colors.ink,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  participantsSection: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: 16,
-    marginTop: 16,
-    gap: 10,
-  },
-  sectionTitle: {
-    ...typography.caption,
-    color: colors.inkMuted,
-    marginBottom: 4,
-  },
-  participantItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  participantName: {
-    ...typography.body,
-    color: colors.ink,
-    flex: 1,
-  },
-  emptyText: { color: colors.inkMuted, fontStyle: 'italic' },
-  addParticipantRow: {
-    gap: 8,
-    marginTop: 8,
-  },
-  participantInput: {
-    ...typography.body,
-    color: colors.ink,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  addParticipantBtn: {
-    borderWidth: 1,
-    borderColor: colors.violet,
-    borderRadius: radius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  addParticipantText: { color: colors.violet, ...typography.label },
-  submitButtonWrapper: {
-    marginTop: 24,
-    alignSelf: 'flex-end',
-  },
+  form: { gap: spacing.md },
+  section: { gap: spacing.sm },
 });

@@ -15,5 +15,10 @@ module.exports = defineConfig([
     rules: {
       'react-native/no-raw-text': 'error',
     },
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.json',
+      },
+    },
   },
 ]);

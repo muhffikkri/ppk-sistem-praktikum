@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import type { StudentLeaveViewModel } from '../../domain/types';
-import { classifyLeaveReason } from '../../services/ai/leaveClassifier';
+import { classifyLeaveReason } from '../../../ai/leaveClassifier';
 import {
   leaveFailure,
   LeaveError,

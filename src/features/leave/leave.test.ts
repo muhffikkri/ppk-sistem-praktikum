@@ -1,74 +1,45 @@
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { classifyLeaveReason } from '../../services/ai/leaveClassifier';
+import { classifyLeaveReason } from '../../../ai/leaveClassifier';
 import {
   requireRole,
   validateReason,
   leaveFailure,
 } from '../../services/firestore/leaveService';
 
-test('AI normalizes supported responses, fails safely, and sends trimmed reason', async () => {
-  const original = globalThis.fetch;
-  try {
-    let body: string | undefined;
-    globalThis.fetch = async (_url, init) => {
-      body = init?.body as string;
-      return new Response(JSON.stringify({ label: 'Sakit', score: 0.85 }));
-    };
-    assert.deepEqual(
-      await classifyLeaveReason('  demam tinggi  ', 'https://example.test'),
-      { status: 'classified', category: 'Sakit', confidence: 0.85 },
-    );
-    assert.deepEqual(JSON.parse(body!), {
-      text: 'demam tinggi',
-      reason: 'demam tinggi',
-    });
-    for (const data of [
-      null,
-      {},
-      { category: '' },
-      { category: 5 },
-      { category: 'Sakit', confidence: 2 },
-    ]) {
-      globalThis.fetch = async () => new Response(JSON.stringify(data));
-      assert.equal(
-        (await classifyLeaveReason('demam', 'https://example.test')).status,
-        'unavailable',
-      );
-    }
-    globalThis.fetch = async () => new Response('error', { status: 503 });
-    assert.equal(
-      (await classifyLeaveReason('demam', 'https://example.test')).status,
-      'unavailable',
-    );
-    globalThis.fetch = async () => {
-      throw new Error('offline');
-    };
-    assert.equal(
-      (await classifyLeaveReason('demam', 'https://example.test')).status,
-      'unavailable',
-    );
-    assert.equal(
-      (await classifyLeaveReason('demam', '')).status,
-      'unavailable',
-    );
-  } finally {
-    globalThis.fetch = original;
-  }
-});
+test('klasifikasi EDOM lokal: tanpa fetch, hasil deterministik, aman gagal', async () => {
+  const empty = await classifyLeaveReason('   ');
+  assert.deepEqual(empty, {
+    status: 'unavailable',
+    category: null,
+    confidence: null,
+    errorMessage:
+      'Klasifikasi AI tidak tersedia. Pengajuan tetap dapat diperiksa asisten.',
+  });
 
-test('AI times out even when transport ignores abort', async () => {
-  const original = globalThis.fetch;
-  try {
-    globalThis.fetch = () => new Promise(() => {});
-    const result = await classifyLeaveReason('demam', 'https://example.test');
-    assert.equal(result.status, 'unavailable');
-    assert.equal(result.category, null);
-    assert.equal(result.confidence, null);
-  } finally {
-    globalThis.fetch = original;
-  }
+  const negatif = await classifyLeaveReason('malas praktikum, gak mau datang');
+  assert.equal(negatif.status, 'classified');
+  assert.equal(negatif.category, 'alasan_weak');
+  assert.ok(
+    negatif.confidence !== null &&
+      negatif.confidence > 0 &&
+      negatif.confidence <= 1,
+  );
+
+  const netral = await classifyLeaveReason('ada keperluan penting keluarga');
+  assert.equal(netral.status, 'classified');
+  assert.equal(netral.category, 'alasan_netral');
+
+  const positif = await classifyLeaveReason('sakit demam dan flu');
+  assert.equal(positif.status, 'classified');
+  assert.equal(positif.category, 'alasan_strong');
+
+  // Teks tanpa kata yang dikenal model -> netral, bukan diklaim terprediksi.
+  const unknown = await classifyLeaveReason('zzz qqq www');
+  assert.equal(unknown.status, 'classified');
+  assert.equal(unknown.category, 'alasan_netral');
+  assert.equal(unknown.confidence, 0.5);
 });
 
 test('leave validation requires a trimmed reason and the correct role', () => {

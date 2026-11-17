@@ -15,7 +15,12 @@ export const colors = {
   pink: '#FFC2D9', // decorative accent (late / warning tint)
   ink: '#17141F', // primary text, dark surface, bottom dock
   inkMuted: '#5D586C', // secondary text
+  inkSubtle: '#9A95A8', // placeholder / disabled text
+  pinkInk: '#8A0F41', // text on pink chips
   onPrimary: '#FFFFFF', // text/icons on violet & ink blocks
+  onInkMuted: 'rgba(255,255,255,0.7)', // secondary text on violet & ink
+  onInkSubtle: 'rgba(255,255,255,0.08)', // tint panels on ink (white/5–10)
+  scrim: 'rgba(23,20,31,0.45)', // sheet / modal backdrop
   surface: '#F4F2F9', // app canvas
   panel: '#FFFFFF', // cards, inputs, modals
   border: '#E7E3F2',
@@ -34,15 +39,7 @@ export const colors = {
   onSiteSoft: '#DCFCE7',
   onSiteBorder: '#86EFAC',
 
-  // Compat aliases used by pre-refactor components
-  primary: '#5B3BE8',
-  primaryDark: '#4427C6',
-  muted: '#5D586C',
-  background: '#F4F2F9',
-  panelColor: '#FFFFFF',
-  primarySoft: '#E4DBFF',
-  primaryPressed: '#4427C6',
-  warningSoft: '#FDEBC8',
+  // Disabled control fill (Button disabled state).
   disabled: '#ECEAF2',
 } as const;
 
@@ -96,10 +93,10 @@ export const shadow = {
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-  // 0 12px 32px -4px rgba(91,59,232,.12)
+  // 0 12px 32px -4px rgba(23,20,31,.08) — neutral soft shadow (unslop: no violet glow).
   elevated: {
-    shadowColor: '#5B3BE8',
-    shadowOpacity: 0.12,
+    shadowColor: '#17141F',
+    shadowOpacity: 0.08,
     shadowRadius: 32,
     shadowOffset: { width: 0, height: 12 },
     elevation: 6,
@@ -114,69 +111,84 @@ export const shadow = {
   },
 } as const;
 
+// Registered family names — one per weight. Keys in src/theme/fonts.ts must
+// match. Android cannot pick a weight from `fontWeight` for custom fonts, so
+// typography tokens select the weight through the family and never set
+// `fontWeight`.
 export const fontFamily = {
-  display: 'Fraunces', // editorial serif, headings & numerals
-  sans: 'Plus Jakarta Sans', // clean modern sans, UI body
+  display: 'Fraunces_400Regular', // editorial serif, headings & numerals
+  displayItalic: 'Fraunces_400Regular_Italic',
+  displaySemibold: 'Fraunces_600SemiBold',
+  displayBold: 'Fraunces_700Bold',
+  sans: 'PlusJakartaSans_400Regular', // clean modern sans, UI body
+  sansMedium: 'PlusJakartaSans_500Medium',
+  sansSemibold: 'PlusJakartaSans_600SemiBold',
+  sansBold: 'PlusJakartaSans_700Bold',
 } as const;
 
 // Sticker sheet type scale (px).
 export const typography = {
   display: {
-    fontFamily: fontFamily.display,
+    fontFamily: fontFamily.displayBold,
     fontSize: 28,
     lineHeight: 34,
-    fontWeight: '700',
     letterSpacing: -0.84, // -0.03em editorial
+  },
+  // Italic accent fragment inside a display title (max once per screen).
+  displayAccent: {
+    fontFamily: fontFamily.displayItalic,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.84,
   },
   displayHero: {
     fontFamily: fontFamily.display,
     fontSize: 30,
     lineHeight: 36,
-    fontWeight: '400',
     letterSpacing: -0.6, // hero time "08:00 — 10:30"
   },
   title: {
-    fontFamily: fontFamily.display,
+    fontFamily: fontFamily.displaySemibold,
     fontSize: 24,
     lineHeight: 30,
-    fontWeight: '600',
+    letterSpacing: -0.48,
   },
   subtitle: {
     fontFamily: fontFamily.display,
     fontSize: 18,
     lineHeight: 26,
-    fontWeight: '400',
-    letterSpacing: -0.36,
+    letterSpacing: -0.36, // -0.02em
   },
   body: {
     fontFamily: fontFamily.sans,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '400',
   },
   bodyStrong: {
-    fontFamily: fontFamily.sans,
+    fontFamily: fontFamily.sansSemibold,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '600',
   },
   label: {
-    fontFamily: fontFamily.sans,
+    fontFamily: fontFamily.sansMedium,
     fontSize: 13,
     lineHeight: 18,
-    fontWeight: '500',
   },
   caption: {
     fontFamily: fontFamily.sans,
-    fontSize: 11,
+    fontSize: 12,
     lineHeight: 16,
-    fontWeight: '400',
+  },
+  captionStrong: {
+    fontFamily: fontFamily.sansSemibold,
+    fontSize: 12,
+    lineHeight: 16,
   },
   overline: {
-    fontFamily: fontFamily.sans,
+    fontFamily: fontFamily.sansBold,
     fontSize: 10,
     lineHeight: 14,
-    fontWeight: '700',
-    letterSpacing: 0.8, // 0.08em uppercase spec labels
+    letterSpacing: 0.8, // 0.08em
+    textTransform: 'uppercase',
   },
 } as const;
