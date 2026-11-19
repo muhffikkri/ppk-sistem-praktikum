@@ -32,6 +32,11 @@ import {
 } from '../features/student';
 
 import {
+  AssistantLabFormScreen,
+  AssistantLabListScreen,
+} from '../features/labs';
+
+import {
   AssistantLeaveReviewListScreen,
   LeaveProvider,
   StudentLeaveListScreen,
@@ -346,6 +351,18 @@ export function AppNavigator() {
 
                   component={AssistantLeaveReviewListScreen}
 
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AssistantLabList"
+                  component={AssistantLabListScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AssistantLabForm"
+                  component={AssistantLabFormScreen}
                   options={{ headerShown: false }}
                 />
               </Stack.Group>
