@@ -26,7 +26,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 type ProfileMenuItem = {
   label: string;
   sub: string;
-  icon: 'calendar-outline' | 'finger-print-outline' | 'location-outline';
+  icon?: 'calendar-outline' | 'finger-print-outline' | 'location-outline';
+  glyph?: string;
   onPress: () => void;
 };
 
@@ -156,7 +157,13 @@ export function ProfileScreen({ navigation }: Props) {
             onPress={item.onPress}
             leading={
               <View style={styles.iconBox}>
-                <Ionicons name={item.icon} size={18} color={colors.violet} />
+                {item.icon ? (
+                  <Ionicons name={item.icon} size={18} color={colors.violet} />
+                ) : (
+                  <Text variant="subtitle" style={styles.glyphText}>
+                    {item.glyph ?? '•'}
+                  </Text>
+                )}
               </View>
             }
             trailing={
@@ -229,5 +236,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lavenderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  glyphText: {
+    color: colors.violet,
+    lineHeight: 20,
   },
 });

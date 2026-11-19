@@ -30,6 +30,7 @@ export type RootStackParamList = {
   Profile: undefined;
   ProfileEdit: undefined;
   Notifications: undefined;
+  LabMaps: undefined;
 };
 
 import type { ActorRole } from '../state/AuthContext';

@@ -43,6 +43,8 @@ import {
   StudentLeaveRequestFormScreen,
 } from '../features/leave';
 
+import { LabMapsScreen } from '../features/maps';
+
 import { db } from '../services/firebase';
 
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
@@ -395,6 +397,14 @@ export function AppNavigator() {
                 name="Notifications"
 
                 component={NotificationsScreen}
+
+                options={{ headerShown: false }}
+              />
+
+              <Stack.Screen
+                name="LabMaps"
+
+                component={LabMapsScreen}
 
                 options={{ headerShown: false }}
               />

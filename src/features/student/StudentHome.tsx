@@ -74,6 +74,11 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
       trailing={
         <>
           <IconButton
+            icon="map-outline"
+            accessibilityLabel="Peta Laboratorium"
+            onPress={() => navigation.navigate('LabMaps')}
+          />
+          <IconButton
             icon="notifications-outline"
             accessibilityLabel="Notifikasi"
             onPress={() => navigation.navigate('Notifications')}
@@ -251,6 +256,11 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 
       <View style={styles.section}>
         <SectionHeader title="Pintasan" />
+        <ListRow
+          title="Peta Laboratorium"
+          meta="Lihat persebaran lab & jadwal aktif"
+          onPress={() => navigation.navigate('LabMaps')}
+        />
         <ListRow
           title="Riwayat kehadiran"
           meta={`${attendanceHistory.length} presensi tercatat`}

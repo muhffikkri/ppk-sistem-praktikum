@@ -1,10 +1,11 @@
 /**
- * Aturan geofence murni (tanpa Firebase / native API) — Sprint 3 (SRS-3.1).
- * Presensi (P2) wajib memanggil `evaluateGeofence` sebelum mencatat kehadiran.
+ * Aturan geofence murni (tanpa Firebase / native API) — Sprint 3.
+ * Menggabungkan validasi/evaluasi geofence (SRS-3.1) dan utilitas jarak peta (SRS-3.3).
  */
 import type {
   DeviceFix,
   GeofenceCheckResult,
+  GeoCoordinates,
   GeoPoint,
   Lab,
   LabInput,
@@ -47,6 +48,40 @@ export function haversineDistanceMeters(a: GeoPoint, b: GeoPoint): number {
       Math.cos(toRadians(b.latitude)) *
       Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * Menghitung jarak antara dua koordinat geografis menggunakan rumus Haversine.
+ * Hasil dalam satuan meter (dibulatkan ke 1 desimal).
+ */
+export function calculateDistanceMeters(
+  coord1: GeoCoordinates,
+  coord2: GeoCoordinates,
+): number {
+  const meters = haversineDistanceMeters(coord1, coord2);
+  return Math.round(meters * 10) / 10;
+}
+
+/**
+ * Memeriksa apakah lokasi pengguna berada di dalam radius toleransi laboratorium.
+ */
+export function isWithinGeofence(
+  userCoord: GeoCoordinates,
+  labCoord: GeoCoordinates,
+  radiusMeters: number,
+): boolean {
+  const distance = calculateDistanceMeters(userCoord, labCoord);
+  return distance <= radiusMeters;
+}
+
+/**
+ * Format jarak manusiawi (misal: "35 m" atau "1.2 km").
+ */
+export function formatDistance(meters: number): string {
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+  return `${(meters / 1000).toFixed(1)} km`;
 }
 
 /**
