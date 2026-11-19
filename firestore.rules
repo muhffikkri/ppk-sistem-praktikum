@@ -96,6 +96,33 @@ service cloud.firestore {
       allow delete: if isAssistant() && request.auth.uid in resource.data.assistantIds;
     }
 
+    // 3b. Master Laboratorium (Sprint 3) — acuan geofence presensi & peta
+    function validLab(data) {
+      return data.name is string && data.name.size() > 0
+        && data.building is string && data.building.size() > 0
+        && data.location.latitude is number
+        && data.location.latitude >= -90 && data.location.latitude <= 90
+        && data.location.longitude is number
+        && data.location.longitude >= -180 && data.location.longitude <= 180
+        && data.radiusMeters is int
+        && data.radiusMeters >= 10 && data.radiusMeters <= 500
+        && data.isActive is bool;
+    }
+
+    match /labs/{labId} {
+      allow read: if isSignedIn();
+
+      allow create: if isAssistant()
+        && request.resource.data.createdBy == request.auth.uid
+        && validLab(request.resource.data);
+
+      allow update: if isAssistant()
+        && request.resource.data.createdBy == resource.data.createdBy
+        && validLab(request.resource.data);
+
+      allow delete: if isAssistant();
+    }
+
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})
     match /attendance/{attendanceId} {
       // get dokumen milik sendiri boleh walau belum ada (cek duplikasi setelah permission-denied)

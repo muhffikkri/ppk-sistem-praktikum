@@ -1,0 +1,176 @@
+/**
+ * CRUD master laboratorium (koleksi Firestore `labs`) — Sprint 3 (SRS-3.1).
+ * Baca: semua pengguna login (dipakai presensi & peta). Tulis: asisten.
+ */
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+  type Unsubscribe,
+} from 'firebase/firestore';
+
+import {
+  hasLabInputErrors,
+  validateLabInput,
+} from '../../domain/geofenceRules';
+import type { Lab, LabInput } from '../../domain/geoTypes';
+import type { AsyncActionResult } from '../../domain/types';
+import { db } from '../firebase';
+
+const LABS = 'labs';
+const labsCol = collection(db, LABS);
+
+type AsyncFailure = { ok: false; reason: string; message: string };
+
+function toFailure(e: unknown): AsyncFailure {
+  const code =
+    typeof e === 'object' && e !== null && 'code' in e
+      ? String((e as { code?: unknown }).code)
+      : '';
+  if (code === 'permission-denied') {
+    return {
+      ok: false,
+      reason: 'forbidden',
+      message: 'Akses ditolak. Hanya asisten yang dapat mengelola lab.',
+    };
+  }
+  if (code === 'unavailable') {
+    return {
+      ok: false,
+      reason: 'network_error',
+      message: 'Koneksi bermasalah. Coba lagi.',
+    };
+  }
+  return {
+    ok: false,
+    reason: 'unknown_error',
+    message: e instanceof Error ? e.message : 'Terjadi kesalahan. Coba lagi.',
+  };
+}
+
+function validationFailure(input: LabInput): AsyncFailure | null {
+  const errors = validateLabInput(input);
+  if (!hasLabInputErrors(errors)) return null;
+  return {
+    ok: false,
+    reason: 'validation_error',
+    message: Object.values(errors)[0] ?? 'Data lab tidak valid.',
+  };
+}
+
+function toPayload(input: LabInput) {
+  const description = input.description?.trim();
+  return {
+    name: input.name.trim(),
+    building: input.building.trim(),
+    description: description ? description : null,
+    location: { latitude: input.latitude, longitude: input.longitude },
+    radiusMeters: input.radiusMeters,
+    isActive: input.isActive,
+  };
+}
+
+function asNumber(value: unknown): number {
+  return typeof value === 'number' ? value : Number.NaN;
+}
+
+export function normalizeLab(id: string, data: Record<string, unknown>): Lab {
+  const location = (data.location ?? {}) as Record<string, unknown>;
+  return {
+    id,
+    name: String(data.name ?? ''),
+    building: String(data.building ?? ''),
+    description: typeof data.description === 'string' ? data.description : null,
+    location: {
+      latitude: asNumber(location.latitude),
+      longitude: asNumber(location.longitude),
+    },
+    radiusMeters: asNumber(data.radiusMeters),
+    isActive: data.isActive !== false,
+    createdBy: String(data.createdBy ?? ''),
+    createdAt: String(data.createdAt ?? ''),
+    updatedAt: String(data.updatedAt ?? ''),
+  };
+}
+
+/** Langganan real-time seluruh lab, urut nama. Kembalikan fungsi unsubscribe. */
+export function subscribeLabs(
+  onData: (labs: Lab[]) => void,
+  onError: (message: string) => void,
+): Unsubscribe {
+  return onSnapshot(
+    query(labsCol, orderBy('name')),
+    (snap) => onData(snap.docs.map((d) => normalizeLab(d.id, d.data()))),
+    (e) => onError(toFailure(e).message),
+  );
+}
+
+export async function getLabById(
+  labId: string,
+): Promise<AsyncActionResult<Lab>> {
+  try {
+    const snap = await getDoc(doc(db, LABS, labId));
+    if (!snap.exists()) {
+      return {
+        ok: false,
+        reason: 'lab_not_found',
+        message: 'Laboratorium tidak ditemukan.',
+      };
+    }
+    return { ok: true, data: normalizeLab(snap.id, snap.data()) };
+  } catch (e) {
+    return toFailure(e);
+  }
+}
+
+export async function createLab(
+  actorUid: string,
+  input: LabInput,
+): Promise<AsyncActionResult<string>> {
+  const invalid = validationFailure(input);
+  if (invalid) return invalid;
+  try {
+    const now = new Date().toISOString();
+    const ref = await addDoc(labsCol, {
+      ...toPayload(input),
+      createdBy: actorUid,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return { ok: true, data: ref.id };
+  } catch (e) {
+    return toFailure(e);
+  }
+}
+
+export async function updateLab(
+  labId: string,
+  input: LabInput,
+): Promise<AsyncActionResult> {
+  const invalid = validationFailure(input);
+  if (invalid) return invalid;
+  try {
+    await updateDoc(doc(db, LABS, labId), {
+      ...toPayload(input),
+      updatedAt: new Date().toISOString(),
+    });
+    return { ok: true };
+  } catch (e) {
+    return toFailure(e);
+  }
+}
+
+export async function deleteLab(labId: string): Promise<AsyncActionResult> {
+  try {
+    await deleteDoc(doc(db, LABS, labId));
+    return { ok: true };
+  } catch (e) {
+    return toFailure(e);
+  }
+}

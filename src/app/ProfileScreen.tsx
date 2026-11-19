@@ -26,7 +26,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 type ProfileMenuItem = {
   label: string;
   sub: string;
-  icon: 'calendar-outline' | 'finger-print-outline';
+  icon: 'calendar-outline' | 'finger-print-outline' | 'location-outline';
   onPress: () => void;
 };
 
@@ -55,6 +55,12 @@ export function ProfileScreen({ navigation }: Props) {
           sub: 'CRUD kelas, peserta, dan jadwal',
           glyph: '⌘',
           onPress: () => navigation.navigate('AssistantClassList'),
+        },
+        {
+          label: 'Lokasi Laboratorium',
+          sub: 'Atur koordinat & radius presensi',
+          icon: 'location-outline',
+          onPress: () => navigation.navigate('AssistantLabList'),
         },
         {
           label: 'Pemeriksaan Izin',
