@@ -26,7 +26,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 type ProfileMenuItem = {
   label: string;
   sub: string;
-  icon: 'calendar-outline' | 'finger-print-outline';
+  icon?: 'calendar-outline' | 'finger-print-outline';
+  glyph?: string;
   onPress: () => void;
 };
 
