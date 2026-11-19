@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { evaluateGeofence } from '../../domain/geofenceRules';
 import type { DeviceFix, GeofenceCheckResult, Lab } from '../../domain/geoTypes';
@@ -44,7 +44,6 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   const [lab, setLab] = useState<Lab | null>(null);
   const [labLoading, setLabLoading] = useState(false);
   const [deviceFix, setDeviceFix] = useState<DeviceFix | null>(null);
-  const [geofence, setGeofence] = useState<GeofenceCheckResult | null>(null);
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +52,9 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   useEffect(() => {
     let active = true;
     if (!session?.lab) {
-      setLab(null);
       return;
     }
 
-    setLabLoading(true);
     getLabById(session.lab).then((res) => {
       if (!active) return;
       setLabLoading(false);
@@ -71,14 +68,10 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
     };
   }, [session?.lab]);
 
-  // Evaluasi ulang geofence saat lab atau deviceFix berubah
-  useEffect(() => {
-    if (deviceFix && lab) {
-      const result = evaluateGeofence(deviceFix, lab);
-      setGeofence(result);
-    } else if (!lab && deviceFix) {
-      setGeofence(evaluateGeofence(deviceFix, null));
-    }
+  // Derived geofence evaluation computed purely from state without cascading setState
+  const geofence = useMemo<GeofenceCheckResult | null>(() => {
+    if (!deviceFix) return null;
+    return evaluateGeofence(deviceFix, lab);
   }, [deviceFix, lab]);
 
   const refreshLocation = useCallback(async () => {
@@ -88,29 +81,29 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
       const locResult = await getCurrentDeviceLocation();
       if (!locResult.ok) {
         setError(locResult.message);
-        setGeofence({
-          status: 'unavailable',
-          withinRadius: false,
-          distanceMeters: null,
-          radiusMeters: lab?.radiusMeters ?? null,
-          accuracyMeters: null,
-          message: locResult.message,
-        });
         return;
       }
-
       setDeviceFix(locResult.fix);
-      const evalRes = evaluateGeofence(locResult.fix, lab);
-      setGeofence(evalRes);
     } finally {
       setCheckingLocation(false);
     }
-  }, [lab]);
+  }, []);
 
   // Cek lokasi awal otomatis saat layar dibuka
   useEffect(() => {
-    refreshLocation();
-  }, [refreshLocation]);
+    let active = true;
+    getCurrentDeviceLocation().then((locResult) => {
+      if (!active) return;
+      if (!locResult.ok) {
+        setError(locResult.message);
+      } else {
+        setDeviceFix(locResult.fix);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const performCheckIn = useCallback(async (): Promise<AsyncActionResult> => {
     setError(null);
@@ -155,7 +148,6 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
         return result;
       }
 
-      setGeofence(result.data.geofence);
       return { ok: true };
     } finally {
       setSubmitting(false);
