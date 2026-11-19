@@ -38,6 +38,13 @@
     "plugins": [
       "expo-status-bar",
       "expo-font",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Izinkan PPK Mobile menggunakan lokasi saat presensi dan saat menampilkan posisi Anda di peta."
+        }
+      ],
       [
         "expo-splash-screen",
         {

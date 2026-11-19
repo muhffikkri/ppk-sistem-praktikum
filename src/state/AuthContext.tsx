@@ -29,6 +29,10 @@ import type {
   UserRole,
 } from '../domain/types';
 import { auth, db, isFirebaseConfigured } from '../services/firebase';
+import {
+  disablePushBeforeLogout,
+  resumePushRegistration,
+} from '../services/firestore/notificationTokenService';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -394,12 +398,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async (): Promise<AsyncActionResult> => {
     setError(null);
+    const uid = auth.currentUser?.uid;
+    try {
+      if (uid) await disablePushBeforeLogout(uid);
+    } catch {
+      const message =
+        'Perangkat belum dapat dilepas dari notifikasi akun ini. Sambungkan internet lalu coba keluar lagi.';
+      setError(message);
+      return { ok: false, reason: 'network_error', message };
+    }
     try {
       await signOut(auth);
       setUser(null);
       setAuthStatus('unauthenticated');
       return { ok: true };
     } catch (err) {
+      if (uid) resumePushRegistration(uid);
       const mapped = mapFirebaseAuthError(err);
       setError(mapped.message);
       return { ok: false, reason: mapped.reason, message: mapped.message };

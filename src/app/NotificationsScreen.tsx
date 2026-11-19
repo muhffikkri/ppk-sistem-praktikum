@@ -1,15 +1,11 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { AppTopBar, EmptyState, IconButton, Screen } from '../shared/ui';
+import { NotificationPermissionStatus } from '../features/permissions';
+import { AppTopBar, IconButton, Screen } from '../shared/ui';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
 
-/**
- * Pusat notifikasi lokal (unslop: quiet chrome, empty state without filler).
- * Belum terhubung push backend; menampilkan daftar dari state lokal saat
- * tersedia, jika kosong tampilkan empty state.
- */
 export function NotificationsScreen({ navigation }: Props) {
   return (
     <Screen withDock>
@@ -24,11 +20,7 @@ export function NotificationsScreen({ navigation }: Props) {
           />
         }
       />
-      <EmptyState
-        icon="notifications-outline"
-        title="Belum ada notifikasi"
-        description="Pemberitahuan presensi dan izin akan muncul di sini."
-      />
+      <NotificationPermissionStatus />
     </Screen>
   );
 }
