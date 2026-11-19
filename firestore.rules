@@ -53,6 +53,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /users/{uid}/push_tokens/{installationId} {
+      allow create, update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
+        && request.resource.data.token is string
+        && request.resource.data.token.size() <= 200
+        && request.resource.data.token.matches('^(Expo|Exponent)PushToken\\[[A-Za-z0-9_-]+\\]$')
+        && request.resource.data.platform in ['android', 'ios']
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
     // 2. Kelas & Peserta
     match /classes/{classId} {
       allow read: if (isAssistant() && request.auth.uid in resource.data.assistantIds)
