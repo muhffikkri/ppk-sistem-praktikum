@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -26,7 +27,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 type ProfileMenuItem = {
   label: string;
   sub: string;
-  icon?: 'calendar-outline' | 'finger-print-outline' | 'location-outline';
+  icon?: ComponentProps<typeof Ionicons>['name'];
   glyph?: string;
   onPress: () => void;
 };
@@ -160,7 +161,7 @@ export function ProfileScreen({ navigation }: Props) {
                 {item.icon ? (
                   <Ionicons name={item.icon} size={18} color={colors.violet} />
                 ) : (
-                  <Text variant="subtitle" style={styles.glyphText}>
+                  <Text variant="captionStrong" tone="violet">
                     {item.glyph ?? '•'}
                   </Text>
                 )}
@@ -236,9 +237,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lavenderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  glyphText: {
-    color: colors.violet,
-    lineHeight: 20,
   },
 });

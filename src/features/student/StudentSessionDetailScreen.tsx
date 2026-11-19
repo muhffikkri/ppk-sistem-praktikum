@@ -1,9 +1,9 @@
-import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
 
 export function StudentSessionDetailScreen({ route, navigation }: any) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession, checkIn, loading } = useStudentAttendanceViewModel();
+  const { getSessionById, getAttendanceForSession, loading } = useStudentAttendanceViewModel();
 
   const session = getSessionById(sessionId);
   const attendance = getAttendanceForSession(sessionId);
@@ -27,21 +27,6 @@ export function StudentSessionDetailScreen({ route, navigation }: any) {
   const isAlreadyCheckedIn = attendance !== undefined;
   const isOpen = session.status === 'open';
 
-  const handleCheckIn = async () => {
-    const result = await checkIn(sessionId);
-    if (result.ok) {
-      Alert.alert('Sukses', 'Presensi berhasil dicatat secara real-time!');
-    } else {
-      if (result.reason === 'already_checked_in') {
-        Alert.alert('Perhatian', 'Anda sudah melakukan presensi pada sesi ini.');
-      } else if (result.reason === 'invalid_status') {
-        Alert.alert('Gagal', 'Sesi belum dibuka atau sudah ditutup.');
-      } else {
-        Alert.alert('Gagal', `Terjadi kesalahan: ${result.reason}`);
-      }
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{session.courseName}</Text>
@@ -55,9 +40,9 @@ export function StudentSessionDetailScreen({ route, navigation }: any) {
       ) : (
         <View style={styles.actionContainer}>
           <Button
-            title={isOpen ? "Presensi Sekarang" : `Sesi ${session.status}`}
+            title={isOpen ? "Buka Presensi Lokasi" : `Sesi ${session.status}`}
             disabled={!isOpen}
-            onPress={handleCheckIn}
+            onPress={() => navigation.navigate('StudentCheckIn', { sessionId })}
           />
         </View>
       )}

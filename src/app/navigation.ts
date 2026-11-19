@@ -1,3 +1,5 @@
+import type { ActorRole } from '../state/AuthContext';
+
 // Keep route names and params aligned with docs/sprint-2-shared-contract.md.
 export type AuthStackParamList = {
   Landing: undefined;
@@ -10,6 +12,7 @@ export type RootStackParamList = {
   Home: undefined;
   StudentSchedule: undefined;
   StudentSessionDetail: { sessionId: string };
+  StudentCheckIn: { sessionId: string };
   StudentAttendanceHistory: undefined;
   StudentLeaveRequestForm: { sessionId: string };
   StudentLeaveList: undefined;
@@ -32,8 +35,6 @@ export type RootStackParamList = {
   Notifications: undefined;
   LabMaps: undefined;
 };
-
-import type { ActorRole } from '../state/AuthContext';
 
 export const POVLABEL: Record<ActorRole, string> = {
   praktikan: 'Praktikan',
