@@ -39,7 +39,7 @@ export function GeofenceStatusCard({
       <Card interactive={false}>
         <CardContent>
           <View style={styles.row}>
-            <View style={[styles.iconBox, { backgroundColor: colors.cardBorder }]}>
+            <View style={[styles.iconBox, { backgroundColor: colors.borderSubtle }]}>
               <Ionicons name="location-outline" size={20} color={colors.inkMuted} />
             </View>
             <View style={styles.textContainer}>
@@ -64,16 +64,16 @@ export function GeofenceStatusCard({
       : 'close-circle-outline';
 
   const iconColor = isInside
-    ? colors.forest
+    ? colors.successInk
     : isInaccurate
-      ? colors.warning
-      : colors.danger;
+      ? colors.pinkInk
+      : colors.dangerInk;
 
   const boxBg = isInside
-    ? colors.forestSubtle
+    ? colors.successSoft
     : isInaccurate
-      ? colors.sandSubtle
-      : colors.dangerSubtle;
+      ? colors.pink
+      : colors.dangerSoft;
 
   const headerTitle = isInside
     ? 'Dalam Radius Lab'

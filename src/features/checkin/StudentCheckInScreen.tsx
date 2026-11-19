@@ -59,7 +59,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         <TopBar onBack={() => navigation.goBack()} />
         <EmptyState
           title="Sesi tidak ditemukan"
-          message="Sesi praktikum tidak tersedia atau telah dihapus."
+          description="Sesi praktikum tidak tersedia atau telah dihapus."
         />
       </Screen>
     );
@@ -80,7 +80,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
       <TopBar onBack={() => navigation.goBack()} />
       <Header
         title="Presensi Lokasi"
-        subtitle={`${session.courseName} — ${session.groupName}`}
+        description={`${session.courseName} — ${session.groupName}`}
       />
 
       {error ? (
@@ -94,7 +94,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
 
       {successBanner || isAlreadyCheckedIn ? (
         <Banner
-          tone="positive"
+          tone="success"
           title="Presensi Berhasil"
           message={
             attendance?.checkedInAt
@@ -133,7 +133,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
                 <Text variant="caption" tone="muted">Status Sesi</Text>
                 <Text
                   variant="captionStrong"
-                  tone={isOpen ? 'positive' : 'muted'}
+                  tone={isOpen ? 'violet' : 'muted'}
                 >
                   {isOpen ? 'Dibuka (Presensi Aktif)' : `Ditutup (${session.status})`}
                 </Text>
@@ -147,10 +147,8 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
       <View style={styles.section}>
         <SectionHeader
           title="Status Lokasi & Geofence"
-          action={{
-            label: checkingLocation ? 'Memeriksa…' : 'Periksa Lokasi',
-            onPress: refreshLocation,
-          }}
+          actionLabel={checkingLocation ? 'Memeriksa…' : 'Periksa Lokasi'}
+          onAction={refreshLocation}
         />
         <GeofenceStatusCard
           geofence={geofence}
@@ -163,14 +161,14 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         {isAlreadyCheckedIn ? (
           <Button
             label="✓ Anda Sudah Hadir"
-            variant="ghost"
+            variant="outline"
             disabled
             onPress={() => {}}
           />
         ) : (
           <Button
             label={submitting ? 'Memproses Presensi…' : 'Presensi Sekarang'}
-            variant="solid"
+            variant="primary"
             loading={submitting}
             disabled={!canCheckIn || submitting}
             onPress={() => setConfirmModal(true)}
