@@ -46,7 +46,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/features/leave/leave.test.ts",
+    "test": "tsx --test src/features/leave/leave.test.ts src/domain/geofenceRules.test.ts",
     "verify:contracts": "tsx scripts/verify-contracts.ts",
     "check:ui": "tsx scripts/check-ui-tokens.ts"
   },
