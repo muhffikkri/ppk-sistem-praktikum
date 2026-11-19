@@ -32,6 +32,10 @@ import {
 } from '../features/student';
 
 import {
+  StudentCheckInScreen,
+} from '../features/checkin';
+
+import {
   AssistantLabFormScreen,
   AssistantLabListScreen,
 } from '../features/labs';
@@ -248,6 +252,14 @@ export function AppNavigator() {
                   name="StudentSessionDetail"
 
                   component={StudentSessionDetailScreen}
+
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentCheckIn"
+
+                  component={StudentCheckInScreen}
 
                   options={{ headerShown: false }}
                 />

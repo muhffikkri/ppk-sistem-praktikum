@@ -55,9 +55,9 @@ export function StudentSessionDetailScreen({ route, navigation }: any) {
       ) : (
         <View style={styles.actionContainer}>
           <Button
-            title={isOpen ? "Presensi Sekarang" : `Sesi ${session.status}`}
+            title={isOpen ? "Buka Presensi Lokasi" : `Sesi ${session.status}`}
             disabled={!isOpen}
-            onPress={handleCheckIn}
+            onPress={() => navigation.navigate('StudentCheckIn', { sessionId })}
           />
         </View>
       )}
