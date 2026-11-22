@@ -1,10 +1,4 @@
-/**
- * Layanan pembacaan lokasi perangkat — Sprint 3 (SRS-3.2).
- *
- * Menggunakan Geolocation Web API standar jika tersedia (Navigator / WebView / browser),
- * atau fallback aman jika perangkat/simulator tidak memiliki modul native expo-location.
- * Modul ini mengekspos DeviceFix standar domain.
- */
+import * as Location from 'expo-location';
 import type { DeviceFix } from '../../domain/geoTypes';
 
 export type LocationPermissionStatus =
@@ -15,19 +9,30 @@ export type LocationPermissionStatus =
 
 export type LocationReadResult =
   | { ok: true; fix: DeviceFix }
-  | { ok: false; reason: 'permission_denied' | 'unavailable' | 'timeout'; message: string };
+  | {
+      ok: false;
+      reason: 'permission_denied' | 'unavailable' | 'timeout';
+      message: string;
+    };
 
-/**
- * Mendapatkan posisi GPS perangkat satu kali (one-shot fix).
- */
-export async function getCurrentDeviceLocation(options?: {
-  timeoutMs?: number;
-  maxAgeMs?: number;
-}): Promise<LocationReadResult> {
-  const timeoutMs = options?.timeoutMs ?? 10000;
-  const maxAgeMs = options?.maxAgeMs ?? 30000;
+function mapPositionToFix(
+  latitude: number,
+  longitude: number,
+  accuracy: number | null | undefined,
+  timestamp: number,
+): DeviceFix {
+  return {
+    latitude,
+    longitude,
+    accuracyMeters: typeof accuracy === 'number' ? Math.round(accuracy) : null,
+    capturedAt: new Date(timestamp).toISOString(),
+  };
+}
 
-  // Cek apakah navigator.geolocation tersedia di runtime platform
+async function readViaWebGeolocation(
+  timeoutMs: number,
+  maxAgeMs: number,
+): Promise<LocationReadResult> {
   const navGeo =
     typeof navigator !== 'undefined' && 'geolocation' in navigator
       ? navigator.geolocation
@@ -60,17 +65,15 @@ export async function getCurrentDeviceLocation(options?: {
         settled = true;
         clearTimeout(timer);
 
-        const fix: DeviceFix = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracyMeters:
-            typeof position.coords.accuracy === 'number'
-              ? Math.round(position.coords.accuracy)
-              : null,
-          capturedAt: new Date(position.timestamp).toISOString(),
-        };
-
-        resolve({ ok: true, fix });
+        resolve({
+          ok: true,
+          fix: mapPositionToFix(
+            position.coords.latitude,
+            position.coords.longitude,
+            position.coords.accuracy,
+            position.timestamp,
+          ),
+        });
       },
       (error) => {
         if (settled) return;
@@ -78,7 +81,6 @@ export async function getCurrentDeviceLocation(options?: {
         clearTimeout(timer);
 
         if (error.code === 1) {
-          // PERMISSION_DENIED
           resolve({
             ok: false,
             reason: 'permission_denied',
@@ -99,4 +101,68 @@ export async function getCurrentDeviceLocation(options?: {
       },
     );
   });
+}
+
+/**
+ * Mendapatkan posisi GPS perangkat satu kali (one-shot fix).
+ */
+export async function getCurrentDeviceLocation(options?: {
+  timeoutMs?: number;
+  maxAgeMs?: number;
+}): Promise<LocationReadResult> {
+  const timeoutMs = options?.timeoutMs ?? 10000;
+  const maxAgeMs = options?.maxAgeMs ?? 30000;
+
+  try {
+    const servicesEnabled = await Location.hasServicesEnabledAsync();
+    if (!servicesEnabled) {
+      return {
+        ok: false,
+        reason: 'unavailable',
+        message:
+          'Layanan lokasi perangkat nonaktif. Silakan aktifkan GPS/Lokasi terlebih dahulu.',
+      };
+    }
+
+    const permission = await Location.requestForegroundPermissionsAsync();
+    if (permission.status !== 'granted') {
+      return {
+        ok: false,
+        reason: 'permission_denied',
+        message: 'Izin akses lokasi ditolak. Harap izinkan akses lokasi.',
+      };
+    }
+
+    const position = await Promise.race<Location.LocationObject | null>([
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      }),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+
+    const resolvedPosition =
+      position ?? (await Location.getLastKnownPositionAsync());
+
+    if (!resolvedPosition) {
+      return {
+        ok: false,
+        reason: 'timeout',
+        message: 'Waktu tunggu pembacaan GPS habis. Silakan coba lagi.',
+      };
+    }
+
+    return {
+      ok: true,
+      fix: mapPositionToFix(
+        resolvedPosition.coords.latitude,
+        resolvedPosition.coords.longitude,
+        resolvedPosition.coords.accuracy,
+        resolvedPosition.timestamp,
+      ),
+    };
+  } catch {
+    return readViaWebGeolocation(timeoutMs, maxAgeMs);
+  }
 }
