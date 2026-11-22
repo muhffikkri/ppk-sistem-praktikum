@@ -124,16 +124,15 @@ export interface UserLocationState {
 export type LabMapFilter = 'all' | 'occupied' | 'available';
 
 /**
- * Titik tengah default lingkungan Laboratorium Informatika.
- * Koordinat referensi area kampus Informatika.
+ * Titik tengah default lingkungan Laboratorium Informatika Undip Tembalang.
  */
 export const DEFAULT_CAMPUS_CENTER: GeoCoordinates = {
-  latitude: -6.89148,
-  longitude: 107.61065,
+  latitude: -7.0507,
+  longitude: 110.4383,
 };
 
 /**
- * Data awal (fallback & seed) laboratorium lingkungan Informatika
+ * Data awal (fallback & seed) laboratorium lingkungan Informatika Undip Tembalang
  * yang selaras dengan data sesi di Sprint 1 & 2.
  */
 export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
@@ -145,8 +144,8 @@ export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
     floor: 'Lantai 3',
     description: 'Laboratorium Rekayasa Perangkat Lunak & Sistem Cerdas',
     coordinates: {
-      latitude: -6.89142,
-      longitude: 107.61058,
+      latitude: -7.05068,
+      longitude: 110.43828,
     },
     radiusMeters: 50,
     capacity: 40,
@@ -160,8 +159,8 @@ export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
     floor: 'Lantai 3',
     description: 'Laboratorium Pemrograman & Basis Data Lanjut',
     coordinates: {
-      latitude: -6.89149,
-      longitude: 107.61062,
+      latitude: -7.05074,
+      longitude: 110.43834,
     },
     radiusMeters: 50,
     capacity: 35,
@@ -175,8 +174,8 @@ export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
     floor: 'Lantai 2',
     description: 'Laboratorium Basis Data & Sistem Informasi',
     coordinates: {
-      latitude: -6.89158,
-      longitude: 107.61075,
+      latitude: -7.05082,
+      longitude: 110.43845,
     },
     radiusMeters: 50,
     capacity: 45,
@@ -190,8 +189,8 @@ export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
     floor: 'Lantai 3',
     description: 'Laboratorium Jaringan Komputer & Cyber Security',
     coordinates: {
-      latitude: -6.89135,
-      longitude: 107.61048,
+      latitude: -7.05062,
+      longitude: 110.4382,
     },
     radiusMeters: 50,
     capacity: 30,
@@ -205,8 +204,8 @@ export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
     floor: 'Lantai 2',
     description: 'Laboratorium Kecerdasan Buatan & Pengolahan Citra',
     coordinates: {
-      latitude: -6.89165,
-      longitude: 107.61082,
+      latitude: -7.05088,
+      longitude: 110.43852,
     },
     radiusMeters: 50,
     capacity: 35,
@@ -220,8 +219,8 @@ export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
     floor: 'Lantai 1',
     description: 'Laboratorium Internet of Things & Sistem Tertanam',
     coordinates: {
-      latitude: -6.89125,
-      longitude: 107.61035,
+      latitude: -7.05055,
+      longitude: 110.43812,
     },
     radiusMeters: 60,
     capacity: 30,
