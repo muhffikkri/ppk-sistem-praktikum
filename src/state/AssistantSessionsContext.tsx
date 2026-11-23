@@ -223,7 +223,7 @@ export const AssistantSessionsProvider = ({
       const ids = new Set<string>();
       classes.forEach((c) =>
         (c.participantIds ?? []).forEach((id) => {
-          if (id.trim()) ids.add(id);
+          if (typeof id === 'string' && id.trim()) ids.add(id.trim());
         }),
       );
 
@@ -236,8 +236,12 @@ export const AssistantSessionsProvider = ({
           missing.map(async (studentUid) => {
             const snap = await getDoc(doc(db, 'users', studentUid));
             if (!snap.exists()) return;
-            const profile = snap.data() as UserProfile;
-            if (profile.role === 'student') {
+            const raw = snap.data() as UserProfile;
+            if (raw.role === 'student') {
+              const profile: UserProfile = {
+                ...raw,
+                uid: raw.uid || snap.id,
+              };
               studentsCacheRef.current.set(studentUid, profile);
             }
           }),
