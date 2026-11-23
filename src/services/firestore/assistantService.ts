@@ -174,10 +174,19 @@ export async function addParticipantByEmail(
 
     const classData = classSnap.data() as PracticalClass;
 
-    // Cari user berdasarkan email di collection users
-    const usersSnap = await getDocs(
-      query(usersCol, where('email', '==', email)),
+    const trimmedEmail = email.trim();
+    const normalizedEmail = trimmedEmail.toLowerCase();
+
+    // Cari user berdasarkan email (normalized lowercase, fallback raw trim)
+    let usersSnap = await getDocs(
+      query(usersCol, where('email', '==', normalizedEmail)),
     );
+    if (usersSnap.empty && trimmedEmail !== normalizedEmail) {
+      usersSnap = await getDocs(
+        query(usersCol, where('email', '==', trimmedEmail)),
+      );
+    }
+
     if (usersSnap.empty) {
       return {
         ok: false,
@@ -197,11 +206,20 @@ export async function addParticipantByEmail(
       };
     }
 
+    const studentUid = userData.uid || userDoc.id;
+    if (!studentUid) {
+      return {
+        ok: false,
+        reason: 'validation_error',
+        message: 'UID praktikan tidak ditemukan',
+      };
+    }
+
     // Tambahkan participantIds ke kelas
     const updatedParticipantIds = [
       ...(classData.participantIds || []),
-      userData.uid,
-    ].filter((id, idx, self) => self.indexOf(id) === idx);
+      studentUid,
+    ].filter((id, idx, self) => Boolean(id) && self.indexOf(id) === idx);
 
     const updatedAt = new Date().toISOString();
 
