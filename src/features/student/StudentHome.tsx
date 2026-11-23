@@ -64,7 +64,7 @@ function formatTodayLong(iso: string): string {
 
 export function StudentHome({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
-  const { sessions, attendanceHistory, loading, error, retry } =
+  const { sessions, attendanceHistory, loading, error } =
     useStudentAttendanceViewModel();
 
   const topBar = (
@@ -109,7 +109,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat jadwal"
           message={error}
-          onRetry={retry}
+          onRetry={() => navigation.replace('Home')}
         />
       </Screen>
     );
