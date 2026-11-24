@@ -58,6 +58,7 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   // Ambil data lab terkait sesi: labId dulu, nama lab untuk sesi lama.
   const labKey = session?.labId ?? session?.lab ?? null;
   useEffect(() => {
+    if (!session?.lab) return;
     let active = true;
     if (!labKey) return;
 
@@ -69,6 +70,14 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
           : { key: labKey, lab: null, error: res.message },
       );
     });
+    getLabById(session.lab)
+      .then((res) => {
+        if (!active) return;
+        if (res.ok) setFetchedLab(res.data);
+      })
+      .finally(() => {
+        if (active) setLabFetchLoading(false);
+      });
 
     return () => {
       active = false;
@@ -80,6 +89,12 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   const lab = currentLab?.lab ?? null;
   const labError = currentLab?.error ?? null;
   const labLoading = !!labKey && !currentLab;
+
+  const lab =
+    session?.lab && fetchedLab && (fetchedLab.id === session.lab || fetchedLab.name === session.lab)
+      ? fetchedLab
+      : null;
+  const labLoading = !!session?.lab && !lab && labFetchLoading;
 
   // Derived geofence evaluation computed purely from state without cascading setState
   const geofence = useMemo<GeofenceCheckResult | null>(() => {
