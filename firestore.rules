@@ -135,6 +135,35 @@ service cloud.firestore {
       allow delete: if isAssistant();
     }
 
+    // Geofence presensi: sesi wajib terhubung ke labs/{labId}, perangkat wajib
+    // mengirim koordinat + jarak, dan keduanya harus konsisten dengan radius lab.
+    // Rules tidak punya cos(): 1° lintang ≈ 111.320 m, 1° bujur ≥ 110.000 m untuk
+    // lintang wilayah Indonesia (|lat| ≤ ~11°), jadi kotak batas ini tidak menolak
+    // posisi yang sah di dalam radius.
+    function withinLabGeofence(data, session) {
+      return session.labId is string
+        && exists(/databases/$(database)/documents/labs/$(session.labId))
+        && labWithinRadius(
+          data,
+          get(/databases/$(database)/documents/labs/$(session.labId)).data
+        );
+    }
+
+    function labWithinRadius(data, lab) {
+      return data.deviceLocation.keys().hasOnly(['latitude', 'longitude', 'accuracyMeters'])
+        && data.deviceLocation.latitude is number
+        && data.deviceLocation.longitude is number
+        && (data.deviceLocation.get('accuracyMeters', null) == null
+          || data.deviceLocation.accuracyMeters <= 100)
+        && data.distanceMeters is number
+        && data.distanceMeters >= 0
+        && data.distanceMeters <= lab.radiusMeters
+        && math.abs(data.deviceLocation.latitude - lab.location.latitude)
+          <= lab.radiusMeters / 111320
+        && math.abs(data.deviceLocation.longitude - lab.location.longitude)
+          <= lab.radiusMeters / 110000;
+    }
+
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})
     match /attendance/{attendanceId} {
       // get dokumen milik sendiri boleh walau belum ada (cek duplikasi setelah permission-denied)
@@ -145,13 +174,21 @@ service cloud.firestore {
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
       allow create: if isStudent()
+        && request.resource.data.keys().hasOnly([
+          'id', 'sessionId', 'classId', 'studentId', 'studentName',
+          'checkedInAt', 'deviceLocation', 'distanceMeters'
+        ])
         && request.resource.data.studentId == request.auth.uid
         && attendanceId == (request.resource.data.sessionId + '_' + request.auth.uid)
         && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
-        && get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.status == 'open'
-        && request.auth.uid in get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.participantIds
+        && sessionData(request.resource.data.sessionId).status == 'open'
+        && request.auth.uid in sessionData(request.resource.data.sessionId).participantIds
         && request.resource.data.checkedInAt is string
-        && request.resource.data.studentName is string;
+        && request.resource.data.studentName is string
+        && withinLabGeofence(
+          request.resource.data,
+          sessionData(request.resource.data.sessionId)
+        );
 
       allow update, delete: if false;
     }
