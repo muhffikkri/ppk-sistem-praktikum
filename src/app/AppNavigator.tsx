@@ -1,9 +1,10 @@
-import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
 
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -117,28 +118,30 @@ export function AppNavigator() {
   const { authStatus, user, logout, needsRoleSelection } = useAuth();
   const actorRole = useActorRole();
 
-  const currentRoute = useNavigationState((state) => {
-    const route = state?.routes[state.index ?? 0];
-    return route?.name ?? 'Home';
-  });
-
-  const activeKey = (() => {
-    if (currentRoute === 'Home' || currentRoute === 'Profile') return currentRoute;
-    if (currentRoute === DOCK_ROUTE_FOR_POV[actorRole].Schedule) return 'Schedule';
-    if (currentRoute === DOCK_ROUTE_FOR_POV[actorRole].Attendance) return 'Attendance';
-    return '';
-  })();
-
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
-
-    /** Reset the whole stack to a single top-level route used by the
-     *  bottom dock so it never surfaces a "back" chevron. */
     reset: (state: {
       index: number;
       routes: { name: string; params?: Record<string, unknown> }[];
     }) => void;
+    addListener: (event: 'state', cb: (e: any) => void) => () => void;
+    getState: () => { index?: number; routes: { name: string }[] } | undefined;
   };
+
+  const [activeKey, setActiveKey] = useState('Home');
+
+  useEffect(() => {
+    const sync = (state: { index?: number; routes: { name: string }[] } | undefined) => {
+      const route = state?.routes[state.index ?? 0];
+      const name = route?.name ?? 'Home';
+      if (name === 'Home' || name === 'Profile') return setActiveKey(name);
+      if (name === DOCK_ROUTE_FOR_POV[actorRole].Schedule) return setActiveKey('Schedule');
+      if (name === DOCK_ROUTE_FOR_POV[actorRole].Attendance) return setActiveKey('Attendance');
+      setActiveKey('');
+    };
+    sync(navigation.getState?.());
+    return navigation.addListener('state', (e) => sync(e.data?.state));
+  }, [actorRole, navigation]);
 
   // Resolve the stable dock keys to the route matching the active POV.
   const resolveRoute = (key: string): keyof RootStackParamList => {
