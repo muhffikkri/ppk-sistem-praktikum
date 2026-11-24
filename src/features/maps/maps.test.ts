@@ -10,7 +10,10 @@ import {
   type GeoCoordinates,
   type LabLocation,
 } from '../../domain/geoTypes';
-import { computeLabActivities } from '../../services/firestore/labActivityService';
+import {
+  computeLabActivities,
+  isSessionForLab,
+} from '../../services/firestore/labActivityService';
 import type { Session } from '../../domain/types';
 
 test('calculateDistanceMeters: menghitung jarak haversine dengan benar', () => {
@@ -33,8 +36,8 @@ test('isWithinGeofence: memvalidasi radius toleransi laboratorium', () => {
     longitude: 107.61065,
   };
   const userFarAway: GeoCoordinates = {
-    latitude: -6.89500,
-    longitude: 107.61500,
+    latitude: -6.895,
+    longitude: 107.615,
   };
 
   assert.equal(isWithinGeofence(userInside, labCoord, 50), true);
@@ -112,4 +115,49 @@ test('computeLabActivities: lab kosong jika tidak ada sesi berjalan', () => {
   assert.equal(activities[0].isOccupied, false);
   assert.equal(activities[0].currentSession, null);
   assert.equal(activities[0].nextSession, null);
+});
+
+const baseSession: Session = {
+  id: 'sess',
+  courseName: 'Basis Data',
+  groupName: 'Kelas A',
+  startsAt: '2026-11-19T09:00:00.000Z',
+  endsAt: '2026-11-19T11:00:00.000Z',
+  status: 'open',
+  openedAt: '2026-11-19T09:00:00.000Z',
+  closedAt: null,
+};
+
+test('isSessionForLab: labId menentukan lab, mengabaikan label nama', () => {
+  const lab = DEFAULT_CAMPUS_LABS[0];
+  assert.equal(isSessionForLab({ ...baseSession, labId: lab.id }, lab), true);
+  assert.equal(
+    isSessionForLab({ ...baseSession, labId: 'lab-lain', lab: lab.name }, lab),
+    false,
+  );
+});
+
+test('isSessionForLab: sesi lama tanpa labId dicocokkan lewat nama persis', () => {
+  const lab = DEFAULT_CAMPUS_LABS[0];
+  assert.equal(
+    isSessionForLab(
+      { ...baseSession, lab: `  ${lab.name.toUpperCase()} ` },
+      lab,
+    ),
+    true,
+  );
+  // Kata kunci yang mirip tidak lagi dianggap lab yang sama.
+  assert.equal(isSessionForLab({ ...baseSession, lab: 'Lab RPL' }, lab), false);
+  assert.equal(isSessionForLab(baseSession, lab), false);
+});
+
+test('computeLabActivities: sesi dengan labId lain tidak muncul di lab ini', () => {
+  const lab = DEFAULT_CAMPUS_LABS[0];
+  const activities = computeLabActivities(
+    [lab],
+    [{ ...baseSession, labId: 'lab-lain' }],
+    new Date('2026-11-19T10:00:00.000Z'),
+  );
+  assert.equal(activities[0].currentSession, null);
+  assert.equal(activities[0].isOccupied, false);
 });
