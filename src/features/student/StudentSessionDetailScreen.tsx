@@ -1,26 +1,58 @@
-import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
-import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { StyleSheet, View } from 'react-native';
 
-export function StudentSessionDetailScreen({ route, navigation }: any) {
+import type { RootStackParamList } from '../../app/navigation';
+import {
+  Banner,
+  Button,
+  Card,
+  CardContent,
+  EmptyState,
+  Header,
+  LoadingState,
+  Screen,
+  SectionHeader,
+  spacing,
+  Text,
+  TopBar,
+} from '../../shared/ui';
+import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
+import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'StudentSessionDetail'>;
+
+const STATUS_LABEL: Record<string, string> = {
+  open: 'Dibuka',
+  scheduled: 'Terjadwal',
+  closed: 'Ditutup',
+};
+
+export function StudentSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession, loading } = useStudentAttendanceViewModel();
+  const { getSessionById, getAttendanceForSession, loading } =
+    useStudentAttendanceViewModel();
 
   const session = getSessionById(sessionId);
   const attendance = getAttendanceForSession(sessionId);
 
-  if (loading) {
+  if (loading && !session) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      <Screen withDock={false}>
+        <TopBar onBack={() => navigation.goBack()} />
+        <LoadingState label="Memuat detail sesi…" />
+      </Screen>
     );
   }
 
   if (!session) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Sesi praktikum tidak ditemukan.</Text>
-      </View>
+      <Screen withDock={false}>
+        <TopBar onBack={() => navigation.goBack()} />
+        <EmptyState
+          title="Sesi tidak ditemukan"
+          description="Sesi praktikum tidak tersedia atau telah dihapus."
+        />
+      </Screen>
     );
   }
 
@@ -28,45 +60,94 @@ export function StudentSessionDetailScreen({ route, navigation }: any) {
   const isOpen = session.status === 'open';
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{session.courseName}</Text>
-      <Text style={styles.info}>Kelas: {session.groupName}</Text>
-      <Text style={styles.info}>Status: <Text style={styles.bold}>{session.status.toUpperCase()}</Text></Text>
+    <Screen withDock={false}>
+      <TopBar onBack={() => navigation.goBack()} />
+      <Header
+        title="Detail Sesi"
+        description={`${session.courseName} — ${session.groupName}`}
+      />
+
+      <View style={styles.section}>
+        <SectionHeader title="Informasi Sesi" />
+        <Card interactive={false}>
+          <CardContent>
+            <View style={styles.detailGrid}>
+              <View style={styles.infoRow}>
+                <Text variant="caption" tone="muted">Mata Kuliah</Text>
+                <Text variant="captionStrong">{session.courseName}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text variant="caption" tone="muted">Kelas</Text>
+                <Text variant="captionStrong">{session.groupName}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text variant="caption" tone="muted">Waktu</Text>
+                <Text variant="captionStrong">
+                  {formatSessionDate(session.startsAt)} · {formatTimeRange(session.startsAt, session.endsAt)}
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text variant="caption" tone="muted">Laboratorium</Text>
+                <Text variant="captionStrong">{session.lab ?? 'Tidak ditentukan'}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text variant="caption" tone="muted">Status</Text>
+                <Text variant="captionStrong" tone={isOpen ? 'violet' : 'muted'}>
+                  {STATUS_LABEL[session.status] ?? session.status}
+                </Text>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+      </View>
 
       {isAlreadyCheckedIn ? (
-        <View style={styles.successBox}>
-          <Text style={styles.successText}>✓ Anda Sudah Hadir</Text>
-        </View>
-      ) : (
-        <View style={styles.actionContainer}>
+        <Banner
+          tone="success"
+          title="Presensi Tercatat"
+          message={
+            attendance?.checkedInAt
+              ? `Anda sudah hadir pada ${formatClock(attendance.checkedInAt)}.`
+              : 'Kehadiran Anda sudah tercatat.'
+          }
+        />
+      ) : null}
+
+      <View style={styles.actions}>
+        {!isAlreadyCheckedIn ? (
           <Button
-            title={isOpen ? "Buka Presensi Lokasi" : `Sesi ${session.status}`}
+            label={isOpen ? 'Buka Presensi Lokasi' : `Sesi ${STATUS_LABEL[session.status] ?? session.status}`}
+            variant="primary"
             disabled={!isOpen}
             onPress={() => navigation.navigate('StudentCheckIn', { sessionId })}
           />
-        </View>
-      )}
-
-      <View style={styles.leaveButtonContainer}>
+        ) : null}
         <Button
-          title="Ajukan Izin Ketidakhadiran"
-          color="#ff9800"
+          label="Ajukan Izin Ketidakhadiran"
+          variant="outline"
           onPress={() => navigation.navigate('StudentLeaveRequestForm', { sessionId })}
         />
       </View>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 16, color: 'red' },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  info: { fontSize: 16, marginBottom: 8, color: '#333' },
-  bold: { fontWeight: 'bold', color: '#007AFF' },
-  successBox: { marginTop: 20, backgroundColor: '#e6f4ea', padding: 16, borderRadius: 8 },
-  successText: { color: '#137333', fontWeight: 'bold', fontSize: 16 },
-  actionContainer: { marginTop: 20 },
-  leaveButtonContainer: { marginTop: 12 }
+  section: {
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  detailGrid: {
+    gap: spacing.sm,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  actions: {
+    marginTop: spacing.xl,
+    gap: spacing.sm,
+  },
 });
