@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, fontFamily, radius, spacing } from '../../theme/tokens';
 import type { RootStackParamList } from '../../app/navigation';
@@ -22,7 +22,7 @@ import {
   type BadgeTone,
 } from '../../shared/ui';
 import { useAuth, useStudentAttendanceViewModel } from '../../state';
-import { formatClock, formatTimeRange } from './formatters';
+import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -39,6 +39,14 @@ const STATUS_TONE: Record<string, BadgeTone> = {
 };
 
 const WEEK_ROWS = 4;
+
+const days = [
+  { label: 'SEN 18', date: new Date() },
+  { label: 'SEL 19', date: new Date() },
+  { label: 'RAB 20', date: new Date() },
+  { label: 'KAM 21', date: new Date() },
+  { label: 'JUM 22', date: new Date() },
+];
 
 function isSameDay(a: string, b: Date) {
   const d = new Date(a);
@@ -66,6 +74,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
   const { sessions, attendanceHistory, loading, error, retry } =
     useStudentAttendanceViewModel();
+  const [selectedDay, setSelectedDay] = useState(days[0]?.label ?? '');
 
   const topBar = (
     <AppTopBar
@@ -168,7 +177,14 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
               pressed && styles.dayBtnPressed,
             ]}
           >
-            <Text style={styles.dayBtnText}>{d.label}</Text>
+            <Text
+              style={[
+                styles.dayBtnText,
+                selectedDay === d.label && styles.dayBtnSelectedText,
+              ]}
+            >
+              {d.label}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -301,4 +317,34 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   heroAction: { marginTop: spacing.sm, alignItems: 'flex-start' },
+  // Day selector styles
+  daySelector: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginVertical: spacing.sm,
+    justifyContent: 'center',
+  },
+  dayBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.lavender,
+  },
+  dayBtnSelected: {
+    backgroundColor: colors.lavender,
+    borderColor: colors.lavender,
+  },
+  dayBtnPressed: {
+    opacity: 0.85,
+  },
+  dayBtnText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 12,
+    color: colors.ink,
+  },
+  dayBtnSelectedText: {
+    color: colors.onPrimary,
+  },
 });
