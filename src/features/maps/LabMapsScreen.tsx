@@ -9,6 +9,8 @@ import MapView, { Circle, Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
+import { Banner } from '../../shared/ui/Banner';
+import { Button } from '../../shared/ui/Button';
 import { IconButton } from '../../shared/ui/IconButton';
 import { Text } from '../../shared/ui/Text';
 import { LoadingState } from '../../shared/ui/LoadingState';
@@ -28,6 +30,7 @@ export function LabMapsScreen({ navigation }: Props) {
   const mapRef = useRef<MapView | null>(null);
 
   const {
+    activities,
     filteredActivities,
     selectedLab,
     filter,
@@ -39,6 +42,7 @@ export function LabMapsScreen({ navigation }: Props) {
     setSelectedLab,
     setFilter,
     refreshLocation,
+    retry,
   } = useLabMapsViewModel();
 
   // Pusatkan peta ke lokasi pengguna ketika pertama kali didapatkan
@@ -127,9 +131,7 @@ export function LabMapsScreen({ navigation }: Props) {
             fillColor={
               act.isOccupied ? colors.lavenderSubtle : colors.onSiteSoft
             }
-            strokeColor={
-              act.isOccupied ? colors.violet : colors.success
-            }
+            strokeColor={act.isOccupied ? colors.violet : colors.success}
             strokeWidth={1.5}
           />
         ))}
@@ -161,7 +163,9 @@ export function LabMapsScreen({ navigation }: Props) {
       </MapView>
 
       {/* Floating Header & Legend */}
-      <View style={[styles.topOverlay, { paddingTop: insets.top + spacing.sm }]}>
+      <View
+        style={[styles.topOverlay, { paddingTop: insets.top + spacing.sm }]}
+      >
         <View style={styles.topBar}>
           <IconButton
             icon="arrow-back-outline"
@@ -187,6 +191,22 @@ export function LabMapsScreen({ navigation }: Props) {
           onFilterChange={setFilter}
           stats={stats}
         />
+
+        {/* Data lab/sesi gagal dimuat (mis. koneksi terputus) */}
+        {error ? (
+          <Banner
+            tone="danger"
+            title="Data laboratorium gagal dimuat"
+            message={`${error} Periksa koneksi lalu coba lagi.`}
+            action={<Button label="Coba lagi" variant="soft" onPress={retry} />}
+          />
+        ) : activities.length === 0 ? (
+          <Banner
+            tone="warning"
+            title="Belum ada laboratorium"
+            message="Asisten belum menambahkan lokasi laboratorium."
+          />
+        ) : null}
 
         {/* Banner Peringatan Lokasi jika Izin Ditolak */}
         {userLocation.error ? (
@@ -223,7 +243,9 @@ export function LabMapsScreen({ navigation }: Props) {
 
       {/* Detail Bottom Sheet ketika Marker Lab dipilih */}
       {selectedLab ? (
-        <View style={[styles.bottomSheetWrapper, { paddingBottom: insets.bottom }]}>
+        <View
+          style={[styles.bottomSheetWrapper, { paddingBottom: insets.bottom }]}
+        >
           <LabMarkerDetailSheet
             activity={selectedLab}
             userCoords={userLocation.coordinates}
