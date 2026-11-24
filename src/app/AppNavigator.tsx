@@ -1,8 +1,8 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { useState } from 'react';
+
 
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -117,7 +117,17 @@ export function AppNavigator() {
   const { authStatus, user, logout, needsRoleSelection } = useAuth();
   const actorRole = useActorRole();
 
-  const [activeKey, setActiveKey] = useState<string>('Home');
+  const currentRoute = useNavigationState((state) => {
+    const route = state?.routes[state.index ?? 0];
+    return route?.name ?? 'Home';
+  });
+
+  const activeKey = (() => {
+    if (currentRoute === 'Home' || currentRoute === 'Profile') return currentRoute;
+    if (currentRoute === DOCK_ROUTE_FOR_POV[actorRole].Schedule) return 'Schedule';
+    if (currentRoute === DOCK_ROUTE_FOR_POV[actorRole].Attendance) return 'Attendance';
+    return '';
+  })();
 
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
@@ -152,10 +162,7 @@ export function AppNavigator() {
   };
 
   const onTabPress = (key: string) => {
-    setActiveKey(key);
-
     const route = resolveRoute(key);
-
     navigation.reset({ index: 0, routes: [{ name: route }] });
   };
 
@@ -435,8 +442,7 @@ export function AppNavigator() {
                 label: 'Izin',
 
                 onPress: () => {
-                  // Izin bukan tab dock: kosongkan key agar tab lama tidak menyala.
-                  setActiveKey('');
+                  // Izin bukan tab dock: route non-tab, jadi tidak ada tab aktif.
                   navigation.navigate(
                     actorRole === 'asisten'
                       ? 'AssistantLeaveReviewList'
