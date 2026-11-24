@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { evaluateGeofence } from '../../domain/geofenceRules';
-import type { DeviceFix, GeofenceCheckResult, Lab } from '../../domain/geoTypes';
+import type {
+  DeviceFix,
+  GeofenceCheckResult,
+  Lab,
+} from '../../domain/geoTypes';
 import type {
   AsyncActionResult,
   AttendanceRecord,
@@ -41,32 +45,41 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   const session = getSessionById(sessionId);
   const attendance = getAttendanceForSession(sessionId);
 
-  const [lab, setLab] = useState<Lab | null>(null);
-  const [labLoading, setLabLoading] = useState(false);
+  const [labResult, setLabResult] = useState<{
+    key: string;
+    lab: Lab | null;
+    error: string | null;
+  } | null>(null);
   const [deviceFix, setDeviceFix] = useState<DeviceFix | null>(null);
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Ambil data lab terkait sesi jika ada
+  // Ambil data lab terkait sesi: labId dulu, nama lab untuk sesi lama.
+  const labKey = session?.labId ?? session?.lab ?? null;
   useEffect(() => {
     let active = true;
-    if (!session?.lab) {
-      return;
-    }
+    if (!labKey) return;
 
-    getLabById(session.lab).then((res) => {
+    getLabById(labKey).then((res) => {
       if (!active) return;
-      setLabLoading(false);
-      if (res.ok) {
-        setLab(res.data);
-      }
+      setLabResult(
+        res.ok
+          ? { key: labKey, lab: res.data, error: null }
+          : { key: labKey, lab: null, error: res.message },
+      );
     });
 
     return () => {
       active = false;
     };
-  }, [session?.lab]);
+  }, [labKey]);
+
+  // Hasil lab hanya berlaku untuk labKey yang sedang aktif.
+  const currentLab = labKey && labResult?.key === labKey ? labResult : null;
+  const lab = currentLab?.lab ?? null;
+  const labError = currentLab?.error ?? null;
+  const labLoading = !!labKey && !currentLab;
 
   // Derived geofence evaluation computed purely from state without cascading setState
   const geofence = useMemo<GeofenceCheckResult | null>(() => {
@@ -127,7 +140,11 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
       setCheckingLocation(false);
       if (!locResult.ok) {
         setError(locResult.message);
-        return { ok: false, reason: 'location_unavailable', message: locResult.message };
+        return {
+          ok: false,
+          reason: 'location_unavailable',
+          message: locResult.message,
+        };
       }
       currentFix = locResult.fix;
       setDeviceFix(currentFix);
@@ -166,7 +183,7 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
     loading: sessionsLoading || labLoading,
     checkingLocation,
     submitting,
-    error,
+    error: error ?? labError,
     isAlreadyCheckedIn,
     isOpen,
     refreshLocation,
