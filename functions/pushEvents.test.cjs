@@ -1,6 +1,11 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { sessionEvents, leaveEvents, pushMessage } = require('./pushEvents.cjs');
+const {
+  sessionCreatedEvents,
+  sessionEvents,
+  leaveEvents,
+  pushMessage,
+} = require('./pushEvents.cjs');
 
 const session = {
   status: 'scheduled',
@@ -93,4 +98,36 @@ test('leave notifications require a final decision and the original applicant', 
     leaveId: 'l1',
   });
   assert.ok(!JSON.stringify(payload).includes(leave.reason));
+});
+
+test('new scheduled sessions notify their distinct participants', () => {
+  assert.deepEqual(sessionCreatedEvents(session, 's1'), [
+    {
+      type: 'session_scheduled',
+      sessionId: 's1',
+      recipients: ['student1', 'student2'],
+    },
+  ]);
+  assert.deepEqual(
+    sessionCreatedEvents({ ...session, participantIds: [] }, 's1'),
+    [],
+  );
+  assert.deepEqual(
+    sessionCreatedEvents({ ...session, status: 'open' }, 's1'),
+    [],
+  );
+});
+
+test('new session push uses its own title', () => {
+  const message = pushMessage(
+    {
+      type: 'session_scheduled',
+      uid: 'student1',
+      sessionId: 's1',
+      sendUntil: Date.now() + 60_000,
+    },
+    'ExponentPushToken[abc]',
+  );
+  assert.equal(message.title, 'Jadwal praktikum baru');
+  assert.equal(message.data.type, 'session_scheduled');
 });

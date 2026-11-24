@@ -8,7 +8,12 @@ const {
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
-const { sessionEvents, leaveEvents, pushMessage } = require('./pushEvents.cjs');
+const {
+  sessionCreatedEvents,
+  sessionEvents,
+  leaveEvents,
+  pushMessage,
+} = require('./pushEvents.cjs');
 
 initializeApp();
 const db = getFirestore();
@@ -63,6 +68,18 @@ async function enqueue(eventId, eventTime, notices) {
   const failure = (await Promise.all(writes)).find(Boolean);
   if (failure) throw failure;
 }
+
+exports.notifySessionScheduled = onDocumentCreated(
+  { document: 'sessions/{sessionId}', retry: true },
+  (event) => {
+    if (!event.data) return;
+    return enqueue(
+      event.id,
+      event.time,
+      sessionCreatedEvents(event.data.data(), event.params.sessionId),
+    );
+  },
+);
 
 exports.notifySessionChanged = onDocumentUpdated(
   { document: 'sessions/{sessionId}', retry: true },
