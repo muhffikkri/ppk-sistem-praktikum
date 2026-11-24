@@ -41,8 +41,8 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   const session = getSessionById(sessionId);
   const attendance = getAttendanceForSession(sessionId);
 
-  const [lab, setLab] = useState<Lab | null>(null);
-  const [labLoading, setLabLoading] = useState(false);
+  const [fetchedLab, setFetchedLab] = useState<Lab | null>(null);
+  const [labFetchLoading, setLabFetchLoading] = useState(false);
   const [deviceFix, setDeviceFix] = useState<DeviceFix | null>(null);
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -50,23 +50,30 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
 
   // Ambil data lab terkait sesi jika ada
   useEffect(() => {
+    if (!session?.lab) return;
     let active = true;
-    if (!session?.lab) {
-      return;
-    }
-
-    getLabById(session.lab).then((res) => {
-      if (!active) return;
-      setLabLoading(false);
-      if (res.ok) {
-        setLab(res.data);
-      }
+    queueMicrotask(() => {
+      if (active) setLabFetchLoading(true);
     });
+    getLabById(session.lab)
+      .then((res) => {
+        if (!active) return;
+        if (res.ok) setFetchedLab(res.data);
+      })
+      .finally(() => {
+        if (active) setLabFetchLoading(false);
+      });
 
     return () => {
       active = false;
     };
   }, [session?.lab]);
+
+  const lab =
+    session?.lab && fetchedLab && (fetchedLab.id === session.lab || fetchedLab.name === session.lab)
+      ? fetchedLab
+      : null;
+  const labLoading = !!session?.lab && !lab && labFetchLoading;
 
   // Derived geofence evaluation computed purely from state without cascading setState
   const geofence = useMemo<GeofenceCheckResult | null>(() => {
