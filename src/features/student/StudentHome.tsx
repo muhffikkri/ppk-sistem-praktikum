@@ -2,7 +2,7 @@ import React from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, fontFamily, radius, spacing } from '../../theme/tokens';
+import { spacing } from '../../theme/tokens';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   AppTopBar,
@@ -22,7 +22,7 @@ import {
   type BadgeTone,
 } from '../../shared/ui';
 import { useAuth, useStudentAttendanceViewModel } from '../../state';
-import { formatClock, formatTimeRange } from './formatters';
+import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -149,29 +149,6 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
     <Screen>
       {topBar}
       {header}
-
-      {/* Day selector (radio style) */}
-      <View
-        style={styles.daySelector}
-        accessibilityRole="radiogroup"
-        aria-label="Pilih hari praktikum"
-      >
-        {days.map((d) => (
-          <Pressable
-            key={d.label}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: selectedDay === d.label }}
-            onPress={() => setSelectedDay(d.label)}
-            style={({ pressed }) => [
-              styles.dayBtn,
-              selectedDay === d.label && styles.dayBtnSelected,
-              pressed && styles.dayBtnPressed,
-            ]}
-          >
-            <Text style={styles.dayBtnText}>{d.label}</Text>
-          </Pressable>
-        ))}
-      </View>
 
       {hero ? (
         <Card variant="heroViolet" interactive={false}>
