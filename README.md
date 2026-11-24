@@ -122,6 +122,21 @@ npx eas-cli update:list --branch preview
 
 Update hanya diterima build yang `runtimeVersion` dan channel-nya cocok. Perubahan native butuh build baru; perubahan JavaScript/asset cukup OTA. Build production tidak otomatis publish OTA production; jalankan `npx eas-cli update --branch production --environment production` bila perlu.
 
+## Firebase: rules, functions, dan Maps (Sprint 3)
+
+Presensi divalidasi oleh Firestore rules: sesi wajib terhubung ke dokumen `labs/{labId}`, dan presensi harus mengirim koordinat perangkat serta jarak yang berada di dalam radius lab. Rules dan Cloud Functions baru berlaku setelah di-deploy:
+
+```bash
+firebase deploy --only firestore:rules --project project-praktikum-sprint
+firebase deploy --only functions --project project-praktikum-sprint
+```
+
+Push notification membutuhkan secret `EXPO_PUSH_ACCESS_TOKEN` (`firebase functions:secrets:set EXPO_PUSH_ACCESS_TOKEN`).
+
+Sesi yang dibuat sebelum ada pilihan lab (termasuk data dari seeder) belum punya `labId`, sehingga praktikan tidak bisa presensi. Buka sesi tersebut di aplikasi asisten, pilih lab, lalu simpan.
+
+API key Google Maps di `app.json` ikut ter-commit. Batasi key tersebut di Google Cloud Console → APIs & Services → Credentials: *Application restrictions* = Android apps (package `com.muhffikkris.ppkmobile` + SHA-1 sertifikat build), *API restrictions* = Maps SDK for Android.
+
 ## Seeder Data Dummy (Opsional)
 
 Untuk mengisi Firestore dengan data demo (kelas, sesi, praktikan, asisten):

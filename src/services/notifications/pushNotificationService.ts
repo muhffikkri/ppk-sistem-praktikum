@@ -14,7 +14,10 @@ export const pushSupported =
   Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
 export type PushTarget =
-  | { type: 'session_opened' | 'schedule_changed'; sessionId: string }
+  | {
+      type: 'session_opened' | 'session_scheduled' | 'schedule_changed';
+      sessionId: string;
+    }
   | { type: 'leave_decided'; leaveId: string };
 
 export function parsePushTarget(
@@ -24,6 +27,7 @@ export function parsePushTarget(
   if (data?.recipientUid !== uid) return null;
   switch (data.type) {
     case 'session_opened':
+    case 'session_scheduled':
     case 'schedule_changed':
       return typeof data.sessionId === 'string' && data.sessionId
         ? { type: data.type, sessionId: data.sessionId }

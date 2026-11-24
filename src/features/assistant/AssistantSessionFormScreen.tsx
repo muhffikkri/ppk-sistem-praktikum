@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
@@ -15,6 +15,7 @@ import {
   TopBar,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
+import { useLabManagement } from '../labs';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSessionForm'>;
 
@@ -30,6 +31,8 @@ function combine(day: Date, clock: Date): Date {
 export function AssistantSessionFormScreen({ route, navigation }: Props) {
   const { classes, getSessionById, createSession, updateSession } =
     useAssistantSessionsViewModel();
+  const { labs, loading: labsLoading, error: labsError } = useLabManagement();
+  const activeLabs = useMemo(() => labs.filter((l) => l.isActive), [labs]);
 
   const { classId: routeClassId, sessionId } = route.params ?? {};
   const existing = sessionId ? getSessionById(sessionId) : undefined;
@@ -39,7 +42,20 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
     routeClassId ?? existing?.classId ?? '',
   );
   const [title, setTitle] = useState(existing?.title ?? '');
-  const [lab, setLab] = useState(existing?.lab ?? '');
+  // Sesi lama hanya punya label teks; pilih lab dengan nama yang sama bila ada.
+  const [pickedLabId, setPickedLabId] = useState<string | null>(
+    existing?.labId ?? null,
+  );
+  const labId =
+    pickedLabId ??
+    activeLabs.find(
+      (l) =>
+        !!existing?.lab &&
+        l.name.trim().toLowerCase() === existing.lab.trim().toLowerCase(),
+    )?.id ??
+    null;
+  const selectedLab = activeLabs.find((l) => l.id === labId);
+  const [labError, setLabError] = useState<string>();
   const [day, setDay] = useState(
     () => new Date(existing?.startsAt ?? Date.now()),
   );
@@ -67,14 +83,16 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
     const endsAt = combine(day, end);
     setFormError(null);
     setClassError(classId ? undefined : 'Pilih kelas terlebih dahulu');
+    setLabError(selectedLab ? undefined : 'Pilih lab tempat praktikum');
     const endInvalid = endsAt.getTime() <= startsAt.getTime();
     setEndError(endInvalid ? 'Jam selesai harus setelah jam mulai' : undefined);
-    if (!classId || endInvalid) return;
+    if (!classId || !selectedLab || endInvalid) return;
 
     const input = {
       classId,
       title,
-      lab,
+      lab: selectedLab.name,
+      labId: selectedLab.id,
       startsAt: startsAt.toISOString(),
       endsAt: endsAt.toISOString(),
     };
@@ -139,12 +157,38 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
           onChangeText={setTitle}
           placeholder="Mis. Pertemuan 1"
         />
-        <TextField
-          label="Lokasi lab"
-          value={lab}
-          onChangeText={setLab}
-          placeholder="Mis. Lab Komputer 2"
-        />
+        {labsError ? (
+          <Banner tone="danger" title="Gagal memuat lab" message={labsError} />
+        ) : !labsLoading && activeLabs.length === 0 ? (
+          <>
+            <Banner
+              tone="warning"
+              title="Belum ada lab"
+              message="Tambahkan lab beserta koordinat dan radiusnya agar presensi bisa divalidasi."
+            />
+            <Button
+              label="Tambah lab"
+              variant="soft"
+              onPress={() => navigation.navigate('AssistantLabForm', {})}
+            />
+          </>
+        ) : (
+          <SelectField
+            label="Lokasi lab"
+            placeholder={labsLoading ? 'Memuat lab…' : 'Pilih lab'}
+            value={labId}
+            options={activeLabs.map((l) => ({
+              value: l.id,
+              label: l.name,
+              description: `${l.building} · radius ${l.radiusMeters} m`,
+            }))}
+            onChange={(id) => {
+              setPickedLabId(id);
+              setLabError(undefined);
+            }}
+            error={labError}
+          />
+        )}
 
         <DateTimeField
           label="Tanggal"

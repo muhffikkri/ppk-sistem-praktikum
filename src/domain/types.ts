@@ -39,6 +39,8 @@ export type Session = {
   title?: string;
   /** Label lokasi lab untuk tampilan kalender & detail sesi. */
   lab?: string;
+  /** ID dokumen `labs/{labId}`: acuan geofence presensi & peta (Sprint 3). */
+  labId?: string;
   participantIds?: string[];
   assistantIds?: string[];
   startsAt: string; // ISO 8601 UTC
@@ -138,6 +140,7 @@ export type SessionInput = {
   classId: string;
   title?: string;
   lab?: string;
+  labId?: string;
   startsAt: string;
   endsAt: string;
 };

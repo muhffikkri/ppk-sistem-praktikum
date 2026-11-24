@@ -10,12 +10,14 @@ import {
   type LabMapFilter,
   type UserLocationState,
 } from '../../domain/geoTypes';
-import {
-  seedDefaultLabsIfEmpty,
-  subscribeLabActivities,
-} from '../../services/firestore/labActivityService';
+import { subscribeLabActivities } from '../../services/firestore/labActivityService';
+import { useAuth } from '../../state';
 
 export function useLabMapsViewModel() {
+  const { user } = useAuth();
+  const uid = user?.uid;
+  const role = user?.role;
+  const [attempt, setAttempt] = useState(0);
   const [activities, setActivities] = useState<LabActivity[]>([]);
   const [selectedLab, setSelectedLab] = useState<LabActivity | null>(null);
   const [filter, setFilter] = useState<LabMapFilter>('all');
@@ -37,12 +39,13 @@ export function useLabMapsViewModel() {
 
   // 1. Subscribe ke aktivitas lab (Firestore)
   useEffect(() => {
-    setLoading(true);
-    seedDefaultLabsIfEmpty();
+    if (!uid || !role) return;
 
     const unsubscribe = subscribeLabActivities(
+      { uid, role },
       (data) => {
         setActivities(data);
+        setError(null);
         setLoading(false);
 
         // Jika ada lab yang sedang dipilih, perbarui datanya secara real-time
@@ -51,8 +54,8 @@ export function useLabMapsViewModel() {
           return data.find((a) => a.lab.id === prev.lab.id) ?? prev;
         });
       },
-      (err) => {
-        setError(err.message);
+      (message) => {
+        setError(message);
         setLoading(false);
       },
     );
@@ -60,7 +63,13 @@ export function useLabMapsViewModel() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [uid, role, attempt]);
+
+  const retry = () => {
+    setError(null);
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  };
 
   // 2. Lacak lokasi perangkat pengguna secara real-time
   useEffect(() => {
@@ -200,8 +209,7 @@ export function useLabMapsViewModel() {
       setUserLocation((prev) => ({
         ...prev,
         isLocating: false,
-        error:
-          e instanceof Error ? e.message : 'Gagal memperbarui posisi GPS.',
+        error: e instanceof Error ? e.message : 'Gagal memperbarui posisi GPS.',
       }));
     }
   };
@@ -219,5 +227,6 @@ export function useLabMapsViewModel() {
     setSelectedLab,
     setFilter,
     refreshLocation,
+    retry,
   };
 }

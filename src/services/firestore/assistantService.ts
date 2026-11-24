@@ -356,6 +356,7 @@ export async function createSession(
 
     if (input.title) payload.title = input.title;
     if (input.lab) payload.lab = input.lab;
+    if (input.labId) payload.labId = input.labId;
 
     const docRef = await addDoc(sessionsCol, payload);
 
@@ -410,6 +411,7 @@ export async function updateSession(
     };
     if (input.title) payload.title = input.title;
     if (input.lab) payload.lab = input.lab;
+    if (input.labId) payload.labId = input.labId;
 
     await updateDoc(sessionDoc, payload);
     return { ok: true };

@@ -4,16 +4,15 @@
  * Bertanggung jawab memvalidasi lokasi perangkat terhadap radius lab
  * dan mencatat kehadiran ke koleksi Firestore `attendance` dengan ID deterministik.
  */
-import {
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-} from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { checkInRule } from '../../domain/attendanceRules';
 import { evaluateGeofence } from '../../domain/geofenceRules';
-import type { DeviceFix, GeofenceCheckResult, Lab } from '../../domain/geoTypes';
+import type {
+  DeviceFix,
+  GeofenceCheckResult,
+  Lab,
+} from '../../domain/geoTypes';
 import type {
   AsyncActionResult,
   AttendanceRecord,
@@ -67,13 +66,27 @@ export async function checkInWithGeofence(
     return { ok: false, reason: validation.reason, message };
   }
 
-  // 2. Ambil data lab jika belum disediakan
-  let labData = input.lab ?? null;
-  if (!labData && session.lab) {
-    const labFetch = await getLabById(session.lab);
-    if (labFetch.ok) {
-      labData = labFetch.data;
+  // 2. Sesi wajib terhubung ke dokumen lab: rules memvalidasi radius dari labs/{labId}
+  if (!session.labId) {
+    return {
+      ok: false,
+      reason: 'lab_not_linked',
+      message:
+        'Sesi ini belum terhubung ke data lab. Minta asisten memilih lab pada sesi.',
+    };
+  }
+
+  let labData = input.lab?.id === session.labId ? input.lab : null;
+  if (!labData) {
+    const labFetch = await getLabById(session.labId);
+    if (!labFetch.ok) {
+      return {
+        ok: false,
+        reason: labFetch.reason,
+        message: labFetch.message,
+      };
     }
+    labData = labFetch.data;
   }
 
   // 3. Evaluasi geofence lokasi perangkat terhadap lab
@@ -82,7 +95,10 @@ export async function checkInWithGeofence(
   if (!geofenceResult.withinRadius) {
     return {
       ok: false,
-      reason: geofenceResult.status === 'inaccurate' ? 'inaccurate_location' : 'outside_geofence',
+      reason:
+        geofenceResult.status === 'inaccurate'
+          ? 'inaccurate_location'
+          : 'outside_geofence',
       message: geofenceResult.message,
     };
   }

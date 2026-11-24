@@ -1,13 +1,26 @@
 const scheduleFields = ['startsAt', 'endsAt', 'lab', 'labId'];
 
-function sessionEvents(before, after, sessionId) {
-  const recipients = [
+function participantsOf(session) {
+  return [
     ...new Set(
-      (Array.isArray(after.participantIds) ? after.participantIds : []).filter(
+      (Array.isArray(session.participantIds)
+        ? session.participantIds
+        : []
+      ).filter(
         (uid) => typeof uid === 'string' && uid.length && !uid.includes('/'),
       ),
     ),
   ];
+}
+
+function sessionCreatedEvents(created, sessionId) {
+  const recipients = participantsOf(created);
+  if (!recipients.length || created.status !== 'scheduled') return [];
+  return [{ type: 'session_scheduled', sessionId, recipients }];
+}
+
+function sessionEvents(before, after, sessionId) {
+  const recipients = participantsOf(after);
   if (!recipients.length) return [];
 
   const events = [];
@@ -40,6 +53,7 @@ function leaveEvents(before, after, leaveId) {
 function pushMessage(job, token) {
   const title = {
     session_opened: 'Sesi praktikum dibuka',
+    session_scheduled: 'Jadwal praktikum baru',
     schedule_changed: 'Jadwal praktikum berubah',
     leave_decided: 'Keputusan izin tersedia',
   }[job.type];
@@ -60,4 +74,9 @@ function pushMessage(job, token) {
   };
 }
 
-module.exports = { sessionEvents, leaveEvents, pushMessage };
+module.exports = {
+  sessionCreatedEvents,
+  sessionEvents,
+  leaveEvents,
+  pushMessage,
+};
