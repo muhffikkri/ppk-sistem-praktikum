@@ -12,6 +12,11 @@
     "android": {
       "package": "com.muhffikkris.ppkmobile",
       "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCkXvzw4zBPPza-98nIH-M0MIIxaT01wPY"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#F4F2F9",
         "foregroundImage": "./assets/android-icon-foreground.png",

@@ -7,9 +7,7 @@ import {
   doc,
   getDocs,
   onSnapshot,
-  query,
   setDoc,
-  where,
   type Firestore,
 } from 'firebase/firestore';
 import {
@@ -157,24 +155,37 @@ export function subscribeLabActivities(
     labsCol,
     (snap) => {
       if (!snap.empty) {
-        const fetchedLabs: LabLocation[] = snap.docs.map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            name: data.name ?? 'Laboratorium',
-            code: data.code,
-            building: data.building ?? 'Gedung Lab',
-            floor: data.floor,
-            description: data.description,
-            coordinates: {
-              latitude: Number(data.coordinates?.latitude ?? data.latitude ?? DEFAULT_CAMPUS_LABS[0].coordinates.latitude),
-              longitude: Number(data.coordinates?.longitude ?? data.longitude ?? DEFAULT_CAMPUS_LABS[0].coordinates.longitude),
-            },
-            radiusMeters: Number(data.radiusMeters ?? data.radius ?? 50),
-            capacity: data.capacity,
-            isActive: data.isActive !== false,
-          };
-        });
+        const fetchedLabs: LabLocation[] = snap.docs
+          .map((d) => {
+            const data = d.data();
+            const rawLat =
+              data.coordinates?.latitude ??
+              data.location?.latitude ??
+              data.latitude ??
+              DEFAULT_CAMPUS_LABS[0].coordinates.latitude;
+            const rawLng =
+              data.coordinates?.longitude ??
+              data.location?.longitude ??
+              data.longitude ??
+              DEFAULT_CAMPUS_LABS[0].coordinates.longitude;
+
+            return {
+              id: d.id,
+              name: data.name ?? 'Laboratorium',
+              code: data.code,
+              building: data.building ?? 'Gedung Lab',
+              floor: data.floor,
+              description: data.description,
+              coordinates: {
+                latitude: Number(rawLat),
+                longitude: Number(rawLng),
+              },
+              radiusMeters: Number(data.radiusMeters ?? data.radius ?? 50),
+              capacity: data.capacity,
+              isActive: data.isActive !== false,
+            };
+          })
+          .filter((lab) => lab.isActive !== false);
         currentLabs = fetchedLabs;
       } else {
         currentLabs = [...DEFAULT_CAMPUS_LABS];

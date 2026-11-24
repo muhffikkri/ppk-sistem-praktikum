@@ -8,10 +8,12 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   updateDoc,
+  where,
   type Unsubscribe,
 } from 'firebase/firestore';
 
@@ -77,7 +79,12 @@ function toPayload(input: LabInput) {
 }
 
 function asNumber(value: unknown): number {
-  return typeof value === 'number' ? value : Number.NaN;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value.trim().replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
+  return Number.NaN;
 }
 
 export function normalizeLab(id: string, data: Record<string, unknown>): Lab {
@@ -112,18 +119,38 @@ export function subscribeLabs(
 }
 
 export async function getLabById(
-  labId: string,
+  labIdOrName: string,
 ): Promise<AsyncActionResult<Lab>> {
+  const key = labIdOrName.trim();
+  if (!key) {
+    return {
+      ok: false,
+      reason: 'lab_not_found',
+      message: 'Laboratorium tidak ditemukan.',
+    };
+  }
+
   try {
-    const snap = await getDoc(doc(db, LABS, labId));
-    if (!snap.exists()) {
+    const snap = await getDoc(doc(db, LABS, key));
+    if (snap.exists()) {
+      return { ok: true, data: normalizeLab(snap.id, snap.data()) };
+    }
+
+    // Fallback: jika sesi menyimpan nama lab (misal "Lab Informatika D") bukan ID dokumen
+    const byNameSnap = await getDocs(query(labsCol, where('name', '==', key)));
+    if (!byNameSnap.empty) {
+      const matchedDoc = byNameSnap.docs[0];
       return {
-        ok: false,
-        reason: 'lab_not_found',
-        message: 'Laboratorium tidak ditemukan.',
+        ok: true,
+        data: normalizeLab(matchedDoc.id, matchedDoc.data()),
       };
     }
-    return { ok: true, data: normalizeLab(snap.id, snap.data()) };
+
+    return {
+      ok: false,
+      reason: 'lab_not_found',
+      message: 'Laboratorium tidak ditemukan.',
+    };
   } catch (e) {
     return toFailure(e);
   }

@@ -39,6 +39,7 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
   const [courseName, setCourseName] = useState(existing?.courseName ?? '');
   const [groupName, setGroupName] = useState(existing?.groupName ?? '');
   const [email, setEmail] = useState('');
+  const [addingParticipant, setAddingParticipant] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,14 +78,21 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
 
   const onAddParticipant = async () => {
     const value = email.trim();
-    if (!value || !classId) return;
+    if (!value || !classId || addingParticipant) return;
     setError(null);
-    const result = await addParticipantByEmail(classId, value);
-    if (!result.ok) {
-      setError(result.message || 'Gagal menambahkan peserta');
-      return;
+    setAddingParticipant(true);
+    try {
+      const result = await addParticipantByEmail(classId, value);
+      if (!result.ok) {
+        setError(result.message || 'Gagal menambahkan peserta');
+        return;
+      }
+      setEmail('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menambahkan peserta');
+    } finally {
+      setAddingParticipant(false);
     }
-    setEmail('');
   };
 
   const onConfirmRemove = async () => {
@@ -160,18 +168,22 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
           <TextField
             label="Email praktikan"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (error) setError(null);
+            }}
             placeholder="nama@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!addingParticipant}
             onSubmitEditing={onAddParticipant}
             rightAccessory={
               <IconButton
                 icon="person-add-outline"
                 variant="soft"
                 accessibilityLabel="Tambah peserta"
-                disabled={!email.trim()}
+                disabled={!email.trim() || addingParticipant}
                 onPress={onAddParticipant}
               />
             }

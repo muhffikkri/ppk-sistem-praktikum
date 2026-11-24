@@ -63,15 +63,9 @@ function formatTodayLong(iso: string): string {
 }
 
 export function StudentHome({ navigation }: { navigation: Nav }) {
-  const [selectedDay, setSelectedDay] = React.useState<string | null>(null);
-
-  const days = [
-    { label: 'SEN 18', date: new Date() },
-    { label: 'SEL 19', date: new Date() },
-    { label: 'RAB 20', date: new Date() },
-    { label: 'KAM 21', date: new Date() },
-    { label: 'JUM 22', date: new Date() },
-  ];
+  const { user } = useAuth();
+  const { sessions, attendanceHistory, loading, error, retry } =
+    useStudentAttendanceViewModel();
 
   const topBar = (
     <AppTopBar
@@ -115,7 +109,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat jadwal"
           message={error}
-          onRetry={retry}
+          onRetry={() => navigation.replace('Home')}
         />
       </Screen>
     );
@@ -307,34 +301,4 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   heroAction: { marginTop: spacing.sm, alignItems: 'flex-start' },
-  // Day selector styles
-  daySelector: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginVertical: spacing.sm,
-    justifyContent: 'center',
-  },
-  dayBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface, // default surface (white)
-    borderWidth: 1,
-    borderColor: colors.lavender,
-  },
-  dayBtnSelected: {
-    backgroundColor: colors.lavender,
-    borderColor: colors.lavender,
-  },
-  dayBtnPressed: {
-    opacity: 0.85,
-  },
-  dayBtnText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 12,
-    color: colors.onSurface,
-  },
-  dayBtnSelectedText: {
-    color: colors.onPrimary,
-  },
 });
