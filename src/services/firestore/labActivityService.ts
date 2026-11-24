@@ -4,47 +4,27 @@
  */
 import {
   collection,
-  doc,
-  getDocs,
   onSnapshot,
-  setDoc,
+  query,
+  where,
   type Firestore,
 } from 'firebase/firestore';
-import {
-  DEFAULT_CAMPUS_LABS,
-  type LabActivity,
-  type LabLocation,
-  type LabSessionInfo,
+import type {
+  Lab,
+  LabActivity,
+  LabLocation,
+  LabSessionInfo,
 } from '../../domain/geoTypes';
-import type { Session } from '../../domain/types';
-
-function getFirestoreDb(): Firestore {
-  const { db } = require('../firebase');
-  return db;
-}
+import type { Session, UserRole } from '../../domain/types';
 
 /**
  * Memeriksa apakah suatu sesi ditugaskan pada laboratorium tertentu.
+ * Sesi baru memakai `labId`; sesi lama (tanpa `labId`) dicocokkan lewat nama persis.
  */
-function isSessionForLab(session: Session, lab: LabLocation): boolean {
+export function isSessionForLab(session: Session, lab: LabLocation): boolean {
+  if (session.labId) return session.labId === lab.id;
   if (!session.lab) return false;
-  const sLab = session.lab.trim().toLowerCase();
-  const lName = lab.name.trim().toLowerCase();
-  const lCode = lab.code ? lab.code.trim().toLowerCase() : '';
-
-  if (sLab === lName) return true;
-  if (lCode && sLab.includes(lCode)) return true;
-  if (sLab.includes(lName) || lName.includes(sLab)) return true;
-
-  // Cek kecocokan kata kunci lab (misal: "RPL", "Database", "Jaringan", "AI", "Sensor")
-  const keywords = ['rpl', 'database', 'jaringan', 'ai', 'sensor', 'iot'];
-  for (const kw of keywords) {
-    if (sLab.includes(kw) && lName.includes(kw)) {
-      return true;
-    }
-  }
-
-  return false;
+  return session.lab.trim().toLowerCase() === lab.name.trim().toLowerCase();
 }
 
 /**
@@ -61,6 +41,7 @@ function toLabSessionInfo(session: Session): LabSessionInfo {
     endsAt: session.endsAt,
     status: session.status,
     lab: session.lab,
+    labId: session.labId,
   };
 }
 
@@ -126,134 +107,76 @@ export function computeLabActivities(
   });
 }
 
+/** Mengubah dokumen lab (`labService`) menjadi bentuk yang dipakai peta. */
+export function toLabLocation(lab: Lab): LabLocation {
+  return {
+    id: lab.id,
+    name: lab.name,
+    building: lab.building,
+    description: lab.description ?? undefined,
+    coordinates: lab.location,
+    radiusMeters: lab.radiusMeters,
+    isActive: lab.isActive,
+    createdAt: lab.createdAt,
+    updatedAt: lab.updatedAt,
+  };
+}
+
+export type LabActivityScope = {
+  uid: string;
+  role: UserRole;
+};
+
 /**
- * Berlangganan (real-time listener) ke data laboratorium dan sesi di Firestore.
+ * Berlangganan (real-time) ke data lab dan sesi milik pengguna.
+ * Query sesi difilter sesuai role agar lolos Firestore rules:
+ * praktikan lewat `participantIds`, asisten lewat `assistantIds`.
  * Mengembalikan fungsi unsubscribe.
  */
 export function subscribeLabActivities(
+  scope: LabActivityScope,
   callback: (activities: LabActivity[]) => void,
-  onError?: (error: Error) => void,
+  onError?: (message: string) => void,
 ): () => void {
-  let currentLabs: LabLocation[] = [...DEFAULT_CAMPUS_LABS];
-  let currentSessions: Session[] = [];
+  // Lazy require: modul ini juga dipakai tes Node tanpa Firebase.
+  const { db } = require('../firebase') as { db: Firestore };
+  const { subscribeLabs } =
+    require('./labService') as typeof import('./labService');
+
+  let currentLabs: LabLocation[] | null = null;
+  let currentSessions: Session[] | null = null;
 
   const update = () => {
-    try {
-      const activities = computeLabActivities(currentLabs, currentSessions);
-      callback(activities);
-    } catch (err) {
-      if (onError && err instanceof Error) onError(err);
-    }
+    if (!currentLabs || !currentSessions) return;
+    callback(computeLabActivities(currentLabs, currentSessions));
   };
 
-  const firestore = getFirestoreDb();
-  const labsCol = collection(firestore, 'labs');
-  const sessionsCol = collection(firestore, 'sessions');
-
-  // 1. Listener untuk Labs
-  const unsubLabs = onSnapshot(
-    labsCol,
-    (snap) => {
-      if (!snap.empty) {
-        const fetchedLabs: LabLocation[] = snap.docs
-          .map((d) => {
-            const data = d.data();
-            const rawLat =
-              data.coordinates?.latitude ??
-              data.location?.latitude ??
-              data.latitude ??
-              DEFAULT_CAMPUS_LABS[0].coordinates.latitude;
-            const rawLng =
-              data.coordinates?.longitude ??
-              data.location?.longitude ??
-              data.longitude ??
-              DEFAULT_CAMPUS_LABS[0].coordinates.longitude;
-
-            return {
-              id: d.id,
-              name: data.name ?? 'Laboratorium',
-              code: data.code,
-              building: data.building ?? 'Gedung Lab',
-              floor: data.floor,
-              description: data.description,
-              coordinates: {
-                latitude: Number(rawLat),
-                longitude: Number(rawLng),
-              },
-              radiusMeters: Number(data.radiusMeters ?? data.radius ?? 50),
-              capacity: data.capacity,
-              isActive: data.isActive !== false,
-            };
-          })
-          .filter((lab) => lab.isActive !== false);
-        currentLabs = fetchedLabs;
-      } else {
-        currentLabs = [...DEFAULT_CAMPUS_LABS];
-      }
+  const unsubLabs = subscribeLabs(
+    (labs) => {
+      currentLabs = labs.filter((lab) => lab.isActive).map(toLabLocation);
       update();
     },
-    (err) => {
-      // Jika permissions belum di-deploy atau offline, gunakan default labs
-      currentLabs = [...DEFAULT_CAMPUS_LABS];
-      update();
-      if (onError) onError(err);
-    },
+    (message) => onError?.(message),
   );
 
-  // 2. Listener untuk Sessions
+  const membershipField =
+    scope.role === 'assistant' ? 'assistantIds' : 'participantIds';
   const unsubSessions = onSnapshot(
-    sessionsCol,
+    query(
+      collection(db, 'sessions'),
+      where(membershipField, 'array-contains', scope.uid),
+    ),
     (snap) => {
-      currentSessions = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          classId: data.classId,
-          courseName: data.courseName ?? '',
-          groupName: data.groupName ?? '',
-          title: data.title,
-          lab: data.lab,
-          participantIds: data.participantIds ?? [],
-          assistantIds: data.assistantIds ?? [],
-          startsAt: data.startsAt ?? new Date().toISOString(),
-          endsAt: data.endsAt ?? new Date().toISOString(),
-          status: data.status ?? 'scheduled',
-          openedAt: data.openedAt ?? null,
-          closedAt: data.closedAt ?? null,
-          createdBy: data.createdBy,
-          createdAt: data.createdAt,
-        };
-      });
+      currentSessions = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as Session,
+      );
       update();
     },
-    (err) => {
-      if (onError) onError(err);
-    },
+    (err) => onError?.(err.message),
   );
-
-  // Initial trigger
-  update();
 
   return () => {
     unsubLabs();
     unsubSessions();
   };
-}
-
-/**
- * Seed data awal laboratorium ke Firestore jika koleksi labs masih kosong.
- */
-export async function seedDefaultLabsIfEmpty(): Promise<void> {
-  try {
-    const firestore = getFirestoreDb();
-    const labsCol = collection(firestore, 'labs');
-    const snap = await getDocs(labsCol);
-    if (snap.empty) {
-      for (const lab of DEFAULT_CAMPUS_LABS) {
-        await setDoc(doc(firestore, 'labs', lab.id), lab);
-      }
-    }
-  } catch {
-    // Fail silently jika izin Firestore belum dibuka untuk create lab
-  }
 }

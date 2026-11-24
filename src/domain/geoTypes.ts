@@ -44,11 +44,7 @@ export type LabInput = {
 };
 
 export type LabInputField =
-  | 'name'
-  | 'building'
-  | 'latitude'
-  | 'longitude'
-  | 'radiusMeters';
+  'name' | 'building' | 'latitude' | 'longitude' | 'radiusMeters';
 
 export type LabInputErrors = Partial<Record<LabInputField, string>>;
 
@@ -60,10 +56,7 @@ export type LabInputErrors = Partial<Record<LabInputField, string>>;
  * - `unavailable`: lokasi perangkat atau koordinat lab tidak tersedia.
  */
 export type GeofenceStatus =
-  | 'inside'
-  | 'outside'
-  | 'inaccurate'
-  | 'unavailable';
+  'inside' | 'outside' | 'inaccurate' | 'unavailable';
 
 export type GeofenceCheckResult = {
   status: GeofenceStatus;
@@ -102,6 +95,7 @@ export interface LabSessionInfo {
   endsAt: string; // ISO 8601
   status: SessionStatus;
   lab?: string;
+  labId?: string;
   assistantName?: string;
 }
 
