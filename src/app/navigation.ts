@@ -9,6 +9,7 @@ export type AuthStackParamList = {
 };
 
 export type RootStackParamList = {
+  DockTabs: { tab?: 'Home' | 'Schedule' | 'Attendance' | 'Profile' } | undefined;
   Home: undefined;
   StudentSchedule: undefined;
   StudentSessionDetail: { sessionId: string };

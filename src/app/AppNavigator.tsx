@@ -4,8 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
 
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Animated, PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import {
   LoginScreen,
@@ -63,6 +63,7 @@ import { CalendarScreen } from './CalendarScreen';
 
 import { HomeScreen } from './HomeScreen';
 
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './navigation';
 
 import { NotificationsScreen } from './NotificationsScreen';
@@ -114,6 +115,97 @@ const AuthStack = createNativeStackNavigator<{
   RoleSelection: undefined;
 }>();
 
+type DockTabKey = 'Home' | 'Schedule' | 'Attendance' | 'Profile';
+const DOCK_ORDER: DockTabKey[] = ['Home', 'Schedule', 'Attendance', 'Profile'];
+
+function DockTabsScreen({
+  navigation,
+  route,
+}: NativeStackScreenProps<RootStackParamList, 'DockTabs'>) {
+  const actorRole = useActorRole();
+  const { width } = useWindowDimensions();
+  const activeTab = (route.params?.tab as DockTabKey | undefined) ?? 'Home';
+  const activeIndex = Math.max(0, DOCK_ORDER.indexOf(activeTab));
+  const [translateX] = useState(() => new Animated.Value(-activeIndex * width));
+  const drag = useMemo(() => ({ x: 0 }), []);
+
+  useEffect(() => {
+    Animated.spring(translateX, {
+      toValue: -activeIndex * width,
+      useNativeDriver: true,
+      tension: 68,
+      friction: 12,
+    }).start();
+  }, [activeIndex, translateX, width]);
+
+  const panHandlers = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) =>
+          Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.1,
+        onPanResponderGrant: () => {
+          translateX.stopAnimation((v) => {
+            drag.x = v;
+          });
+        },
+        onPanResponderMove: (_, g) => {
+          const min = -(DOCK_ORDER.length - 1) * width;
+          const next = Math.max(min, Math.min(0, drag.x + g.dx));
+          translateX.setValue(next);
+        },
+        onPanResponderRelease: (_, g) => {
+          const threshold = width * 0.18;
+          let nextIndex = activeIndex;
+          if (g.dx < -threshold && activeIndex < DOCK_ORDER.length - 1) nextIndex = activeIndex + 1;
+          if (g.dx > threshold && activeIndex > 0) nextIndex = activeIndex - 1;
+          navigation.setParams({ tab: DOCK_ORDER[nextIndex] });
+        },
+        onPanResponderTerminate: () => navigation.setParams({ tab: DOCK_ORDER[activeIndex] }),
+      }).panHandlers,
+    [activeIndex, drag, navigation, translateX, width],
+  );
+
+  const page = (key: DockTabKey) => {
+    const nav = navigation as any;
+    const fakeRoute = { key, name: key, params: undefined } as any;
+    if (key === 'Home') return <HomeScreen navigation={nav} route={fakeRoute} />;
+    if (key === 'Schedule') {
+      return actorRole === 'asisten' ? (
+        <AssistantScheduleScreen navigation={nav} route={fakeRoute} />
+      ) : (
+        <StudentScheduleScreen navigation={nav} route={fakeRoute} />
+      );
+    }
+    if (key === 'Attendance') {
+      return actorRole === 'asisten' ? (
+        <AssistantAllAttendanceScreen navigation={nav} route={fakeRoute} />
+      ) : (
+        <StudentAttendanceHistoryScreen navigation={nav} route={fakeRoute} />
+      );
+    }
+    return <ProfileScreen navigation={nav} route={fakeRoute} />;
+  };
+
+  return (
+    <View style={{ flex: 1, overflow: 'hidden' }} {...panHandlers}>
+      <Animated.View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          width: width * DOCK_ORDER.length,
+          transform: [{ translateX }],
+        }}
+      >
+        {DOCK_ORDER.map((key) => (
+          <View key={key} style={{ width }}>
+            {page(key)}
+          </View>
+        ))}
+      </Animated.View>
+    </View>
+  );
+}
+
 export function AppNavigator() {
   const { authStatus, user, logout, needsRoleSelection } = useAuth();
   const actorRole = useActorRole();
@@ -131,9 +223,14 @@ export function AppNavigator() {
   const [activeKey, setActiveKey] = useState('Home');
 
   useEffect(() => {
-    const sync = (state: { index?: number; routes: { name: string }[] } | undefined) => {
+    const sync = (state: { index?: number; routes: any[] } | undefined) => {
       const route = state?.routes[state.index ?? 0];
-      const name = route?.name ?? 'Home';
+      const name = route?.name ?? 'DockTabs';
+      if (name === 'DockTabs') {
+        const tab = route?.params?.tab;
+        if (tab === 'Schedule' || tab === 'Attendance' || tab === 'Profile') return setActiveKey(tab);
+        return setActiveKey('Home');
+      }
       if (name === 'Home' || name === 'Profile') return setActiveKey(name);
       if (name === DOCK_ROUTE_FOR_POV[actorRole].Schedule) return setActiveKey('Schedule');
       if (name === DOCK_ROUTE_FOR_POV[actorRole].Attendance) return setActiveKey('Attendance');
@@ -143,30 +240,11 @@ export function AppNavigator() {
     return navigation.addListener('state', (e) => sync(e.data?.state));
   }, [actorRole, navigation]);
 
-  // Resolve the stable dock keys to the route matching the active POV.
-  const resolveRoute = (key: string): keyof RootStackParamList => {
-    const currentPov = actorRole;
-    switch (key) {
-      case 'Schedule':
-        return DOCK_ROUTE_FOR_POV[currentPov].Schedule;
-
-      case 'Attendance':
-        return DOCK_ROUTE_FOR_POV[currentPov].Attendance;
-
-      case 'Home':
-        return 'Home';
-
-      case 'Profile':
-        return 'Profile';
-
-      default:
-        return key as keyof RootStackParamList;
-    }
-  };
-
   const onTabPress = (key: string) => {
-    const route = resolveRoute(key);
-    navigation.reset({ index: 0, routes: [{ name: route }] });
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'DockTabs', params: { tab: key as DockTabKey } }],
+    });
   };
 
   // When unauthenticated or loading, show auth stack (Landing → Login/Register)
@@ -203,7 +281,7 @@ export function AppNavigator() {
         <LeaveProvider db={db} user={user}>
           <View style={styles.root}>
             <Stack.Navigator
-              initialRouteName="Home"
+              initialRouteName="DockTabs"
 
               screenOptions={({ route }) => ({
                 headerStyle: { backgroundColor: colors.panel },
@@ -235,6 +313,12 @@ export function AppNavigator() {
                 ),
               })}
             >
+              <Stack.Screen
+                name="DockTabs"
+                component={DockTabsScreen}
+                options={{ headerShown: false }}
+              />
+
               <Stack.Screen
                 name="Home"
 
