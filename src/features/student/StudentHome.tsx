@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { spacing } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing } from '../../theme/tokens';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   AppTopBar,
