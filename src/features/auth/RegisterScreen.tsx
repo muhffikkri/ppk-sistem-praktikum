@@ -172,6 +172,9 @@ export function RegisterScreen({ navigation }: Props) {
           placeholder="Minimal 6 karakter"
           secureTextEntry={!showPassword}
           autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="new-password"
+          textContentType="newPassword"
           editable={!submitting}
           error={passwordError}
           rightAccessory={

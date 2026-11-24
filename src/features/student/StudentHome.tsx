@@ -1,7 +1,8 @@
+import React from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
-import { formatSessionDate } from '../../app/formatters';
+import { colors, fontFamily, radius, spacing } from '../../theme/tokens';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   AppTopBar,
@@ -16,7 +17,6 @@ import {
   LoadingState,
   Screen,
   SectionHeader,
-  spacing,
   StatusBadge,
   Text,
   type BadgeTone,
@@ -63,9 +63,15 @@ function formatTodayLong(iso: string): string {
 }
 
 export function StudentHome({ navigation }: { navigation: Nav }) {
-  const { user } = useAuth();
-  const { sessions, attendanceHistory, loading, error, retry } =
-    useStudentAttendanceViewModel();
+  const [selectedDay, setSelectedDay] = React.useState<string | null>(null);
+
+  const days = [
+    { label: 'SEN 18', date: new Date() },
+    { label: 'SEL 19', date: new Date() },
+    { label: 'RAB 20', date: new Date() },
+    { label: 'KAM 21', date: new Date() },
+    { label: 'JUM 22', date: new Date() },
+  ];
 
   const topBar = (
     <AppTopBar
@@ -149,6 +155,29 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
     <Screen>
       {topBar}
       {header}
+
+      {/* Day selector (radio style) */}
+      <View
+        style={styles.daySelector}
+        accessibilityRole="radiogroup"
+        aria-label="Pilih hari praktikum"
+      >
+        {days.map((d) => (
+          <Pressable
+            key={d.label}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: selectedDay === d.label }}
+            onPress={() => setSelectedDay(d.label)}
+            style={({ pressed }) => [
+              styles.dayBtn,
+              selectedDay === d.label && styles.dayBtnSelected,
+              pressed && styles.dayBtnPressed,
+            ]}
+          >
+            <Text style={styles.dayBtnText}>{d.label}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       {hero ? (
         <Card variant="heroViolet" interactive={false}>
@@ -278,4 +307,34 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   heroAction: { marginTop: spacing.sm, alignItems: 'flex-start' },
+  // Day selector styles
+  daySelector: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginVertical: spacing.sm,
+    justifyContent: 'center',
+  },
+  dayBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface, // default surface (white)
+    borderWidth: 1,
+    borderColor: colors.lavender,
+  },
+  dayBtnSelected: {
+    backgroundColor: colors.lavender,
+    borderColor: colors.lavender,
+  },
+  dayBtnPressed: {
+    opacity: 0.85,
+  },
+  dayBtnText: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 12,
+    color: colors.onSurface,
+  },
+  dayBtnSelectedText: {
+    color: colors.onPrimary,
+  },
 });

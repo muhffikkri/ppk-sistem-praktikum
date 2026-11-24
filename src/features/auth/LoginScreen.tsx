@@ -118,6 +118,9 @@ export function LoginScreen({ navigation }: Props) {
           placeholder="Minimal 6 karakter"
           secureTextEntry={!showPassword}
           autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="password"
+          textContentType="password"
           editable={!submitting}
           error={passwordError}
           rightAccessory={
