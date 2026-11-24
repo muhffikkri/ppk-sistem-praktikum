@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 import * as Location from 'expo-location';
-import {
-  getPermissionsAsync,
-  IosAuthorizationStatus,
-  requestPermissionsAsync,
-  type NotificationPermissionsStatus,
-} from 'expo-notifications';
+import type { NotificationPermissionsStatus } from 'expo-notifications';
 import {
   preparePushChannel,
   pushSupported,
 } from '../../services/notifications/pushNotificationService';
+
+const Notifications = (() => {
+  try {
+    return require('expo-notifications');
+  } catch {
+    return null;
+  }
+})();
 
 export type PermissionState =
   | 'checking'
@@ -42,16 +45,16 @@ async function readLocation(request: boolean): Promise<PermissionState> {
 }
 
 async function readNotifications(request: boolean): Promise<PermissionState> {
-  if (!pushSupported) return 'unsupported';
+  if (!pushSupported || !Notifications) return 'unsupported';
   await preparePushChannel();
-  const current = await getPermissionsAsync();
+  const current = await Notifications.getPermissionsAsync();
   const usable = (value: NotificationPermissionsStatus) =>
     value.granted ||
-    value.ios?.status === IosAuthorizationStatus.PROVISIONAL ||
-    value.ios?.status === IosAuthorizationStatus.EPHEMERAL;
+    value.ios?.status === Notifications.IosAuthorizationStatus?.PROVISIONAL ||
+    value.ios?.status === Notifications.IosAuthorizationStatus?.EPHEMERAL;
   const result =
     request && !usable(current) && current.canAskAgain
-      ? await requestPermissionsAsync()
+      ? await Notifications.requestPermissionsAsync()
       : current;
   return usable(result) ? 'granted' : status(result);
 }

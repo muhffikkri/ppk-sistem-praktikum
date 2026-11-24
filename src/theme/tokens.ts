@@ -39,6 +39,14 @@ export const colors = {
   onSiteSoft: '#DCFCE7',
   onSiteBorder: '#86EFAC',
 
+  // Accent / Map user marker & transparent radius circles
+  blue: '#2563EB',
+  blueSoft: '#EFF6FF',
+  mapCircleOccupied: 'rgba(91, 59, 232, 0.15)',
+  mapCircleOccupiedBorder: 'rgba(91, 59, 232, 0.5)',
+  mapCircleAvailable: 'rgba(34, 197, 94, 0.15)',
+  mapCircleAvailableBorder: 'rgba(34, 197, 94, 0.5)',
+
   // Disabled control fill (Button disabled state).
   disabled: '#ECEAF2',
 } as const;

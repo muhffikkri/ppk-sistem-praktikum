@@ -23,17 +23,21 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "736d7efd-ad41-4fa4-a147-57e6bf106ce6"
+        "projectId": "9723b307-1ce7-46f3-8519-7a183468dd98"
       }
     },
-    "owner": "muhffikkris-team",
+    "owner": "elvish20s-team",
     "runtimeVersion": {
       "policy": "appVersion"
     },

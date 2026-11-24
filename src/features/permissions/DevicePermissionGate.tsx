@@ -7,7 +7,15 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { ActivityIndicator, AppState } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsType from 'expo-notifications';
+
+const Notifications = (() => {
+  try {
+    return require('expo-notifications');
+  } catch {
+    return null;
+  }
+})();
 
 import { Banner, Button } from '../../shared/ui';
 import {
@@ -70,7 +78,7 @@ export function DevicePermissionGate({
       return;
     let active = true;
     let run = 0;
-    const register = async (nativeToken?: Notifications.DevicePushToken) => {
+    const register = async (nativeToken?: NotificationsType.DevicePushToken) => {
       const current = ++run;
       setRegistration('registering');
       try {
@@ -99,22 +107,22 @@ export function DevicePermissionGate({
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') void register();
     });
-    const tokenChanges = Notifications.addPushTokenListener((token) => {
+    const tokenChanges = Notifications?.addPushTokenListener?.((token: NotificationsType.DevicePushToken) => {
       void register(token);
     });
     return () => {
       active = false;
       appState.remove();
-      tokenChanges.remove();
+      tokenChanges?.remove?.();
     };
   }, [uid, permissions.notifications, revision]);
 
   useEffect(() => {
-    if (!uid || !pushSupported) return;
+    if (!uid || !pushSupported || !Notifications) return;
     let active = true;
     let retry: ReturnType<typeof setTimeout> | undefined;
     function receive(
-      response: Notifications.NotificationResponse,
+      response: NotificationsType.NotificationResponse,
       attempts = 0,
     ) {
       if (!active) return;
@@ -124,7 +132,7 @@ export function DevicePermissionGate({
       if (!target) return;
       if (onTarget(target)) {
         handled.current.add(request.identifier);
-        void Notifications.clearLastNotificationResponseAsync().catch(
+        void Notifications?.clearLastNotificationResponseAsync?.().catch(
           () => undefined,
         );
       } else if (attempts < 30) {
@@ -133,18 +141,18 @@ export function DevicePermissionGate({
       }
     }
 
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => receive(response),
+    const subscription = Notifications?.addNotificationResponseReceivedListener?.(
+      (response: NotificationsType.NotificationResponse) => receive(response),
     );
-    void Notifications.getLastNotificationResponseAsync()
-      .then((response) => {
+    void Notifications?.getLastNotificationResponseAsync?.()
+      .then((response: NotificationsType.NotificationResponse | null) => {
         if (response) receive(response);
       })
       .catch(() => undefined);
     return () => {
       active = false;
       clearTimeout(retry);
-      subscription.remove();
+      subscription?.remove?.();
     };
   }, [uid, onTarget]);
 
