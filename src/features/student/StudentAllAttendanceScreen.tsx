@@ -1,5 +1,4 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
@@ -10,7 +9,7 @@ import {
   ListRow,
   LoadingState,
   Screen,
-  spacing,
+  ScreenList,
   StatCard,
   StatRow,
   Text,
@@ -22,7 +21,7 @@ import { formatClock, formatSessionDate } from './formatters';
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentAllAttendance'>;
 
 export function StudentAllAttendanceScreen({ navigation }: Props) {
-  const { attendanceHistory, sessions, loading, error, retry } =
+  const { attendanceHistory, sessions, loading, error, retry, getSessionById } =
     useStudentAttendanceViewModel();
 
   const sorted = [...attendanceHistory].sort(
@@ -56,24 +55,32 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Semua presensi"
-        description="Daftar presensi yang kamu catat"
-      />
-
-      <StatRow>
-        <StatCard variant="panel" value={total} label="Total presensi" />
-        <StatCard
-          variant="panel"
-          value={sessions.length > 0 ? `${rate}%` : '–'}
-          label="Tingkat kehadiran"
-        />
-        <StatCard variant="panel" value={sessions.length} label="Total sesi" />
-      </StatRow>
-
-      {sorted.length === 0 ? (
+    <ScreenList
+      data={sorted}
+      keyExtractor={(record) => record.id}
+      header={
+        <>
+          <TopBar onBack={() => navigation.goBack()} />
+          <Header
+            title="Semua presensi"
+            description="Daftar presensi yang kamu catat"
+          />
+          <StatRow>
+            <StatCard variant="panel" value={total} label="Total presensi" />
+            <StatCard
+              variant="panel"
+              value={sessions.length > 0 ? `${rate}%` : '–'}
+              label="Tingkat kehadiran"
+            />
+            <StatCard
+              variant="panel"
+              value={sessions.length}
+              label="Total sesi"
+            />
+          </StatRow>
+        </>
+      }
+      empty={
         <EmptyState
           icon="time-outline"
           title="Belum ada riwayat presensi"
@@ -86,39 +93,31 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
             />
           }
         />
-      ) : (
-        <View style={styles.list}>
-          {sorted.map((record) => {
-            const session = sessions.find((s) => s.id === record.sessionId);
-            return (
-              <ListRow
-                key={record.id}
-                title={session?.courseName ?? record.sessionId}
-                meta={
-                  session
-                    ? formatSessionDate(session.startsAt)
-                    : 'Sesi tidak diketahui'
-                }
-                accessibilityHint="Membuka detail sesi"
-                onPress={() =>
-                  navigation.navigate('StudentSessionDetail', {
-                    sessionId: record.sessionId,
-                  })
-                }
-                trailing={
-                  <Text variant="bodyStrong">
-                    {formatClock(record.checkedInAt)}
-                  </Text>
-                }
-              />
-            );
-          })}
-        </View>
-      )}
-    </Screen>
+      }
+      renderItem={({ item: record }) => {
+        const session = getSessionById(record.sessionId);
+        return (
+          <ListRow
+            title={session?.courseName ?? record.sessionId}
+            meta={
+              session
+                ? formatSessionDate(session.startsAt)
+                : 'Sesi tidak diketahui'
+            }
+            accessibilityHint="Membuka detail sesi"
+            onPress={() =>
+              navigation.navigate('StudentSessionDetail', {
+                sessionId: record.sessionId,
+              })
+            }
+            trailing={
+              <Text variant="bodyStrong">
+                {formatClock(record.checkedInAt)}
+              </Text>
+            }
+          />
+        );
+      }}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  list: { gap: spacing.sm },
-});
