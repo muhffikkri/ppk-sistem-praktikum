@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
@@ -24,6 +24,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'BarcodeScan'>;
 export function BarcodeScanScreen({ navigation }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  // The camera can report several frames before `scanned` re-renders; the
+  // ref drops those so only the first code navigates.
+  const handled = useRef(false);
   const [invalid, setInvalid] = useState(false);
   // Start the camera after the push animation so it does not stall it.
   const cameraReady = useTransitionReady();
@@ -76,6 +79,8 @@ export function BarcodeScanScreen({ navigation }: Props) {
               scanned
                 ? undefined
                 : ({ data }) => {
+                    if (handled.current) return;
+                    handled.current = true;
                     setScanned(true);
                     const sessionId = parseSessionQr(data);
                     if (sessionId) {
@@ -99,6 +104,7 @@ export function BarcodeScanScreen({ navigation }: Props) {
             label="Scan Lagi"
             variant="outline"
             onPress={() => {
+              handled.current = false;
               setInvalid(false);
               setScanned(false);
             }}
