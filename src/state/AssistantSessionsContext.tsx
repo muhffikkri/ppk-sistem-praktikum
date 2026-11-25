@@ -1,6 +1,8 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
+  useMemo,
   useReducer,
   useState,
   useRef,
@@ -44,6 +46,9 @@ const unauthenticated = (): {
   reason: 'unauthenticated',
   message: 'Silakan login ulang.',
 });
+
+// Shared empty result so sessions without attendance keep a stable reference.
+const NO_RECORDS: AttendanceRecord[] = [];
 
 const forbidden = (): {
   ok: false;
@@ -334,62 +339,97 @@ export const AssistantSessionsProvider = ({
     };
   }, []);
 
-  const getSessionById = (sessionId: string) =>
-    state.sessions.find((s) => s.id === sessionId);
+  // O(1) lookups; rebuilt only when the snapshot data changes.
+  const sessionsById = useMemo(
+    () => new Map(state.sessions.map((s) => [s.id, s])),
+    [state.sessions],
+  );
+  const classesById = useMemo(
+    () => new Map(state.classes.map((c) => [c.id, c])),
+    [state.classes],
+  );
 
-  const getAttendanceForSession = (sessionId: string) =>
-    state.attendanceBySession[sessionId] ?? [];
+  const getSessionById = useCallback(
+    (sessionId: string) => sessionsById.get(sessionId),
+    [sessionsById],
+  );
 
-  const subscribeAttendance = (
-    sessionId: string,
-    onData: (records: AttendanceRecord[]) => void,
-    onError: (msg: string) => void,
-  ) => subscribeAttendanceForSession(sessionId, onData, onError);
+  const { attendanceBySession } = state;
+  const getAttendanceForSession = useCallback(
+    (sessionId: string) => attendanceBySession[sessionId] ?? NO_RECORDS,
+    [attendanceBySession],
+  );
 
-  const viewModel: AssistantSessionsViewModel = {
-    ...state,
-    getSessionById,
-    getAttendanceForSession,
-    openSession: (sessionId) =>
-      enabled ? openSession(sessionId) : Promise.resolve(forbidden()),
-    closeSession: (sessionId) =>
-      enabled ? closeSession(sessionId) : Promise.resolve(forbidden()),
-    createSession: (input) =>
-      !enabled
-        ? Promise.resolve(forbidden())
-        : user
-          ? createSession(user.uid, input)
-          : Promise.resolve(unauthenticated()),
-    updateSession: (sessionId, input) =>
-      enabled ? updateSession(sessionId, input) : Promise.resolve(forbidden()),
-    deleteSession: (sessionId) =>
-      enabled ? deleteSession(sessionId) : Promise.resolve(forbidden()),
-    addParticipantByEmail: (classId, email) =>
-      enabled
-        ? addParticipantByEmail(classId, email)
-        : Promise.resolve(forbidden()),
-    removeParticipant: (classId, studentUid) =>
-      enabled
-        ? removeParticipant(classId, studentUid)
-        : Promise.resolve(forbidden()),
-    getClassById: (classId: string) =>
-      state.classes.find((c) => c.id === classId),
-    subscribeAttendanceForSession: (sessionId, onData, onError) =>
-      enabled ? subscribeAttendance(sessionId, onData, onError) : () => {},
-    createClass: (input) =>
-      !enabled
-        ? Promise.resolve(forbidden())
-        : user
-          ? createClass(user.uid, input)
-          : Promise.resolve(unauthenticated()),
-    updateClass: (classId, input) =>
-      enabled ? updateClass(classId, input) : Promise.resolve(forbidden()),
-    deleteClass: (classId) =>
-      enabled ? deleteClass(classId) : Promise.resolve(forbidden()),
-    retry: () => {
-      if (enabled) setRetryCounter((c) => c + 1);
-    },
-  };
+  const getClassById = useCallback(
+    (classId: string) => classesById.get(classId),
+    [classesById],
+  );
+
+  const uid = user?.uid;
+
+  // Service-backed actions only change when the gate (role or account)
+  // changes, not on every snapshot.
+  const actions = useMemo(
+    () => ({
+      openSession: (sessionId: string) =>
+        enabled ? openSession(sessionId) : Promise.resolve(forbidden()),
+      closeSession: (sessionId: string) =>
+        enabled ? closeSession(sessionId) : Promise.resolve(forbidden()),
+      createSession: (input: SessionInput) =>
+        !enabled
+          ? Promise.resolve(forbidden())
+          : uid
+            ? createSession(uid, input)
+            : Promise.resolve(unauthenticated()),
+      updateSession: (sessionId: string, input: SessionInput) =>
+        enabled ? updateSession(sessionId, input) : Promise.resolve(forbidden()),
+      deleteSession: (sessionId: string) =>
+        enabled ? deleteSession(sessionId) : Promise.resolve(forbidden()),
+      addParticipantByEmail: (classId: string, email: string) =>
+        enabled
+          ? addParticipantByEmail(classId, email)
+          : Promise.resolve(forbidden()),
+      removeParticipant: (classId: string, studentUid: string) =>
+        enabled
+          ? removeParticipant(classId, studentUid)
+          : Promise.resolve(forbidden()),
+      subscribeAttendanceForSession: (
+        sessionId: string,
+        onData: (records: AttendanceRecord[]) => void,
+        onError: (msg: string) => void,
+      ) =>
+        enabled
+          ? subscribeAttendanceForSession(sessionId, onData, onError)
+          : () => {},
+      createClass: (input: ClassInput) =>
+        !enabled
+          ? Promise.resolve(forbidden())
+          : uid
+            ? createClass(uid, input)
+            : Promise.resolve(unauthenticated()),
+      updateClass: (classId: string, input: ClassInput) =>
+        enabled ? updateClass(classId, input) : Promise.resolve(forbidden()),
+      deleteClass: (classId: string) =>
+        enabled ? deleteClass(classId) : Promise.resolve(forbidden()),
+      retry: () => {
+        if (enabled) setRetryCounter((c) => c + 1);
+      },
+    }),
+    [enabled, uid],
+  );
+
+  // A stable value keeps every consumer from re-rendering when the provider
+  // re-renders without a data change.
+  const viewModel = useMemo<AssistantSessionsViewModel>(
+    () => ({
+      ...state,
+      ...actions,
+      getSessionById,
+      getAttendanceForSession,
+      getClassById,
+    }),
+    [state, actions, getSessionById, getAttendanceForSession, getClassById],
+  );
 
   return (
     <AssistantSessionsContext.Provider value={viewModel}>
