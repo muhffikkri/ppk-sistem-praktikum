@@ -73,7 +73,11 @@ import { CalendarScreen } from './CalendarScreen';
 
 import { HomeScreen } from './HomeScreen';
 
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type {
+  NativeStackNavigationOptions,
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 import type { RootStackParamList } from './navigation';
 
 import { NotificationsScreen } from './NotificationsScreen';
@@ -228,8 +232,41 @@ function DockTabsScreen({
   );
 }
 
+function ProfileHeaderButton() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Buka profil"
+      onPress={() => navigation.navigate('Profile')}
+      style={({ pressed }) => [styles.changeRole, pressed && styles.pressed]}
+    >
+      <Text variant="label" tone="violet">
+        Profil
+      </Text>
+    </Pressable>
+  );
+}
+
+const renderProfileHeaderButton = () => <ProfileHeaderButton />;
+
+// Module-level so the navigator does not receive new options on every
+// AppNavigator render.
+const STACK_SCREEN_OPTIONS: NativeStackNavigationOptions = {
+  headerStyle: { backgroundColor: colors.panel },
+  headerTintColor: colors.violet,
+  headerShadowVisible: false,
+  headerBackButtonDisplayMode: 'minimal',
+  contentStyle: { backgroundColor: colors.surface },
+  // Screens covered by a pushed screen skip re-renders until they are
+  // focused again.
+  freezeOnBlur: true,
+  headerRight: renderProfileHeaderButton,
+};
+
 export function AppNavigator() {
-  const { authStatus, user, logout, needsRoleSelection } = useAuth();
+  const { authStatus, user, needsRoleSelection } = useAuth();
   const actorRole = useActorRole();
 
   const navigation = useNavigation() as unknown as {
@@ -305,39 +342,7 @@ export function AppNavigator() {
             <Stack.Navigator
               initialRouteName="DockTabs"
 
-              screenOptions={({ route }) => ({
-                headerStyle: { backgroundColor: colors.panel },
-
-                headerTintColor: colors.violet,
-
-                headerShadowVisible: false,
-
-                headerBackButtonDisplayMode: 'minimal',
-
-                contentStyle: { backgroundColor: colors.surface },
-
-                // Screens covered by a pushed screen skip re-renders until
-                // they are focused again.
-                freezeOnBlur: true,
-
-                headerRight: () => (
-                  <Pressable
-                    accessibilityRole="button"
-
-                    accessibilityLabel="Buka profil"
-
-                    onPress={() => navigation.navigate('Profile')}
-
-                    style={({ pressed }) => [
-                      styles.changeRole,
-
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text variant="label" tone="violet">Profil</Text>
-                  </Pressable>
-                ),
-              })}
+              screenOptions={STACK_SCREEN_OPTIONS}
             >
               <Stack.Screen
                 name="DockTabs"
