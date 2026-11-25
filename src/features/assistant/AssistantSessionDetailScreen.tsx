@@ -127,6 +127,14 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
         {canOpen ? (
           <Button label="Buka sesi" onPress={() => setSheet('open')} />
         ) : null}
+        {session.status === 'open' ? (
+          <Button
+            label="Tampilkan kode presensi"
+            onPress={() =>
+              navigation.navigate('AssistantSessionQr', { sessionId })
+            }
+          />
+        ) : null}
         {canClose ? (
           <Button
             label="Tutup sesi"

@@ -1,5 +1,6 @@
 export { AssistantScheduleScreen } from './AssistantScheduleScreen';
 export { AssistantSessionDetailScreen } from './AssistantSessionDetailScreen';
+export { AssistantSessionQrScreen } from './AssistantSessionQrScreen';
 export { AssistantAttendanceRosterScreen } from './AssistantAttendanceRosterScreen';
 export { AssistantAllSessionsScreen } from './AssistantAllSessionsScreen';
 export { AssistantAllAttendanceScreen } from './AssistantAllAttendanceScreen';

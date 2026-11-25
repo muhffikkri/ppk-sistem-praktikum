@@ -19,6 +19,7 @@ export type RootStackParamList = {
   StudentLeaveList: undefined;
   AssistantSchedule: undefined;
   AssistantSessionDetail: { sessionId: string };
+  AssistantSessionQr: { sessionId: string };
   AssistantAttendanceRoster: { sessionId: string };
   AssistantAllSessions: undefined;
   AssistantAllAttendance: undefined;

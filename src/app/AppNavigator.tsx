@@ -22,6 +22,7 @@ import {
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
   AssistantSessionFormScreen,
+  AssistantSessionQrScreen,
 } from '../features/assistant';
 
 import {
@@ -418,6 +419,11 @@ export function AppNavigator() {
                 />
 
                 <Stack.Screen
+                  name="AssistantSessionQr"
+                  component={AssistantSessionQrScreen}
+                />
+
+                <Stack.Screen
                   name="AssistantAttendanceRoster"
 
                   component={AssistantAttendanceRosterScreen}
@@ -530,13 +536,18 @@ export function AppNavigator() {
 
               onTabPress={onTabPress}
 
-              fab={{
-                glyph: 'camera',
-                label: 'Scan presensi',
-                onPress: () => {
-                  navigation.navigate('BarcodeScan');
-                },
-              }}
+              fab={
+                // Asisten menampilkan kode presensi, tidak ikut presensi.
+                actorRole === 'praktikan'
+                  ? {
+                      glyph: 'camera',
+                      label: 'Scan presensi',
+                      onPress: () => {
+                        navigation.navigate('BarcodeScan');
+                      },
+                    }
+                  : undefined
+              }
             />
           </View>
         </LeaveProvider>
