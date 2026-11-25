@@ -57,6 +57,9 @@ const titles = {
   session_scheduled: 'Jadwal praktikum baru',
   schedule_changed: 'Jadwal praktikum berubah',
   leave_decided: 'Keputusan izin tersedia',
+  fine_issued: 'Tagihan denda baru',
+  payment_success: 'Pembayaran denda berhasil',
+  payment_failed: 'Pembayaran denda perlu tindakan',
 };
 const defaultBody = 'Buka PPK Mobile untuk melihat detail.';
 const maxBodyLength = 160;
@@ -109,6 +112,26 @@ function noticeContent(type, source = {}) {
           ? 'ditolak'
           : 'sudah diputuskan';
     body = 'Izin ' + (name || 'praktikum') + ' ' + decision + '.';
+  } else if (type === 'fine_issued') {
+    const amount =
+      typeof source.amount === 'number'
+        ? 'Rp ' + Math.round(source.amount).toLocaleString('id-ID')
+        : 'denda';
+    body =
+      'Tagihan ' +
+      amount +
+      (name ? ' untuk ' + name : '') +
+      '. Buka aplikasi untuk detail.';
+  } else if (type === 'payment_success') {
+    body =
+      'Pembayaran denda ' +
+      (name || 'praktikum') +
+      ' berhasil diverifikasi.';
+  } else if (type === 'payment_failed') {
+    body =
+      'Pembayaran denda ' +
+      (name || 'praktikum') +
+      ' gagal atau perlu tindakan lanjutan.';
   }
 
   body = body || defaultBody;
@@ -144,9 +167,9 @@ function inboxEntries(eventId, notices, source, now = new Date()) {
         data: {
           type: notice.type,
           ...content,
-          ...(notice.sessionId
-            ? { sessionId: notice.sessionId }
-            : { leaveId: notice.leaveId }),
+                      ...(notice.sessionId ? { sessionId: notice.sessionId } : {}),
+            ...(notice.leaveId ? { leaveId: notice.leaveId } : {}),
+            ...(notice.fineId ? { fineId: notice.fineId } : {}),
           createdAt: now.toISOString(),
           readAt: null,
         },
@@ -167,18 +190,65 @@ function pushMessage(job, token) {
     data: {
       recipientUid: job.uid,
       type: job.type,
-      ...(job.sessionId
-        ? { sessionId: job.sessionId }
-        : { leaveId: job.leaveId }),
+      ...(job.sessionId ? { sessionId: job.sessionId } : {}),
+      ...(job.leaveId ? { leaveId: job.leaveId } : {}),
+      ...(job.fineId ? { fineId: job.fineId } : {}),
       ...(job.notificationId ? { notificationId: job.notificationId } : {}),
     },
   };
+}
+
+function fineCreatedEvents(fine, fineId) {
+  if (
+    !fine ||
+    typeof fine.studentId !== 'string' ||
+    !fine.studentId ||
+    fine.studentId.includes('/') ||
+    fine.status !== 'unpaid'
+  )
+    return [];
+  return [{ type: 'fine_issued', fineId, recipients: [fine.studentId] }];
+}
+
+function paymentEvents(before, after, transactionId) {
+  if (
+    !before ||
+    !after ||
+    before.status === after.status ||
+    typeof after.studentId !== 'string' ||
+    !after.studentId ||
+    after.studentId.includes('/')
+  )
+    return [];
+  if (after.status === 'success') {
+    return [
+      {
+        type: 'payment_success',
+        fineId: after.fineId,
+        transactionId,
+        recipients: [after.studentId],
+      },
+    ];
+  }
+  if (after.status === 'failed') {
+    return [
+      {
+        type: 'payment_failed',
+        fineId: after.fineId,
+        transactionId,
+        recipients: [after.studentId],
+      },
+    ];
+  }
+  return [];
 }
 
 module.exports = {
   sessionCreatedEvents,
   sessionEvents,
   leaveEvents,
+  fineCreatedEvents,
+  paymentEvents,
   noticeContent,
   inboxId,
   inboxEntries,
