@@ -34,6 +34,14 @@ yarn-error.*
 .env
 .env*.local
 
+# Firebase native config (use EAS file secret / local file)
+google-services.json
+GoogleService-Info.plist
+
+# EAS local credentials
+credentials.json
+credentials/
+
 # typescript
 *.tsbuildinfo
 
