@@ -140,6 +140,9 @@ service cloud.firestore {
     // Rules tidak punya cos(): 1° lintang ≈ 111.320 m, 1° bujur ≥ 110.000 m untuk
     // lintang wilayah Indonesia (|lat| ≤ ~11°), jadi kotak batas ini tidak menolak
     // posisi yang sah di dalam radius.
+    // Pembagi wajib float (111320.0): int / int di rules adalah pembagian bulat,
+    // sehingga 50 / 111320 = 0 dan semua presensi tertolak. Toleransi +1 m
+    // menutup selisih pembulatan jarak di aplikasi (Math.round).
     function withinLabGeofence(data, session) {
       return session.labId is string
         && exists(/databases/$(database)/documents/labs/$(session.labId))
@@ -159,9 +162,9 @@ service cloud.firestore {
         && data.distanceMeters >= 0
         && data.distanceMeters <= lab.radiusMeters
         && math.abs(data.deviceLocation.latitude - lab.location.latitude)
-          <= lab.radiusMeters / 111320
+          <= (lab.radiusMeters + 1) / 111320.0
         && math.abs(data.deviceLocation.longitude - lab.location.longitude)
-          <= lab.radiusMeters / 110000;
+          <= (lab.radiusMeters + 1) / 110000.0;
     }
 
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})

@@ -61,7 +61,8 @@
     "test": "tsx --test src/features/leave/leave.test.ts src/domain/geofenceRules.test.ts src/features/maps/maps.test.ts src/domain/sessionQr.test.ts src/features/assistant/components/qrRows.test.ts",
     "verify:contracts": "tsx scripts/verify-contracts.ts",
     "check:ui": "tsx scripts/check-ui-tokens.ts",
-    "seed": "tsx scripts/seed-firestore.ts"
+    "seed": "tsx scripts/seed-firestore.ts",
+    "test:rules": "npx --yes firebase-tools@15 emulators:exec --only firestore,auth --project demo-ppk \"tsx scripts/test-attendance-rules.mts\""
   },
   "private": true
 }

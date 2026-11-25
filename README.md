@@ -131,6 +131,8 @@ firebase deploy --only firestore:rules --project project-praktikum-sprint
 firebase deploy --only functions --project project-praktikum-sprint
 ```
 
+Sebelum deploy rules, jalankan `npm run test:rules` (butuh Java). Tes ini menyalakan Firestore + Auth emulator lalu mencoba presensi dari dalam radius, di luar radius, dan dengan jarak dipalsukan.
+
 Push notification membutuhkan secret `EXPO_PUSH_ACCESS_TOKEN` (`firebase functions:secrets:set EXPO_PUSH_ACCESS_TOKEN`).
 
 Sesi yang dibuat sebelum ada pilihan lab belum punya `labId`, sehingga praktikan tidak bisa presensi. Buka sesi tersebut di aplikasi asisten, pilih lab, lalu simpan. Seeder sudah membuat data `labs` dan mengisi `labId` di setiap sesi; ubah koordinat lab lewat aplikasi asisten bila ingin mencoba presensi dari lokasi lain.
