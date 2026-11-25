@@ -11,7 +11,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppNavigator } from './src/app/AppNavigator';
 import type { RootStackParamList } from './src/app/navigation';
+import { notificationRoute } from './src/domain/notificationTypes';
 import { DevicePermissionGate } from './src/features/permissions';
+import { markNotificationRead } from './src/services/firestore/notificationInboxService';
 import type { PushTarget } from './src/services/notifications/pushNotificationService';
 import { AuthProvider, useAuth } from './src/state';
 import { fontAssets } from './src/theme/fonts';
@@ -25,27 +27,31 @@ function AppNavigation() {
   const { authStatus, user, needsRoleSelection } = useAuth();
   const readyUser =
     authStatus === 'authenticated' && !needsRoleSelection ? user : null;
+  const readyUid = readyUser?.uid ?? null;
+  const readyRole = readyUser?.role ?? null;
   const openPushTarget = useCallback(
     (target: PushTarget) => {
-      if (!navigation.isReady() || readyUser?.role !== 'student') return false;
-      if (target.type === 'leave_decided') {
-        if (!navigation.getRootState()?.routeNames.includes('StudentLeaveList'))
-          return false;
+      if (!navigation.isReady() || !readyUid || readyRole !== 'student')
+        return false;
+      const route = notificationRoute(target);
+      if (
+        !route ||
+        !navigation.getRootState()?.routeNames.includes(route.screen)
+      )
+        return false;
+      if (route.screen === 'StudentLeaveList') {
         navigation.navigate('StudentLeaveList');
       } else {
-        if (
-          !navigation
-            .getRootState()
-            ?.routeNames.includes('StudentSessionDetail')
-        )
-          return false;
-        navigation.navigate('StudentSessionDetail', {
-          sessionId: target.sessionId,
-        });
+        navigation.navigate(route.screen, { sessionId: route.sessionId });
+      }
+      if (target.notificationId) {
+        void markNotificationRead(readyUid, target.notificationId).catch(
+          () => undefined,
+        );
       }
       return true;
     },
-    [navigation, readyUser?.role],
+    [navigation, readyRole, readyUid],
   );
 
   return (

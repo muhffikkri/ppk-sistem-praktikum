@@ -16,12 +16,23 @@ export const pushSupported =
   (Platform.OS === 'android' || Platform.OS === 'ios') &&
   Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
-export type PushTarget =
+export type PushTarget = (
   | {
       type: 'session_opened' | 'session_scheduled' | 'schedule_changed';
       sessionId: string;
     }
-  | { type: 'leave_decided'; leaveId: string };
+  | { type: 'leave_decided'; leaveId: string }
+) & {
+  /** ID dokumen inbox `users/{uid}/notifications/{id}`, bila ada. */
+  notificationId?: string;
+};
+
+function inboxIdOf(data: Record<string, unknown>) {
+  return typeof data.notificationId === 'string' &&
+    /^[A-Za-z0-9_-]{1,128}$/.test(data.notificationId)
+    ? { notificationId: data.notificationId }
+    : {};
+}
 
 export function parsePushTarget(
   data: Record<string, unknown> | undefined,
@@ -33,11 +44,11 @@ export function parsePushTarget(
     case 'session_scheduled':
     case 'schedule_changed':
       return typeof data.sessionId === 'string' && data.sessionId
-        ? { type: data.type, sessionId: data.sessionId }
+        ? { type: data.type, sessionId: data.sessionId, ...inboxIdOf(data) }
         : null;
     case 'leave_decided':
       return typeof data.leaveId === 'string' && data.leaveId
-        ? { type: data.type, leaveId: data.leaveId }
+        ? { type: data.type, leaveId: data.leaveId, ...inboxIdOf(data) }
         : null;
     default:
       return null;

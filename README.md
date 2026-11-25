@@ -135,6 +135,35 @@ Sebelum deploy rules, jalankan `npm run test:rules` (butuh Java). Tes ini menyal
 
 Push notification membutuhkan secret `EXPO_PUSH_ACCESS_TOKEN` (`firebase functions:secrets:set EXPO_PUSH_ACCESS_TOKEN`).
 
+### Inbox notifikasi
+
+Setiap push juga disimpan ke `users/{uid}/notifications/{id}` dan tampil di layar **Notifikasi** (badge di lonceng topbar). Aplikasi hanya membaca dan menandai sudah dibaca; dokumen inbox **hanya boleh ditulis server** (Admin SDK).
+
+| Kejadian | Penerima | Diketuk membuka |
+|---|---|---|
+| Sesi baru dibuat (`session_scheduled`) | Peserta sesi | Detail sesi |
+| Sesi dibuka (`session_opened`) | Peserta sesi | Halaman presensi |
+| Jam/lab sesi berubah (`schedule_changed`) | Peserta sesi | Detail sesi |
+| Izin disetujui/ditolak (`leave_decided`) | Praktikan pengaju | Daftar izin |
+
+Worker Node.js (pengganti Cloud Functions tanpa Blaze) cukup memakai ulang `functions/pushEvents.cjs`:
+
+```js
+const { sessionEvents, inboxEntries, pushMessage } = require('./functions/pushEvents.cjs');
+
+// before/after = data dokumen sesi, eventId = ID unik perubahan (mis. `${sessionId}:${updateTime}`)
+const notices = sessionEvents(before, after, sessionId);
+for (const entry of inboxEntries(eventId, notices, after)) {
+  // create() + abaikan ALREADY_EXISTS agar event yang diulang tidak dobel
+  await db.doc(`users/${entry.uid}/notifications/${entry.id}`).create(entry.data).catch(() => {});
+  // untuk setiap token push milik entry.uid:
+  // pushMessage({ ...notice, uid: entry.uid, title: entry.data.title, body: entry.data.body,
+  //               notificationId: entry.id, sendUntil }, token)
+}
+```
+
+`sessionCreatedEvents` (dokumen sesi baru) dan `leaveEvents` (dokumen izin) dipakai dengan cara yang sama.
+
 Sesi yang dibuat sebelum ada pilihan lab belum punya `labId`, sehingga praktikan tidak bisa presensi. Buka sesi tersebut di aplikasi asisten, pilih lab, lalu simpan. Seeder sudah membuat data `labs` dan mengisi `labId` di setiap sesi; ubah koordinat lab lewat aplikasi asisten bila ingin mencoba presensi dari lokasi lain.
 
 API key Google Maps di `app.json` ikut ter-commit. Batasi key tersebut di Google Cloud Console → APIs & Services → Credentials: *Application restrictions* = Android apps (package `com.muhffikkris.ppkmobile` + SHA-1 sertifikat build), *API restrictions* = Maps SDK for Android.

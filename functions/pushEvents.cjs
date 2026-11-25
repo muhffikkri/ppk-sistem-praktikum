@@ -1,3 +1,5 @@
+const { createHash } = require('node:crypto');
+
 const scheduleFields = ['startsAt', 'endsAt', 'lab', 'labId'];
 
 function participantsOf(session) {
@@ -50,17 +52,115 @@ function leaveEvents(before, after, leaveId) {
   return [{ type: 'leave_decided', leaveId, recipients: [after.studentId] }];
 }
 
+const titles = {
+  session_opened: 'Sesi praktikum dibuka',
+  session_scheduled: 'Jadwal praktikum baru',
+  schedule_changed: 'Jadwal praktikum berubah',
+  leave_decided: 'Keputusan izin tersedia',
+};
+const defaultBody = 'Buka PPK Mobile untuk melihat detail.';
+const maxBodyLength = 160;
+
+const timeFormat = new Intl.DateTimeFormat('id-ID', {
+  timeZone: 'Asia/Jakarta',
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function text(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function when(iso) {
+  const date = new Date(text(iso));
+  return Number.isNaN(date.getTime()) ? '' : timeFormat.format(date) + ' WIB';
+}
+
+/**
+ * Judul & isi notifikasi untuk satu event. `source` adalah dokumen sesi
+ * (event sesi) atau dokumen izin (event izin) setelah perubahan.
+ * Alasan izin dan catatan asisten sengaja tidak dimasukkan karena isi
+ * notifikasi bisa tampil di layar kunci.
+ */
+function noticeContent(type, source = {}) {
+  const title = titles[type] ?? 'Notifikasi PPK Mobile';
+  const name = [text(source.courseName), text(source.groupName)]
+    .filter(Boolean)
+    .join(' · ');
+  const schedule = when(source.startsAt);
+  const lab = text(source.lab);
+  const atLab = lab ? ' di ' + lab : '';
+  let body = '';
+
+  if (type === 'session_scheduled' && name) {
+    body = name + (schedule ? ' — ' + schedule : '') + atLab + '.';
+  } else if (type === 'session_opened' && name) {
+    body = name + ' sudah dibuka. Silakan presensi dari area lab.';
+  } else if (type === 'schedule_changed' && name) {
+    body = name + ' kini ' + (schedule || 'berubah') + atLab + '.';
+  } else if (type === 'leave_decided') {
+    const decision =
+      source.status === 'approved'
+        ? 'disetujui'
+        : source.status === 'rejected'
+          ? 'ditolak'
+          : 'sudah diputuskan';
+    body = 'Izin ' + (name || 'praktikum') + ' ' + decision + '.';
+  }
+
+  body = body || defaultBody;
+  return {
+    title,
+    body:
+      body.length > maxBodyLength
+        ? body.slice(0, maxBodyLength - 1) + '…'
+        : body,
+  };
+}
+
+/** ID inbox deterministik: event yang diulang tidak membuat notifikasi ganda. */
+function inboxId(eventId, type, uid) {
+  return createHash('sha256')
+    .update(JSON.stringify([eventId, type, uid]))
+    .digest('hex')
+    .slice(0, 40);
+}
+
+/**
+ * Dokumen `users/{uid}/notifications/{id}` untuk setiap penerima event.
+ * Dipakai Cloud Functions maupun worker Node.js agar isi inbox sama.
+ */
+function inboxEntries(eventId, notices, source, now = new Date()) {
+  const entries = [];
+  for (const { recipients, ...notice } of notices) {
+    const content = noticeContent(notice.type, source);
+    for (const uid of recipients) {
+      entries.push({
+        uid,
+        id: inboxId(eventId, notice.type, uid),
+        data: {
+          type: notice.type,
+          ...content,
+          ...(notice.sessionId
+            ? { sessionId: notice.sessionId }
+            : { leaveId: notice.leaveId }),
+          createdAt: now.toISOString(),
+          readAt: null,
+        },
+      });
+    }
+  }
+  return entries;
+}
+
 function pushMessage(job, token) {
-  const title = {
-    session_opened: 'Sesi praktikum dibuka',
-    session_scheduled: 'Jadwal praktikum baru',
-    schedule_changed: 'Jadwal praktikum berubah',
-    leave_decided: 'Keputusan izin tersedia',
-  }[job.type];
   return {
     to: token,
-    title,
-    body: 'Buka PPK Mobile untuk melihat detail.',
+    title: job.title ?? titles[job.type],
+    body: job.body ?? defaultBody,
     channelId: 'practicum',
     sound: 'default',
     ttl: Math.max(1, Math.floor((job.sendUntil - Date.now()) / 1000)),
@@ -70,6 +170,7 @@ function pushMessage(job, token) {
       ...(job.sessionId
         ? { sessionId: job.sessionId }
         : { leaveId: job.leaveId }),
+      ...(job.notificationId ? { notificationId: job.notificationId } : {}),
     },
   };
 }
@@ -78,5 +179,8 @@ module.exports = {
   sessionCreatedEvents,
   sessionEvents,
   leaveEvents,
+  noticeContent,
+  inboxId,
+  inboxEntries,
   pushMessage,
 };

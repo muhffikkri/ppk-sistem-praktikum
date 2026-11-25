@@ -27,6 +27,7 @@ import {
 import { useAssistantSessionsViewModel, useAuth } from '../../state';
 import { useAssistantLeaveViewModel } from '../leave';
 import { formatClock, formatTimeRange } from '../student/formatters';
+import { NotificationBellButton } from '../notifications/NotificationBellButton';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 type Feedback = { tone: 'success' | 'danger'; title: string; message: string };
@@ -52,9 +53,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
             accessibilityLabel="Peta Laboratorium"
             onPress={() => navigation.navigate('LabMaps')}
           />
-          <IconButton
-            icon="notifications-outline"
-            accessibilityLabel="Notifikasi"
+          <NotificationBellButton
             onPress={() => navigation.navigate('Notifications')}
           />
           <IconButton

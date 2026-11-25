@@ -4,6 +4,8 @@ const {
   sessionCreatedEvents,
   sessionEvents,
   leaveEvents,
+  noticeContent,
+  inboxEntries,
   pushMessage,
 } = require('./pushEvents.cjs');
 
@@ -130,4 +132,92 @@ test('new session push uses its own title', () => {
   );
   assert.equal(message.title, 'Jadwal praktikum baru');
   assert.equal(message.data.type, 'session_scheduled');
+});
+
+const sessionDoc = {
+  ...session,
+  courseName: 'Praktikum RPL',
+  groupName: 'Kelas A',
+  lab: 'Lab 3.2 RPL',
+  startsAt: '2026-11-27T01:00:00Z',
+};
+
+test('notice content describes the session in WIB without leaking leave details', () => {
+  assert.deepEqual(noticeContent('session_scheduled', sessionDoc), {
+    title: 'Jadwal praktikum baru',
+    body: 'Praktikum RPL · Kelas A — Jum, 27 Nov, 08.00 WIB di Lab 3.2 RPL.',
+  });
+  assert.equal(
+    noticeContent('session_opened', sessionDoc).body,
+    'Praktikum RPL · Kelas A sudah dibuka. Silakan presensi dari area lab.',
+  );
+  const leave = {
+    status: 'rejected',
+    courseName: 'Praktikum RPL',
+    groupName: 'Kelas A',
+    reason: 'Detail pribadi',
+    decisionNote: 'Catatan asisten',
+  };
+  const content = noticeContent('leave_decided', leave);
+  assert.equal(content.body, 'Izin Praktikum RPL · Kelas A ditolak.');
+  assert.ok(!JSON.stringify(content).includes('Detail pribadi'));
+  assert.ok(!JSON.stringify(content).includes('Catatan asisten'));
+  assert.equal(
+    noticeContent('session_opened', {}).body,
+    'Buka PPK Mobile untuk melihat detail.',
+  );
+  assert.ok(
+    noticeContent('session_scheduled', { ...sessionDoc, lab: 'x'.repeat(300) })
+      .body.length <= 160,
+  );
+});
+
+test('inbox entries are one per recipient with stable ids', () => {
+  const now = new Date('2026-11-25T10:00:00Z');
+  const notices = sessionCreatedEvents(sessionDoc, 's1');
+  const first = inboxEntries('event-1', notices, sessionDoc, now);
+  const retry = inboxEntries('event-1', notices, sessionDoc, now);
+  assert.deepEqual(
+    first.map((entry) => entry.uid),
+    ['student1', 'student2'],
+  );
+  assert.deepEqual(
+    first.map((entry) => entry.id),
+    retry.map((entry) => entry.id),
+  );
+  assert.notEqual(first[0].id, first[1].id);
+  assert.notEqual(
+    first[0].id,
+    inboxEntries('event-2', notices, sessionDoc, now)[0].id,
+  );
+  assert.deepEqual(first[0].data, {
+    type: 'session_scheduled',
+    title: 'Jadwal praktikum baru',
+    body: 'Praktikum RPL · Kelas A — Jum, 27 Nov, 08.00 WIB di Lab 3.2 RPL.',
+    sessionId: 's1',
+    createdAt: '2026-11-25T10:00:00.000Z',
+    readAt: null,
+  });
+});
+
+test('push message reuses inbox content and links the inbox entry', () => {
+  const message = pushMessage(
+    {
+      type: 'session_opened',
+      uid: 'student1',
+      sessionId: 's1',
+      title: 'Sesi praktikum dibuka',
+      body: 'Praktikum RPL · Kelas A sudah dibuka.',
+      notificationId: 'abc123',
+      sendUntil: Date.now() + 60_000,
+    },
+    'ExpoPushToken[token]',
+  );
+  assert.equal(message.body, 'Praktikum RPL · Kelas A sudah dibuka.');
+  assert.deepEqual(message.data, {
+    recipientUid: 'student1',
+    type: 'session_opened',
+    sessionId: 's1',
+    notificationId: 'abc123',
+  });
 });
