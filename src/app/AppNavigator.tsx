@@ -52,6 +52,11 @@ import {
   StudentLeaveListScreen,
   StudentLeaveRequestFormScreen,
 } from '../features/leave';
+import {
+  StudentFineDetailScreen,
+  StudentFineListScreen,
+  StudentPaymentHistoryScreen,
+} from '../features/fines';
 
 import { LabMapsScreen } from '../features/maps';
 
@@ -428,6 +433,24 @@ export function AppNavigator() {
 
                   component={StudentLeaveListScreen}
 
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentFineList"
+                  component={StudentFineListScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentFineDetail"
+                  component={StudentFineDetailScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentPaymentHistory"
+                  component={StudentPaymentHistoryScreen}
                   options={{ headerShown: false }}
                 />
               </Stack.Group>

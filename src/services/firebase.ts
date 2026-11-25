@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as firebaseAuth from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFunctions, type Functions } from 'firebase/functions';
 import { Platform } from 'react-native';
 
 type AuthPersistenceFactory = (
@@ -55,3 +56,4 @@ function createAuthInstance(app: FirebaseApp): firebaseAuth.Auth {
 
 export const auth: firebaseAuth.Auth = createAuthInstance(firebaseApp);
 export const db: Firestore = getFirestore(firebaseApp);
+export const functions: Functions = getFunctions(firebaseApp);

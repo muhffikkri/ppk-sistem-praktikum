@@ -31,6 +31,9 @@ export type RootStackParamList = {
   AssistantLabForm: { labId?: string };
   StudentAllSessions: undefined;
   StudentAllAttendance: undefined;
+  StudentFineList: undefined;
+  StudentFineDetail: { fineId: string };
+  StudentPaymentHistory: undefined;
   Calendar: undefined;
   Profile: undefined;
   ProfileEdit: undefined;

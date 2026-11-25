@@ -265,6 +265,14 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
           title="Izin saya"
           onPress={() => navigation.navigate('StudentLeaveList')}
         />
+        <ListRow
+          title="Tagihan denda"
+          onPress={() => navigation.navigate('StudentFineList')}
+        />
+        <ListRow
+          title="Riwayat pembayaran"
+          onPress={() => navigation.navigate('StudentPaymentHistory')}
+        />
       </View>
     </Screen>
   );
