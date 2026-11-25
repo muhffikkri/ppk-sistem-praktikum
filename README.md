@@ -139,12 +139,20 @@ API key Google Maps di `app.json` ikut ter-commit. Batasi key tersebut di Google
 
 ## Seeder Data Dummy (Opsional)
 
-Untuk mengisi Firestore dengan data demo (kelas, sesi, praktikan, asisten):
+Seeder mengisi Firestore dengan data demo (user, kelas, lab, sesi) memakai Firebase Admin SDK, sehingga tidak terhalang Firestore rules.
+
+1. Firebase Console → Project settings → Service accounts → **Generate new private key**. Simpan sebagai `service-account.json` di root repo (sudah di-gitignore) atau di luar repo. Jangan dibagikan atau di-commit.
+2. Isi `.env` (lihat `.env.example`):
+   - `GOOGLE_APPLICATION_CREDENTIALS=./service-account.json`
+   - `SEED_DEMO_PASSWORD=...` (opsional) agar akun demo juga dibuat di Firebase Auth dan bisa dipakai login.
+3. Jalankan:
 
 ```bash
-# Pastikan .env sudah diisi konfigurasi Firebase
-npx tsx scripts/seed-firestore.ts
+npm run seed -- --dry-run   # cek data tanpa menulis
+npm run seed                # tulis ke Firestore
 ```
+
+Seeder menimpa dokumen demo dengan ID yang sama (`users/user-*`, `classes/class-*`, `labs/lab-*`, `sessions/session-*`), jadi aman dijalankan ulang. Data lain tidak disentuh.
 
 Akun demo yang di-generate:
 
@@ -154,6 +162,7 @@ Akun demo yang di-generate:
 | Praktikan | siti@kampus.ac.id |
 | Praktikan | dimas@kampus.ac.id |
 | Asisten | asisten.rpl@kampus.ac.id |
+| Asisten | asisten.koordinator@kampus.ac.id |
 
 > Admin dibuat manual melalui `EXPO_PUBLIC_ADMIN_EMAIL` di `.env`, tidak melalui seeder.
 
