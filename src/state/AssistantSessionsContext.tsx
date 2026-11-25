@@ -24,7 +24,9 @@ import {
   subscribeClasses,
   subscribeSessions,
   subscribeAttendanceForSession,
+  subscribeAttendanceForSessionChunk,
 } from '../services/firestore/assistantService';
+import { chunkIds } from '../services/firestore/batching';
 import { db } from '../services/firebase';
 import {
   PracticalClass,
@@ -112,9 +114,8 @@ type AssistantAction =
   | { type: 'SET_SESSIONS'; sessions: Session[] }
   | { type: 'SET_STUDENTS'; students: UserProfile[] }
   | {
-      type: 'SET_ATTENDANCE';
-      sessionId: string;
-      records: AttendanceRecord[];
+      type: 'SET_ATTENDANCE_BULK';
+      bySession: Record<string, AttendanceRecord[]>;
     }
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'SET_ERROR'; error: string | null }
@@ -161,12 +162,12 @@ function assistantReducer(
       return { ...state, sessions: action.sessions };
     case 'SET_STUDENTS':
       return { ...state, studentsDirectory: action.students };
-    case 'SET_ATTENDANCE':
+    case 'SET_ATTENDANCE_BULK':
       return {
         ...state,
         attendanceBySession: {
           ...state.attendanceBySession,
-          [action.sessionId]: action.records,
+          ...action.bySession,
         },
       };
     case 'SET_LOADING':
@@ -306,36 +307,41 @@ export const AssistantSessionsProvider = ({
 
   const sessionIds = state.sessions.map((s) => s.id).join(',');
 
-  // Keep one attendance listener per session and drop listeners for
-  // sessions that are no longer visible.
+  // One attendance listener per chunk of up to 30 sessions instead of one per
+  // session. Only chunks whose membership changed are resubscribed; each
+  // snapshot updates its sessions in a single dispatch.
   useEffect(() => {
-    const currentIds = sessionIds ? sessionIds.split(',') : [];
-    const activeIds = new Set(currentIds);
+    const listeners = attendanceUnsubsRef.current;
+    const chunks = chunkIds(sessionIds ? sessionIds.split(',') : []);
+    const wanted = new Set(chunks.map((chunk) => chunk.join(',')));
 
-    attendanceUnsubsRef.current.forEach((unsubscribe, id) => {
-      if (!activeIds.has(id)) {
+    listeners.forEach((unsubscribe, key) => {
+      if (!wanted.has(key)) {
         unsubscribe();
-        attendanceUnsubsRef.current.delete(id);
+        listeners.delete(key);
       }
     });
 
-    currentIds.forEach((sessionId) => {
-      if (attendanceUnsubsRef.current.has(sessionId)) return;
-
-      const unsubscribe = subscribeAttendanceForSession(
-        sessionId,
-        (records) => dispatch({ type: 'SET_ATTENDANCE', sessionId, records }),
-        (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+    chunks.forEach((chunk) => {
+      const key = chunk.join(',');
+      if (listeners.has(key)) return;
+      listeners.set(
+        key,
+        subscribeAttendanceForSessionChunk(
+          chunk,
+          (bySession) => dispatch({ type: 'SET_ATTENDANCE_BULK', bySession }),
+          (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+        ),
       );
-      attendanceUnsubsRef.current.set(sessionId, unsubscribe);
     });
   }, [sessionIds]);
 
   // Close every attendance listener on unmount/logout.
   useEffect(() => {
+    const listeners = attendanceUnsubsRef.current;
     return () => {
-      attendanceUnsubsRef.current.forEach((unsubscribe) => unsubscribe());
-      attendanceUnsubsRef.current.clear();
+      listeners.forEach((unsubscribe) => unsubscribe());
+      listeners.clear();
     };
   }, []);
 
