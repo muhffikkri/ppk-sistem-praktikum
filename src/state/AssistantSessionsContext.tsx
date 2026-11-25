@@ -302,35 +302,48 @@ export const AssistantSessionsProvider = ({
   const sessionIds = state.sessions.map((s) => s.id).join(',');
 
   // Keep one attendance listener per session and drop listeners for
-  // sessions that are no longer visible.
+  // sessions that are no longer visible or when disabled/retrying.
   useEffect(() => {
+    const unsubs = attendanceUnsubsRef.current;
+
+    if (!enabled || !user?.uid) {
+      unsubs.forEach((unsubscribe) => unsubscribe());
+      unsubs.clear();
+      return;
+    }
+
     const currentIds = sessionIds ? sessionIds.split(',') : [];
     const activeIds = new Set(currentIds);
 
-    attendanceUnsubsRef.current.forEach((unsubscribe, id) => {
+    unsubs.forEach((unsubscribe, id) => {
       if (!activeIds.has(id)) {
         unsubscribe();
-        attendanceUnsubsRef.current.delete(id);
+        unsubs.delete(id);
       }
     });
 
     currentIds.forEach((sessionId) => {
-      if (attendanceUnsubsRef.current.has(sessionId)) return;
+      if (unsubs.has(sessionId)) return;
 
       const unsubscribe = subscribeAttendanceForSession(
         sessionId,
         (records) => dispatch({ type: 'SET_ATTENDANCE', sessionId, records }),
-        (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+        (msg: string) => {
+          // Lepas listener yang gagal agar retry() dapat menyambung ulang.
+          unsubs.delete(sessionId);
+          dispatch({ type: 'SET_ERROR', error: msg });
+        },
       );
-      attendanceUnsubsRef.current.set(sessionId, unsubscribe);
+      unsubs.set(sessionId, unsubscribe);
     });
-  }, [sessionIds]);
+  }, [enabled, user?.uid, sessionIds, retryCounter]);
 
   // Close every attendance listener on unmount/logout.
   useEffect(() => {
+    const unsubs = attendanceUnsubsRef.current;
     return () => {
-      attendanceUnsubsRef.current.forEach((unsubscribe) => unsubscribe());
-      attendanceUnsubsRef.current.clear();
+      unsubs.forEach((unsubscribe) => unsubscribe());
+      unsubs.clear();
     };
   }, []);
 

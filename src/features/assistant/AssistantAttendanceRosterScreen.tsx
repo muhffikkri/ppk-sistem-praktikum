@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   Avatar,
+  Banner,
   EmptyState,
   Header,
   ListRow,
@@ -28,7 +29,7 @@ type Props = NativeStackScreenProps<
 
 export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession } =
+  const { getSessionById, getAttendanceForSession, error } =
     useAssistantSessionsViewModel();
 
   const session = getSessionById(sessionId);
@@ -57,6 +58,14 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         title={session.courseName}
         description={`${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
       />
+
+      {error ? (
+        <Banner
+          tone="danger"
+          title="Gagal memuat rekap kehadiran"
+          message={error}
+        />
+      ) : null}
 
       <View style={styles.summary}>
         <StatusBadge

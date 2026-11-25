@@ -4,7 +4,13 @@
  * Bertanggung jawab memvalidasi lokasi perangkat terhadap radius lab
  * dan mencatat kehadiran ke koleksi Firestore `attendance` dengan ID deterministik.
  */
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore';
 
 import { checkInRule } from '../../domain/attendanceRules';
 import { evaluateGeofence } from '../../domain/geofenceRules';
@@ -21,6 +27,7 @@ import type {
 } from '../../domain/types';
 import { db } from '../firebase';
 import { getLabById } from './labService';
+import { normalizeAttendanceRecord } from './normalize';
 
 export type GeoCheckInInput = {
   session: Session;
@@ -33,7 +40,37 @@ export type GeoCheckInInput = {
 export type GeoCheckInResult = AsyncActionResult<{
   attendanceId: string;
   geofence: GeofenceCheckResult;
+  record: AttendanceRecord;
 }>;
+
+/**
+ * Memantau langsung dokumen presensi deterministik `{sessionId}_{uid}` milik praktikan.
+ * Menggunakan single-document `get` (tanpa composite index) agar status sudah hadir
+ * selalu konsisten saat layar presensi dibuka ulang.
+ */
+export function subscribeStudentSessionAttendance(
+  sessionId: string,
+  uid: string,
+  onData: (record: AttendanceRecord | null) => void,
+  onError?: (message: string) => void,
+) {
+  const attendanceId = `${sessionId}_${uid}`;
+  const attendanceRef = doc(db, 'attendance', attendanceId);
+
+  return onSnapshot(
+    attendanceRef,
+    (snap) => {
+      if (!snap.exists()) {
+        onData(null);
+        return;
+      }
+      onData(normalizeAttendanceRecord(snap.id, snap.data()));
+    },
+    (err) => {
+      onError?.(err.message || 'Gagal memeriksa status presensi.');
+    },
+  );
+}
 
 function errorCode(e: unknown): string {
   return typeof e === 'object' && e !== null && 'code' in e
@@ -136,6 +173,7 @@ export async function checkInWithGeofence(
       data: {
         attendanceId,
         geofence: geofenceResult,
+        record: payload,
       },
     };
   } catch (e) {

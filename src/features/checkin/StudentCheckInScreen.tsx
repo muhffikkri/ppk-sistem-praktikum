@@ -73,7 +73,9 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
     }
   };
 
-  const canCheckIn = isOpen && !isAlreadyCheckedIn && geofence?.status === 'inside';
+  const checkedIn = isAlreadyCheckedIn || successBanner;
+  const canCheckIn =
+    isOpen && !checkedIn && !loading && geofence?.status === 'inside';
 
   return (
     <Screen withDock={false}>
@@ -92,13 +94,15 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         />
       ) : null}
 
-      {successBanner || isAlreadyCheckedIn ? (
+      {checkedIn ? (
         <Banner
           tone="success"
           title="Presensi Berhasil"
           message={
             attendance?.checkedInAt
-              ? `Tercatat pada ${new Date(attendance.checkedInAt).toLocaleTimeString('id-ID', {
+              ? `Tercatat pada ${new Date(
+                  attendance.checkedInAt,
+                ).toLocaleTimeString('id-ID', {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}.`
@@ -114,28 +118,41 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           <CardContent>
             <View style={styles.detailGrid}>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Mata Kuliah</Text>
+                <Text variant="caption" tone="muted">
+                  Mata Kuliah
+                </Text>
                 <Text variant="captionStrong">{session.courseName}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Kelas & Jadwal</Text>
+                <Text variant="caption" tone="muted">
+                  Kelas & Jadwal
+                </Text>
                 <Text variant="captionStrong">
-                  {session.groupName} • {session.startsAt.slice(11, 16)}–{session.endsAt.slice(11, 16)}
+                  {session.groupName} • {session.startsAt.slice(11, 16)}–
+                  {session.endsAt.slice(11, 16)}
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Laboratorium</Text>
+                <Text variant="caption" tone="muted">
+                  Laboratorium
+                </Text>
                 <Text variant="captionStrong">
-                  {lab ? `${lab.name} (${lab.building})` : (session.lab ?? 'Tidak ditentukan')}
+                  {lab
+                    ? `${lab.name} (${lab.building})`
+                    : (session.lab ?? 'Tidak ditentukan')}
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Status Sesi</Text>
+                <Text variant="caption" tone="muted">
+                  Status Sesi
+                </Text>
                 <Text
                   variant="captionStrong"
                   tone={isOpen ? 'violet' : 'muted'}
                 >
-                  {isOpen ? 'Dibuka (Presensi Aktif)' : `Ditutup (${session.status})`}
+                  {isOpen
+                    ? 'Dibuka (Presensi Aktif)'
+                    : `Ditutup (${session.status})`}
                 </Text>
               </View>
             </View>
@@ -158,7 +175,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
 
       {/* Aksi Presensi */}
       <View style={styles.actionSection}>
-        {isAlreadyCheckedIn ? (
+        {checkedIn ? (
           <Button
             label="✓ Anda Sudah Hadir"
             variant="outline"
@@ -175,15 +192,17 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           />
         )}
 
-        {!isAlreadyCheckedIn && !isOpen && (
+        {!checkedIn && !isOpen && (
           <Text variant="caption" tone="muted" style={styles.helperText}>
-            Presensi hanya dapat dilakukan saat sesi praktikum dalam status dibuka.
+            Presensi hanya dapat dilakukan saat sesi praktikum dalam status
+            dibuka.
           </Text>
         )}
 
-        {!isAlreadyCheckedIn && isOpen && geofence?.status !== 'inside' && (
+        {!checkedIn && isOpen && geofence?.status !== 'inside' && (
           <Text variant="caption" tone="danger" style={styles.helperText}>
-            Dekati lokasi laboratorium hingga berada dalam batas radius untuk mengaktifkan tombol presensi.
+            Dekati lokasi laboratorium hingga berada dalam batas radius untuk
+            mengaktifkan tombol presensi.
           </Text>
         )}
       </View>

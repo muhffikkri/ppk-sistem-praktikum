@@ -566,17 +566,19 @@ export function subscribeAttendanceForSession(
   onData: (records: AttendanceRecord[]) => void,
   onError: (msg: string) => void,
 ) {
-  const q = query(
-    attendanceCol,
-    where('sessionId', '==', sessionId),
-    orderBy('checkedInAt', 'asc'),
-  );
+  // Query single-field (sessionId) lalu urutkan di klien agar tidak gagal saat
+  // composite index (sessionId, checkedInAt) belum di-deploy di Firestore.
+  const q = query(attendanceCol, where('sessionId', '==', sessionId));
   return onSnapshot(
     q,
     (snap: any) => {
-      const records = snap.docs.map((d: any) =>
-        normalizeAttendanceRecord(d.id, d.data()),
-      );
+      const records = snap.docs
+        .map((d: any) => normalizeAttendanceRecord(d.id, d.data()))
+        .sort(
+          (a: AttendanceRecord, b: AttendanceRecord) =>
+            new Date(a.checkedInAt).getTime() -
+            new Date(b.checkedInAt).getTime(),
+        );
       onData(records);
     },
     (err: any) => {
