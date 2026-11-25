@@ -117,7 +117,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat jadwal"
           message={error}
-          onRetry={() => navigation.replace('Home')}
+          onRetry={retry}
         />
       </Screen>
     );
