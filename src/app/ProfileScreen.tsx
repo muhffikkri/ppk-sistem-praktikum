@@ -20,6 +20,7 @@ import {
   Text,
 } from '../shared/ui';
 import { useAuth } from '../state';
+import { canManageLabMaster } from '../domain/asprakScope';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
@@ -38,8 +39,14 @@ export function ProfileScreen({ navigation }: Props) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const isAssistant = user?.role === 'assistant';
-  const roleLabel = isAssistant ? 'Asisten' : 'Praktikan';
+  const isAssistant =
+    user?.role === 'assistant' || user?.role === 'lab_assistant';
+  const roleLabel =
+    user?.role === 'lab_assistant'
+      ? 'Aslab'
+      : user?.role === 'assistant'
+        ? 'Asprak'
+        : 'Praktikan';
   const displayName = user?.displayName ?? 'Pengguna';
   const email = user?.email ?? '-';
   const activeError = localError ?? error;
@@ -58,12 +65,16 @@ export function ProfileScreen({ navigation }: Props) {
           icon: 'people-outline',
           onPress: () => navigation.navigate('AssistantClassList'),
         },
-        {
-          label: 'Lokasi Laboratorium',
-          sub: 'Atur koordinat & radius presensi',
-          icon: 'location-outline',
-          onPress: () => navigation.navigate('AssistantLabList'),
-        },
+        ...(canManageLabMaster(user?.role)
+          ? [
+              {
+                label: 'Lokasi Laboratorium',
+                sub: 'Atur koordinat & radius presensi',
+                icon: 'location-outline' as const,
+                onPress: () => navigation.navigate('AssistantLabList'),
+              },
+            ]
+          : []),
         {
           label: 'Pemeriksaan Izin',
           sub: 'Tinjau pengajuan izin & prediksi AI',

@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     function isAssistant() {
-      return hasRole('assistant');
+      return hasRole('assistant') || hasRole('lab_assistant');
     }
 
     function isStudent() {

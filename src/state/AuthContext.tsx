@@ -204,7 +204,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = snap.data() as Partial<UserProfile>;
             // Role disimpan di Firestore dan dipakai sebagai kebenaran tunggal.
             const role: UserRole =
-              data.role === 'assistant' ? 'assistant' : 'student';
+              data.role === 'lab_assistant'
+                ? 'lab_assistant'
+                : data.role === 'assistant'
+                  ? 'assistant'
+                  : 'student';
             setUser({
               uid: firebaseUser.uid,
               displayName:
@@ -559,5 +563,7 @@ export type ActorRole = 'praktikan' | 'asisten';
 
 export function useActorRole(): ActorRole {
   const { user } = useAuth();
-  return user?.role === 'assistant' ? 'asisten' : 'praktikan';
+  return user?.role === 'assistant' || user?.role === 'lab_assistant'
+    ? 'asisten'
+    : 'praktikan';
 }

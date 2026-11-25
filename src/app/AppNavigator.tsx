@@ -334,7 +334,11 @@ export function AppNavigator() {
   }
 
   return (
-    <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
+    <AssistantSessionsProvider
+      enabled={
+        user?.role === 'assistant' || user?.role === 'lab_assistant'
+      }
+    >
       <StudentAttendanceProvider enabled={user?.role === 'student'}>
         <LeaveProvider db={db} user={user}>
           <NotificationInboxProvider>

@@ -36,7 +36,8 @@ export function useLabManagement(): LabManagementViewModel {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  const canManage = user?.role === 'assistant';
+  const canManage =
+    user?.role === 'assistant' || user?.role === 'lab_assistant';
 
   const uid = user?.uid;
 

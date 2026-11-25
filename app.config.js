@@ -8,10 +8,10 @@ const path = require('path');
  */
 function androidBuildProperties() {
   const props = {
-    // R8: strip and shorten unused Java/Kotlin code.
-    enableMinifyInReleaseBuilds: true,
-    // Drop resources R8 proves unused. Requires minify.
-    enableShrinkResourcesInReleaseBuilds: true,
+    // R8 minification is disabled because it strips native JNI bindings for
+    // react-native-worklets / reanimated in release/preview APKs.
+    enableMinifyInReleaseBuilds: false,
+    enableShrinkResourcesInReleaseBuilds: false,
   };
 
   // The preview profile ships a universal APK for internal installs, which

@@ -98,7 +98,7 @@ export function LabMapsScreen({ navigation }: Props) {
   };
 
   const handleSelectSession = (sessionId: string) => {
-    if (user?.role === 'assistant') {
+    if (user?.role === 'assistant' || user?.role === 'lab_assistant') {
       navigation.navigate('AssistantSessionDetail', { sessionId });
     } else {
       navigation.navigate('StudentSessionDetail', { sessionId });
