@@ -5,9 +5,11 @@ import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import { parseSessionQr } from '../../domain/sessionQr';
+import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
 import {
   Banner,
   Button,
+  colors,
   EmptyState,
   Header,
   LoadingState,
@@ -23,6 +25,8 @@ export function BarcodeScanScreen({ navigation }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [invalid, setInvalid] = useState(false);
+  // Start the camera after the push animation so it does not stall it.
+  const cameraReady = useTransitionReady();
 
   if (!permission) {
     return (
@@ -64,23 +68,25 @@ export function BarcodeScanScreen({ navigation }: Props) {
         description="Arahkan kamera ke kode presensi yang ditampilkan asisten."
       />
       <View style={styles.cameraWrap}>
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={
-            scanned
-              ? undefined
-              : ({ data }) => {
-                  setScanned(true);
-                  const sessionId = parseSessionQr(data);
-                  if (sessionId) {
-                    navigation.replace('StudentCheckIn', { sessionId });
-                  } else {
-                    setInvalid(true);
+        {cameraReady ? (
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={
+              scanned
+                ? undefined
+                : ({ data }) => {
+                    setScanned(true);
+                    const sessionId = parseSessionQr(data);
+                    if (sessionId) {
+                      navigation.replace('StudentCheckIn', { sessionId });
+                    } else {
+                      setInvalid(true);
+                    }
                   }
-                }
-          }
-        />
+            }
+          />
+        ) : null}
       </View>
       {invalid ? (
         <View style={styles.result}>
@@ -113,6 +119,7 @@ const styles = StyleSheet.create({
     minHeight: 320,
     overflow: 'hidden',
     marginTop: spacing.md,
+    backgroundColor: colors.ink,
   },
   result: {
     gap: spacing.sm,
