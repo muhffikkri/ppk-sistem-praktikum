@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { StackActions, useNavigation } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -218,10 +218,7 @@ export function AppNavigator() {
 
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
-    reset: (state: {
-      index: number;
-      routes: { name: string; params?: Record<string, unknown> }[];
-    }) => void;
+    dispatch: (action: ReturnType<typeof StackActions.popTo>) => void;
     addListener: (event: 'state', cb: (e: any) => void) => () => void;
     getState: () => { index?: number; routes: { name: string }[] } | undefined;
   };
@@ -246,11 +243,13 @@ export function AppNavigator() {
     return navigation.addListener('state', (e) => sync(e.data?.state));
   }, [actorRole, navigation]);
 
+  // Pop back to the existing DockTabs route and merge the tab param so the
+  // tab pages stay mounted. A reset would mint a new route key and remount
+  // every tab page on each tap.
   const onTabPress = (key: string) => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'DockTabs', params: { tab: key as DockTabKey } }],
-    });
+    navigation.dispatch(
+      StackActions.popTo('DockTabs', { tab: key as DockTabKey }, { merge: true }),
+    );
   };
 
   // When unauthenticated or loading, show auth stack (Landing → Login/Register)
