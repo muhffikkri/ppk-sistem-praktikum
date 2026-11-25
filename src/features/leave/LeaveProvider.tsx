@@ -14,6 +14,7 @@ import {
   leaveFailure,
   type LeaveService,
 } from '../../services/firestore/leaveService';
+import { useAssistantSessionsViewModel } from '../../state/AssistantSessionsContext';
 
 const Context = createContext<{
   user: UserProfile | null;
@@ -63,8 +64,17 @@ function LeaveRequestsSubscription({
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
 
+  // Assistants: reuse the session list AssistantSessionsContext already
+  // listens to instead of opening a second sessions listener.
+  const assistant = useAssistantSessionsViewModel();
+  const isAssistant = user?.role === 'assistant';
+  const assistantSessionKey = isAssistant
+    ? assistant.sessions.map((s) => s.id).join(',')
+    : '';
+  const assistantSessionsReady = !isAssistant || !assistant.loading;
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || !assistantSessionsReady) return;
     let active = true;
     const fail = (cause: unknown) => {
       if (active) {
@@ -72,23 +82,24 @@ function LeaveRequestsSubscription({
         setLoading(false);
       }
     };
+    const onData = (items: LeaveRequest[]) => {
+      if (active) {
+        setRequests(items);
+        setLoading(false);
+        setError(null);
+      }
+    };
     let stop: (() => void) | undefined;
     try {
-      const subscribe =
+      stop =
         user.role === 'student'
-          ? service.subscribeStudent
-          : service.subscribeAssistant;
-      stop = subscribe(
-        user,
-        (items) => {
-          if (active) {
-            setRequests(items);
-            setLoading(false);
-            setError(null);
-          }
-        },
-        fail,
-      );
+          ? service.subscribeStudent(user, onData, fail)
+          : service.subscribeAssistant(
+              user,
+              assistantSessionKey ? assistantSessionKey.split(',') : [],
+              onData,
+              fail,
+            );
     } catch (cause) {
       queueMicrotask(() => fail(cause));
     }
@@ -96,7 +107,7 @@ function LeaveRequestsSubscription({
       active = false;
       stop?.();
     };
-  }, [service, user, revision]);
+  }, [service, user, revision, assistantSessionKey, assistantSessionsReady]);
 
   const retry = useCallback(() => {
     setLoading(true);
