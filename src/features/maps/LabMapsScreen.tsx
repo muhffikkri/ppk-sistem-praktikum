@@ -48,20 +48,25 @@ export function LabMapsScreen({ navigation }: Props) {
     retry,
   } = useLabMapsViewModel();
 
-  // Pusatkan peta ke lokasi pengguna ketika pertama kali didapatkan
+  // Pusatkan peta ke lokasi pengguna ketika pertama kali didapatkan, sekali
+  // saja: setiap update GPS sebelumnya menarik peta kembali ke pengguna dan
+  // menjalankan animasi kamera 800 ms walau pengguna sedang menggeser peta.
+  const centeredOnUser = useRef(false);
+  const userCoords = userLocation.coordinates;
   useEffect(() => {
-    if (userLocation.coordinates && mapRef.current) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: userLocation.coordinates.latitude,
-          longitude: userLocation.coordinates.longitude,
-          latitudeDelta: 0.002,
-          longitudeDelta: 0.002,
-        },
-        800,
-      );
-    }
-  }, [userLocation.coordinates?.latitude, userLocation.coordinates?.longitude]);
+    if (centeredOnUser.current || !userCoords || !mapReady) return;
+    if (!mapRef.current) return;
+    centeredOnUser.current = true;
+    mapRef.current.animateToRegion(
+      {
+        latitude: userCoords.latitude,
+        longitude: userCoords.longitude,
+        latitudeDelta: 0.002,
+        longitudeDelta: 0.002,
+      },
+      800,
+    );
+  }, [userCoords, mapReady]);
 
   const handleCenterUser = () => {
     refreshLocation();
