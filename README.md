@@ -133,7 +133,7 @@ firebase deploy --only functions --project project-praktikum-sprint
 
 Push notification membutuhkan secret `EXPO_PUSH_ACCESS_TOKEN` (`firebase functions:secrets:set EXPO_PUSH_ACCESS_TOKEN`).
 
-Sesi yang dibuat sebelum ada pilihan lab (termasuk data dari seeder) belum punya `labId`, sehingga praktikan tidak bisa presensi. Buka sesi tersebut di aplikasi asisten, pilih lab, lalu simpan.
+Sesi yang dibuat sebelum ada pilihan lab belum punya `labId`, sehingga praktikan tidak bisa presensi. Buka sesi tersebut di aplikasi asisten, pilih lab, lalu simpan. Seeder sudah membuat data `labs` dan mengisi `labId` di setiap sesi; ubah koordinat lab lewat aplikasi asisten bila ingin mencoba presensi dari lokasi lain.
 
 API key Google Maps di `app.json` ikut ter-commit. Batasi key tersebut di Google Cloud Console → APIs & Services → Credentials: *Application restrictions* = Android apps (package `com.muhffikkris.ppkmobile` + SHA-1 sertifikat build), *API restrictions* = Maps SDK for Android.
 

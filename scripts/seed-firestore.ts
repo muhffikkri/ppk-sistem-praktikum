@@ -14,6 +14,7 @@ import { doc, setDoc, collection, writeBatch } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import type { PracticalClass, Session, UserProfile } from '../src/domain/types';
+import { DEFAULT_CAMPUS_LABS, type Lab } from '../src/domain/geoTypes';
 
 // Firebase config from environment
 const firebaseConfig = {
@@ -129,6 +130,28 @@ const demoClasses: PracticalClass[] = [
 ];
 
 // ============================================================
+// Demo Labs (acuan geofence presensi & peta, Sprint 3)
+// ============================================================
+
+const seededAt = new Date().toISOString();
+
+const demoLabs: Lab[] = DEFAULT_CAMPUS_LABS.map((lab) => ({
+  id: lab.id,
+  name: lab.name,
+  building: lab.building,
+  description: lab.description ?? null,
+  location: {
+    latitude: lab.coordinates.latitude,
+    longitude: lab.coordinates.longitude,
+  },
+  radiusMeters: lab.radiusMeters,
+  isActive: lab.isActive ?? true,
+  createdBy: 'user-asisten-02',
+  createdAt: seededAt,
+  updatedAt: seededAt,
+}));
+
+// ============================================================
 // Demo Sessions
 // ============================================================
 
@@ -146,6 +169,7 @@ const demoSessions: Session[] = [
     groupName: 'Kelas 3SE1 - Kelompok A',
     title: 'Sesi 1: Pengenalan Sistem Terdistribusi',
     lab: 'Lab 3.2 RPL · Ged B',
+    labId: 'lab-rpl-32',
     startsAt: addDays(now, -2),
     endsAt: addDays(now, -2),
     status: 'closed',
@@ -167,6 +191,7 @@ const demoSessions: Session[] = [
     groupName: 'Kelas 3SE2 - Kelompok B',
     title: 'Sesi 1: Normalisasi Database',
     lab: 'Lab Database · Ged C',
+    labId: 'lab-database',
     startsAt: addDays(now, -1),
     endsAt: addDays(now, -1),
     status: 'open',
@@ -184,6 +209,7 @@ const demoSessions: Session[] = [
     groupName: 'Kelas 3SE3 - Kelompok C',
     title: 'Sesi 1: Konfigurasi Router',
     lab: 'Lab Jaringan · Ged B302',
+    labId: 'lab-jaringan',
     startsAt: addDays(now, 1),
     endsAt: addDays(now, 1),
     status: 'scheduled',
@@ -201,6 +227,7 @@ const demoSessions: Session[] = [
     groupName: 'Kelas 3SE1 - Kelompok A',
     title: 'Sesi 2: Client-Server Architecture',
     lab: 'Lab 3.2 RPL · Ged B',
+    labId: 'lab-rpl-32',
     startsAt: addDays(now, 3),
     endsAt: addDays(now, 3),
     status: 'scheduled',
@@ -236,6 +263,12 @@ async function seed() {
     batch.set(ref, cls);
   }
 
+  // Seed labs (sebelum sesi, karena sesi merujuk labs/{labId})
+  for (const lab of demoLabs) {
+    const ref = doc(db, 'labs', lab.id);
+    batch.set(ref, lab);
+  }
+
   // Seed sessions
   for (const session of demoSessions) {
     const ref = doc(db, 'sessions', session.id);
@@ -247,6 +280,7 @@ async function seed() {
   console.log('✅ Seeder selesai:');
   console.log(`   👥 ${demoUsers.length} user`);
   console.log(`   🏫 ${demoClasses.length} kelas`);
+  console.log(`   📍 ${demoLabs.length} lab`);
   console.log(`   📅 ${demoSessions.length} sesi`);
   console.log('');
   console.log('🔑 Akun demo:');
