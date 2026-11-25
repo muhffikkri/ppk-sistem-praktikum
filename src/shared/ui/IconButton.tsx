@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, type PressableProps, StyleSheet, View } from 'react-native';
 
 import { colors, radius, ripple, typography } from '../../theme/tokens';
