@@ -23,6 +23,7 @@ import {
 } from '../../shared/ui';
 import { useAuth, useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
+import { NotificationBellButton } from '../notifications/NotificationBellButton';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -87,9 +88,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
             accessibilityLabel="Peta Laboratorium"
             onPress={() => navigation.navigate('LabMaps')}
           />
-          <IconButton
-            icon="notifications-outline"
-            accessibilityLabel="Notifikasi"
+          <NotificationBellButton
             onPress={() => navigation.navigate('Notifications')}
           />
           <IconButton

@@ -65,6 +65,18 @@ service cloud.firestore {
       allow delete: if isSignedIn() && request.auth.uid == uid;
     }
 
+    // Inbox notifikasi: hanya ditulis server (Admin SDK); pemilik hanya boleh
+    // membaca dan menandai sudah dibaca.
+    match /users/{uid}/notifications/{notificationId} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+        && request.resource.data.readAt is string
+        && request.resource.data.readAt.size() <= 40;
+      allow create, delete: if false;
+    }
+
     // 2. Kelas & Peserta
     match /classes/{classId} {
       allow read: if (isAssistant() && request.auth.uid in resource.data.assistantIds)

@@ -1,5 +1,5 @@
 /**
- * Tes Firestore rules presensi (geofence) di Firebase Emulator.
+ * Tes Firestore rules presensi (geofence) & inbox notifikasi di Firebase Emulator.
  *
  * Usage:
  *   npm run test:rules
@@ -21,13 +21,16 @@ import {
 import {
   collection,
   connectFirestoreEmulator,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   getFirestore,
   orderBy,
   query,
   setDoc,
   setLogLevel,
+  updateDoc,
   where,
 } from 'firebase/firestore';
 
@@ -75,24 +78,20 @@ await adminAuth.createUser({
   email: 'budi@rules.test',
   password: PASSWORD,
 });
-await adminDb
-  .doc('users/asisten')
-  .set({
-    uid: 'asisten',
-    role: 'assistant',
-    displayName: 'Asisten',
-    email: 'asisten@rules.test',
-    createdAt: lab.createdAt,
-  });
-await adminDb
-  .doc('users/budi')
-  .set({
-    uid: 'budi',
-    role: 'student',
-    displayName: 'Budi',
-    email: 'budi@rules.test',
-    createdAt: lab.createdAt,
-  });
+await adminDb.doc('users/asisten').set({
+  uid: 'asisten',
+  role: 'assistant',
+  displayName: 'Asisten',
+  email: 'asisten@rules.test',
+  createdAt: lab.createdAt,
+});
+await adminDb.doc('users/budi').set({
+  uid: 'budi',
+  role: 'student',
+  displayName: 'Budi',
+  email: 'budi@rules.test',
+  createdAt: lab.createdAt,
+});
 const { id: labId, ...labDoc } = lab;
 await adminDb.doc(`labs/${labId}`).set(labDoc);
 await adminDb.doc('sessions/s1').set({
@@ -231,6 +230,82 @@ for (const testCase of cases) {
     `${pass ? '✅' : '❌'} ${testCase.label}: server ${result} (harap ${testCase.expected}), rekap asisten ${roster.size}`,
   );
 }
+
+// --- Inbox notifikasi: users/{uid}/notifications/{id} ---
+const notice = {
+  type: 'session_opened',
+  title: 'Sesi praktikum dibuka',
+  body: 'Praktikum · A sudah dibuka.',
+  sessionId: 's1',
+  createdAt: '2026-01-01T01:00:00.000Z',
+  readAt: null,
+};
+await adminDb.doc('users/budi/notifications/n1').set(notice);
+await adminDb.doc('users/asisten/notifications/n2').set(notice);
+
+const attempt = async (action: () => Promise<unknown>) => {
+  try {
+    await action();
+    return 'allowed' as const;
+  } catch {
+    return 'denied' as const;
+  }
+};
+
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+const inboxCases: [string, () => Promise<unknown>, 'allowed' | 'denied'][] = [
+  [
+    'baca inbox sendiri',
+    () =>
+      getDocs(
+        query(
+          collection(db, 'users', 'budi', 'notifications'),
+          orderBy('createdAt', 'desc'),
+        ),
+      ),
+    'allowed',
+  ],
+  [
+    'baca inbox orang lain',
+    () => getDoc(doc(db, 'users', 'asisten', 'notifications', 'n2')),
+    'denied',
+  ],
+  [
+    'tandai sudah dibaca',
+    () =>
+      updateDoc(doc(db, 'users', 'budi', 'notifications', 'n1'), {
+        readAt: new Date().toISOString(),
+      }),
+    'allowed',
+  ],
+  [
+    'ubah judul notifikasi',
+    () =>
+      updateDoc(doc(db, 'users', 'budi', 'notifications', 'n1'), {
+        title: 'Palsu',
+      }),
+    'denied',
+  ],
+  [
+    'buat notifikasi sendiri',
+    () => setDoc(doc(db, 'users', 'budi', 'notifications', 'n3'), notice),
+    'denied',
+  ],
+  [
+    'hapus notifikasi',
+    () => deleteDoc(doc(db, 'users', 'budi', 'notifications', 'n1')),
+    'denied',
+  ],
+];
+for (const [label, action, expected] of inboxCases) {
+  const result = await attempt(action);
+  const pass = result === expected;
+  if (!pass) failures += 1;
+  console.log(
+    `${pass ? '✅' : '❌'} inbox: ${label}: server ${result} (harap ${expected})`,
+  );
+}
+await signOut(auth);
 
 console.log(
   failures ? `\n❌ ${failures} kasus gagal.` : '\n✅ Semua kasus lolos.',

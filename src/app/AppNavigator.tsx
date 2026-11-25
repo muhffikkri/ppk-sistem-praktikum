@@ -56,7 +56,11 @@ import { db } from '../services/firebase';
 
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
 
-import { useActorRole, useAuth } from '../state';
+import {
+  NotificationInboxProvider,
+  useActorRole,
+  useAuth,
+} from '../state';
 
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
 import { StudentAttendanceProvider } from '../state/StudentAttendanceContext';
@@ -281,6 +285,7 @@ export function AppNavigator() {
     <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
       <StudentAttendanceProvider enabled={user?.role === 'student'}>
         <LeaveProvider db={db} user={user}>
+          <NotificationInboxProvider>
           <View style={styles.root}>
             <Stack.Navigator
               initialRouteName="DockTabs"
@@ -550,6 +555,7 @@ export function AppNavigator() {
               }
             />
           </View>
+          </NotificationInboxProvider>
         </LeaveProvider>
       </StudentAttendanceProvider>
     </AssistantSessionsProvider>
