@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
-  Pressable,
   type PressableProps,
   StyleSheet,
   View,
 } from 'react-native';
+import { interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import type { IconName } from './IconButton';
 import { androidClip, rippleOnDark, rippleOnLight } from './ripple';
 import { Text, type TextTone } from './Text';
+import { AnimatedPressable, usePressFeedback } from './usePressFeedback';
 
 type ButtonVariant =
   | 'primary' // violet solid
@@ -44,6 +45,15 @@ const labelTone: Record<ButtonVariant, TextTone> = {
   destructive: 'danger',
 };
 
+// Resting and pressed fills, interpolated on the UI thread while pressed.
+const fillColor: Record<ButtonVariant, [string, string]> = {
+  primary: [colors.violet, colors.violetDark],
+  accent: [colors.lime, colors.limeHover],
+  soft: [colors.lavender, colors.lavenderSubtle],
+  outline: [colors.panel, colors.surface],
+  destructive: [colors.dangerSoft, colors.dangerBorder],
+};
+
 const contentColor: Record<ButtonVariant, string> = {
   primary: colors.onPrimary,
   accent: colors.ink,
@@ -60,27 +70,49 @@ export function Button({
   icon,
   loading = false,
   disabled,
+  onPressIn,
+  onPressOut,
   ...pressableProps
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   const color = disabled ? colors.inkMuted : contentColor[variant];
+  const { progress, scaleStyle, handlers } = usePressFeedback({
+    onPressIn,
+    onPressOut,
+  });
+  const [rest, pressedFill] = fillColor[variant];
+  // Disabled buttons keep the static disabled fill.
+  const animateFill = !isDisabled;
+  const fillStyle = useAnimatedStyle(() =>
+    animateFill
+      ? {
+          backgroundColor: interpolateColor(
+            progress.get(),
+            [0, 1],
+            [rest, pressedFill],
+          ),
+        }
+      : {},
+  );
 
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={iconOnly ? label : undefined}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
       android_ripple={variant === 'primary' ? rippleOnDark : rippleOnLight}
-      style={({ pressed }) => [
+      style={[
         styles.button,
         styles[size],
         iconOnly && styles.iconOnly,
         styles[variant],
-        !isDisabled && pressed && styles[`${variant}Pressed`],
         disabled && styles.disabled,
+        fillStyle,
+        scaleStyle,
       ]}
       {...pressableProps}
+      {...handlers}
     >
       <View style={styles.row}>
         {loading ? (
@@ -99,7 +131,7 @@ export function Button({
           </Text>
         )}
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -131,18 +163,13 @@ const styles = StyleSheet.create({
 
   // Sticker sheet variants
   primary: { backgroundColor: colors.violet, borderColor: colors.violet },
-  primaryPressed: { backgroundColor: colors.violetDark },
   accent: { backgroundColor: colors.lime, borderColor: colors.lime },
-  accentPressed: { backgroundColor: colors.limeHover },
   soft: { backgroundColor: colors.lavender, borderColor: colors.lavender },
-  softPressed: { backgroundColor: colors.lavenderSubtle },
   outline: { backgroundColor: colors.panel, borderColor: colors.border },
-  outlinePressed: { backgroundColor: colors.surface },
   destructive: {
     backgroundColor: colors.dangerSoft,
     borderColor: colors.dangerBorder,
   },
-  destructivePressed: { backgroundColor: colors.dangerBorder },
 
   disabled: {
     backgroundColor: colors.disabled,

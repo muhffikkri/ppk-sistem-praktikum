@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -11,6 +12,7 @@ import {
   spacing,
   typography,
 } from '../../theme/tokens';
+import { usePressFeedback } from './usePressFeedback';
 
 // Borderless so the ripple reads as a circle on the dark dock.
 const TAB_RIPPLE = { color: ripple.onDark, borderless: true, radius: 28 };
@@ -37,6 +39,29 @@ type BottomDockProps = {
     onPress: () => void;
   };
 };
+
+/** Center action. Scales on press via a shared value (UI thread). */
+function DockFab({
+  glyph,
+  label,
+  onPress,
+}: NonNullable<BottomDockProps['fab']>) {
+  const { scaleStyle, handlers } = usePressFeedback();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      android_ripple={FAB_RIPPLE}
+      style={styles.fabSlot}
+      {...handlers}
+    >
+      <Animated.View style={[styles.fab, scaleStyle]}>
+        <Ionicons name={glyph} size={32} color={colors.ink} />
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 /**
  * Mobile bottom dock (sticker sheet "BottomNavigationPreview").
@@ -83,22 +108,7 @@ export function BottomDock({
     <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.row}>
         {leftTabs.map(renderTab)}
-        {fab ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={fab.label}
-            onPress={fab.onPress}
-            android_ripple={FAB_RIPPLE}
-            style={({ pressed }) => [
-              styles.fabSlot,
-              pressed && styles.fabSlotPressed,
-            ]}
-          >
-            <View style={styles.fab}>
-              <Ionicons name={fab.glyph} size={32} color={colors.ink} />
-            </View>
-          </Pressable>
-        ) : null}
+        {fab ? <DockFab {...fab} /> : null}
         {rightTabs.map(renderTab)}
       </View>
     </View>
@@ -133,7 +143,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fabSlotPressed: { opacity: 0.85 },
   fab: {
     width: 72,
     height: 72,
