@@ -35,6 +35,7 @@ export type RootStackParamList = {
   ProfileEdit: undefined;
   Notifications: undefined;
   LabMaps: undefined;
+  BarcodeScan: undefined;
 };
 
 export const POVLABEL: Record<ActorRole, string> = {

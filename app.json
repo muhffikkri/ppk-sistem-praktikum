@@ -51,6 +51,12 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Izinkan PPK Mobile mengakses kamera untuk memindai barcode presensi."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
