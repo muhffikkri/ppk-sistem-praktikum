@@ -127,11 +127,17 @@ export function LabMapsScreen({ navigation }: Props) {
           <Circle
             key={`radius-${act.lab.id}`}
             center={act.lab.coordinates}
-            radius={act.lab.radiusMeters}
+            radius={Math.min(act.lab.radiusMeters, 35)}
             fillColor={
-              act.isOccupied ? colors.lavenderSubtle : colors.onSiteSoft
+              act.isOccupied
+                ? colors.mapCircleOccupied
+                : colors.mapCircleAvailable
             }
-            strokeColor={act.isOccupied ? colors.violet : colors.success}
+            strokeColor={
+              act.isOccupied
+                ? colors.mapCircleOccupiedBorder
+                : colors.mapCircleAvailableBorder
+            }
             strokeWidth={1.5}
           />
         ))}
@@ -157,7 +163,7 @@ export function LabMapsScreen({ navigation }: Props) {
           <Marker
             coordinate={userLocation.coordinates}
             title="Lokasi Anda"
-            pinColor={colors.violetDark}
+            pinColor={colors.blue}
           />
         )}
       </MapView>

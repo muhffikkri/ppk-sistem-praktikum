@@ -1,15 +1,18 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import {
-  AndroidImportance,
-  getExpoPushTokenAsync,
-  setNotificationChannelAsync,
-  setNotificationHandler,
-  type DevicePushToken,
-} from 'expo-notifications';
+import type { DevicePushToken } from 'expo-notifications';
 import { Platform } from 'react-native';
+
+const Notifications = (() => {
+  try {
+    return require('expo-notifications');
+  } catch {
+    return null;
+  }
+})();
 
 export const PUSH_CHANNEL = 'practicum';
 export const pushSupported =
+  Boolean(Notifications) &&
   (Platform.OS === 'android' || Platform.OS === 'ios') &&
   Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
@@ -42,15 +45,18 @@ export function parsePushTarget(
 }
 
 export async function preparePushChannel() {
-  if (pushSupported && Platform.OS === 'android') {
-    await setNotificationChannelAsync(PUSH_CHANNEL, {
+  if (pushSupported && Notifications && Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(PUSH_CHANNEL, {
       name: 'Praktikum',
-      importance: AndroidImportance.HIGH,
+      importance: Notifications.AndroidImportance.HIGH,
     });
   }
 }
 
 export async function getPushToken(devicePushToken?: DevicePushToken) {
+  if (!Notifications) {
+    throw new Error('Notifications module not available');
+  }
   const projectId =
     Constants.easConfig?.projectId ??
     Constants.expoConfig?.extra?.eas?.projectId;
@@ -60,7 +66,7 @@ export async function getPushToken(devicePushToken?: DevicePushToken) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
-      getExpoPushTokenAsync({ projectId, devicePushToken }),
+      Notifications.getExpoPushTokenAsync({ projectId, devicePushToken }),
       new Promise<never>((_, reject) => {
         timer = setTimeout(
           () => reject(new Error('Push registration timed out')),
@@ -75,8 +81,8 @@ export async function getPushToken(devicePushToken?: DevicePushToken) {
 }
 
 export function enableForegroundNotifications() {
-  if (!pushSupported) return;
-  setNotificationHandler({
+  if (!pushSupported || !Notifications) return;
+  Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
       shouldShowList: true,

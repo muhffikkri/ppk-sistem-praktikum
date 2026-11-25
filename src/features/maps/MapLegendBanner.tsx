@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.violet,
   },
   dotUser: {
-    backgroundColor: colors.violetDark,
+    backgroundColor: colors.blue,
   },
   filterRow: {
     flexDirection: 'row',

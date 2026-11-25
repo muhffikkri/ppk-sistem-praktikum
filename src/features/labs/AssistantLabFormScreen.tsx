@@ -27,6 +27,9 @@ import {
   TextField,
   TopBar,
 } from '../../shared/ui';
+import { colors, radius as tokenRadius } from '../../theme/tokens';
+import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
+import { LabLocationPickerModal } from './LabLocationPickerModal';
 import {
   useLabManagement,
   type LabManagementViewModel,
@@ -114,6 +117,21 @@ function LabForm({
   const [errors, setErrors] = useState<LabInputErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [locating, setLocating] = useState(false);
+
+  const handleUseGPS = async () => {
+    setLocating(true);
+    try {
+      const res = await getCurrentDeviceLocation();
+      if (res.ok && res.fix) {
+        setLatitude(res.fix.latitude.toFixed(6));
+        setLongitude(res.fix.longitude.toFixed(6));
+      }
+    } finally {
+      setLocating(false);
+    }
+  };
 
   const buildInput = (): LabInput => ({
     name,
@@ -186,9 +204,35 @@ function LabForm({
       <View style={styles.form}>
         <SectionHeader title="Titik lokasi" />
         <Text variant="body" tone="muted">
-          Salin koordinat dari Google Maps (tekan lama pada titik lab), lalu
-          tempel latitude dan longitude di bawah.
+          Pilih lokasi lab langsung di peta atau gunakan lokasi saat ini. Anda juga
+          dapat mengetik koordinat manual di bawah.
         </Text>
+
+        <View style={styles.pickerActions}>
+          <Button
+            label="Pilih Titik di Peta"
+            variant="accent"
+            icon="map-outline"
+            onPress={() => setPickerVisible(true)}
+          />
+          <Button
+            label={locating ? 'Membaca GPS…' : 'Gunakan Lokasi Saat Ini'}
+            variant="outline"
+            icon="locate-outline"
+            loading={locating}
+            disabled={locating}
+            onPress={handleUseGPS}
+          />
+        </View>
+
+        {Boolean(latitude && longitude) && (
+          <View style={styles.coordPreviewBox}>
+            <Text variant="caption" tone="violet">
+              Titik Terpilih: {latitude}, {longitude}
+            </Text>
+          </View>
+        )}
+
         <TextField
           label="Latitude"
           value={latitude}
@@ -263,10 +307,31 @@ function LabForm({
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
+
+      <LabLocationPickerModal
+        visible={pickerVisible}
+        initialLatitude={parseCoordinate(latitude)}
+        initialLongitude={parseCoordinate(longitude)}
+        radiusMeters={Number(radius) || DEFAULT_RADIUS_METERS}
+        onConfirm={(coords) => {
+          setLatitude(coords.latitude.toFixed(6));
+          setLongitude(coords.longitude.toFixed(6));
+        }}
+        onClose={() => setPickerVisible(false)}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   form: { gap: spacing.md },
+  pickerActions: { gap: spacing.sm },
+  coordPreviewBox: {
+    backgroundColor: colors.lavenderSubtle,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: tokenRadius.md,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
 });
