@@ -1,47 +1,57 @@
 /**
  * Firestore Seeder — PPK Mobile
  *
- * Populates Firestore with demo classes, sessions, and student profiles
- * so the app has content when opened for the first time.
+ * Mengisi Firestore dengan data demo (user, kelas, lab, sesi) memakai
+ * Firebase Admin SDK, sehingga tidak terhalang Firestore rules.
  *
  * Usage:
- *   npx tsx scripts/seed-firestore.ts
+ *   npm run seed                 # tulis ke Firestore
+ *   npm run seed -- --dry-run    # cek data tanpa menulis
  *
- * Requires Firebase config in .env (EXPO_PUBLIC_FIREBASE_*).
+ * Kebutuhan (.env atau environment):
+ *   EXPO_PUBLIC_FIREBASE_PROJECT_ID   ID project Firebase
+ *   GOOGLE_APPLICATION_CREDENTIALS    path file service account (JSON).
+ *                                     Tidak perlu bila memakai emulator
+ *                                     (FIRESTORE_EMULATOR_HOST).
+ *   SEED_DEMO_PASSWORD                (opsional) password akun demo. Bila
+ *                                     diisi, akun Firebase Auth dibuat/
+ *                                     diperbarui agar bisa dipakai login.
  */
 
-import { doc, setDoc, collection, writeBatch } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { existsSync } from 'node:fs';
+import { applicationDefault, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import type { PracticalClass, Session, UserProfile } from '../src/domain/types';
 import { DEFAULT_CAMPUS_LABS, type Lab } from '../src/domain/geoTypes';
 
-// Firebase config from environment
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '',
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? '',
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '',
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? '',
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '',
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? '',
-};
+if (existsSync('.env')) {
+  process.loadEnvFile('.env');
+}
 
-const isConfigured = Boolean(
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId &&
-  firebaseConfig.appId,
-);
+const dryRun = process.argv.includes('--dry-run');
+const projectId = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '';
+const usingEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
+const demoPassword = process.env.SEED_DEMO_PASSWORD ?? '';
 
-if (!isConfigured) {
+if (!projectId) {
   console.error(
-    '❌ Firebase belum dikonfigurasi. Salin .env.example menjadi .env dan isi EXPO_PUBLIC_FIREBASE_*.',
+    '❌ EXPO_PUBLIC_FIREBASE_PROJECT_ID belum diisi. Salin .env.example menjadi .env.',
   );
   process.exit(1);
 }
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+if (!dryRun && !usingEmulator && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  console.error(
+    '❌ GOOGLE_APPLICATION_CREDENTIALS belum diisi. Unduh service account dari Firebase Console → Project settings → Service accounts → Generate new private key, simpan di luar repo atau sebagai service-account.json (sudah di-gitignore), lalu isi path-nya di .env.',
+  );
+  process.exit(1);
+}
+
+if (demoPassword && demoPassword.length < 6) {
+  console.error('❌ SEED_DEMO_PASSWORD minimal 6 karakter.');
+  process.exit(1);
+}
 
 // ============================================================
 // Demo Users
@@ -248,45 +258,102 @@ const demoSessions: Session[] = [
 // Seed Function
 // ============================================================
 
-async function seed() {
-  const batch = writeBatch(db);
-
-  // Seed users
+async function seedAuthAccounts() {
+  const auth = getAuth();
   for (const user of demoUsers) {
-    const ref = doc(db, 'users', user.uid);
-    batch.set(ref, user);
+    try {
+      const existing = await auth.getUserByEmail(user.email);
+      if (existing.uid !== user.uid) {
+        console.warn(
+          `   ⚠️  ${user.email} sudah terdaftar dengan uid lain (${existing.uid}); akun Auth dilewati.`,
+        );
+        continue;
+      }
+      await auth.updateUser(user.uid, {
+        password: demoPassword,
+        displayName: user.displayName,
+      });
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'auth/user-not-found') throw err;
+      await auth.createUser({
+        uid: user.uid,
+        email: user.email,
+        password: demoPassword,
+        displayName: user.displayName,
+      });
+    }
+  }
+}
+
+async function seed() {
+  console.log(
+    `${dryRun ? '🔎 Dry run' : '🌱 Seeding'} ke project ${projectId}${usingEmulator ? ' (emulator)' : ''}`,
+  );
+
+  const labIds = new Set(demoLabs.map((lab) => lab.id));
+  const unlinked = demoSessions.filter(
+    (session) => !session.labId || !labIds.has(session.labId),
+  );
+  if (unlinked.length > 0) {
+    throw new Error(
+      `Sesi tanpa lab yang valid: ${unlinked.map((s) => s.id).join(', ')}`,
+    );
   }
 
-  // Seed classes
-  for (const cls of demoClasses) {
-    const ref = doc(db, 'classes', cls.id);
-    batch.set(ref, cls);
+  if (!dryRun) {
+    initializeApp({
+      projectId,
+      ...(usingEmulator ? {} : { credential: applicationDefault() }),
+    });
+    const db = getFirestore();
+    const batch = db.batch();
+
+    for (const user of demoUsers) {
+      batch.set(db.collection('users').doc(user.uid), user);
+    }
+    for (const cls of demoClasses) {
+      batch.set(db.collection('classes').doc(cls.id), cls);
+    }
+    for (const lab of demoLabs) {
+      batch.set(db.collection('labs').doc(lab.id), lab);
+    }
+    for (const session of demoSessions) {
+      batch.set(db.collection('sessions').doc(session.id), session);
+    }
+
+    await batch.commit();
+
+    if (
+      demoPassword &&
+      usingEmulator &&
+      !process.env.FIREBASE_AUTH_EMULATOR_HOST
+    ) {
+      console.warn(
+        '⚠️  Auth emulator tidak aktif; akun demo tidak dibuat agar tidak menyentuh Firebase Auth asli.',
+      );
+    } else if (demoPassword) {
+      await seedAuthAccounts();
+    }
   }
 
-  // Seed labs (sebelum sesi, karena sesi merujuk labs/{labId})
-  for (const lab of demoLabs) {
-    const ref = doc(db, 'labs', lab.id);
-    batch.set(ref, lab);
-  }
-
-  // Seed sessions
-  for (const session of demoSessions) {
-    const ref = doc(db, 'sessions', session.id);
-    batch.set(ref, session);
-  }
-
-  await batch.commit();
-
-  console.log('✅ Seeder selesai:');
+  console.log(`✅ ${dryRun ? 'Data valid' : 'Seeder selesai'}:`);
   console.log(`   👥 ${demoUsers.length} user`);
   console.log(`   🏫 ${demoClasses.length} kelas`);
   console.log(`   📍 ${demoLabs.length} lab`);
   console.log(`   📅 ${demoSessions.length} sesi`);
   console.log('');
-  console.log('🔑 Akun demo:');
-  console.log('   Praktikan: budi@kampus.ac.id');
-  console.log('   Asisten: asisten.rpl@kampus.ac.id');
-  console.log('   Asisten Koordinator: asisten.koordinator@kampus.ac.id');
+  if (demoPassword) {
+    console.log('🔑 Akun demo (password = SEED_DEMO_PASSWORD):');
+    for (const user of demoUsers) {
+      console.log(
+        `   ${user.role === 'assistant' ? 'Asisten' : 'Praktikan'}: ${user.email}`,
+      );
+    }
+  } else {
+    console.log(
+      'ℹ️  Akun login tidak dibuat. Isi SEED_DEMO_PASSWORD untuk membuat akun demo di Firebase Auth.',
+    );
+  }
 }
 
 seed().catch((err) => {
