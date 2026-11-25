@@ -4,9 +4,12 @@ import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  DEFAULT_LATE_TOLERANCE_MINUTES,
   DEFAULT_RADIUS_METERS,
   hasLabInputErrors,
+  MAX_LATE_TOLERANCE_MINUTES,
   MAX_RADIUS_METERS,
+  MIN_LATE_TOLERANCE_MINUTES,
   MIN_RADIUS_METERS,
   parseCoordinate,
   validateLabInput,
@@ -58,7 +61,7 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
         ) : (
           <ErrorState
             title="Laboratorium tidak ditemukan"
-            message={error ?? 'Lab mungkin sudah dihapus oleh asisten lain.'}
+            message={error ?? 'Lab mungkin sudah dihapus oleh Aslab lain.'}
           />
         )}
       </Screen>
@@ -102,6 +105,7 @@ function LabForm({
   const [name, setName] = useState(existing?.name ?? '');
   const [building, setBuilding] = useState(existing?.building ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
+  const [courseId, setCourseId] = useState(existing?.courseId ?? '');
   const [latitude, setLatitude] = useState(
     coordText(existing?.location.latitude),
   );
@@ -110,6 +114,9 @@ function LabForm({
   );
   const [radius, setRadius] = useState(
     String(existing?.radiusMeters ?? DEFAULT_RADIUS_METERS),
+  );
+  const [lateTolerance, setLateTolerance] = useState(
+    String(existing?.lateToleranceMinutes ?? DEFAULT_LATE_TOLERANCE_MINUTES),
   );
   const [active, setActive] = useState<ActiveValue>(
     existing?.isActive === false ? 'inactive' : 'active',
@@ -137,9 +144,11 @@ function LabForm({
     name,
     building,
     description,
+    courseId: courseId.trim() ? courseId.trim() : null,
     latitude: parseCoordinate(latitude),
     longitude: parseCoordinate(longitude),
     radiusMeters: Number(radius.trim()),
+    lateToleranceMinutes: Number(lateTolerance.trim()),
     isActive: active === 'active',
   });
 
@@ -174,7 +183,7 @@ function LabForm({
       <TopBar onBack={onDone} />
       <Header
         title={labId ? 'Edit lab' : 'Tambah lab'}
-        description="Koordinat dan radius dipakai untuk validasi lokasi presensi."
+        description="Koordinat, radius, dan toleransi dipakai untuk kebijakan presensi lab."
       />
 
       <View style={styles.form}>
@@ -193,6 +202,13 @@ function LabForm({
           error={errors.building}
         />
         <TextField
+          label="Mata kuliah (opsional)"
+          value={courseId}
+          onChangeText={setCourseId}
+          placeholder="Mis. PPK-A1 atau ID mata kuliah"
+          error={errors.courseId}
+        />
+        <TextField
           label="Keterangan (opsional)"
           value={description}
           onChangeText={setDescription}
@@ -202,7 +218,7 @@ function LabForm({
       </View>
 
       <View style={styles.form}>
-        <SectionHeader title="Titik lokasi" />
+        <SectionHeader title="Titik lokasi & kebijakan presensi" />
         <Text variant="body" tone="muted">
           Pilih lokasi lab langsung di peta atau gunakan lokasi saat ini. Anda juga
           dapat mengetik koordinat manual di bawah.
@@ -261,6 +277,15 @@ function LabForm({
           keyboardType="number-pad"
           hint={`Praktikan harus berada dalam radius ini. ${MIN_RADIUS_METERS}–${MAX_RADIUS_METERS} m.`}
           error={errors.radiusMeters}
+        />
+        <TextField
+          label="Toleransi keterlambatan (menit)"
+          value={lateTolerance}
+          onChangeText={setLateTolerance}
+          placeholder={String(DEFAULT_LATE_TOLERANCE_MINUTES)}
+          keyboardType="number-pad"
+          hint={`Durasi toleransi dalam menit. ${MIN_LATE_TOLERANCE_MINUTES}–${MAX_LATE_TOLERANCE_MINUTES} menit.`}
+          error={errors.lateToleranceMinutes}
         />
       </View>
 

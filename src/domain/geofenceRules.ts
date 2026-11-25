@@ -1,6 +1,7 @@
 /**
- * Aturan geofence murni (tanpa Firebase / native API) — Sprint 3.
- * Menggabungkan validasi/evaluasi geofence (SRS-3.1) dan utilitas jarak peta (SRS-3.3).
+- Aturan geofence murni (tanpa Firebase / native API) — Sprint 3 & Sprint 4.
+- Menggabungkan validasi/evaluasi geofence (SRS-3.1), utilitas jarak peta (SRS-3.3),
+- dan validasi kebijakan presensi lab (SRS-4.02).
  */
 import type {
   DeviceFix,
@@ -17,6 +18,11 @@ export const MIN_RADIUS_METERS = 10;
 export const MAX_RADIUS_METERS = 500;
 /** Pembacaan GPS dengan akurasi lebih buruk dari ini dianggap tidak andal. */
 export const MAX_ACCEPTABLE_ACCURACY_METERS = 100;
+
+/** Toleransi keterlambatan presensi dalam menit (SRS-4.02 / K4). */
+export const DEFAULT_LATE_TOLERANCE_MINUTES = 15;
+export const MIN_LATE_TOLERANCE_MINUTES = 0;
+export const MAX_LATE_TOLERANCE_MINUTES = 120;
 
 const EARTH_RADIUS_METERS = 6_371_000;
 
@@ -51,8 +57,8 @@ export function haversineDistanceMeters(a: GeoPoint, b: GeoPoint): number {
 }
 
 /**
- * Menghitung jarak antara dua koordinat geografis menggunakan rumus Haversine.
- * Hasil dalam satuan meter (dibulatkan ke 1 desimal).
+- Menghitung jarak antara dua koordinat geografis menggunakan rumus Haversine.
+- Hasil dalam satuan meter (dibulatkan ke 1 desimal).
  */
 export function calculateDistanceMeters(
   coord1: GeoCoordinates,
@@ -63,7 +69,7 @@ export function calculateDistanceMeters(
 }
 
 /**
- * Memeriksa apakah lokasi pengguna berada di dalam radius toleransi laboratorium.
+- Memeriksa apakah lokasi pengguna berada di dalam radius toleransi laboratorium.
  */
 export function isWithinGeofence(
   userCoord: GeoCoordinates,
@@ -75,7 +81,7 @@ export function isWithinGeofence(
 }
 
 /**
- * Format jarak manusiawi (misal: "35 m" atau "1.2 km").
+- Format jarak manusiawi (misal: "35 m" atau "1.2 km").
  */
 export function formatDistance(meters: number): string {
   if (meters < 1000) {
@@ -85,8 +91,8 @@ export function formatDistance(meters: number): string {
 }
 
 /**
- * Parse teks koordinat dari form. Menerima koma desimal (`-6,9`) agar ramah
- * keyboard lokal. Mengembalikan `NaN` bila tidak valid.
+- Parse teks koordinat dari form. Menerima koma desimal (`-6,9`) agar ramah
+- keyboard lokal. Mengembalikan `NaN` bila tidak valid.
  */
 export function parseCoordinate(raw: string): number {
   const text = raw.trim().replace(',', '.');
@@ -111,6 +117,17 @@ export function validateLabInput(input: LabInput): LabInputErrors {
   ) {
     errors.radiusMeters = `Radius harus bilangan bulat ${MIN_RADIUS_METERS}–${MAX_RADIUS_METERS} meter`;
   }
+
+  const tolerance =
+    input.lateToleranceMinutes ?? DEFAULT_LATE_TOLERANCE_MINUTES;
+  if (
+    !Number.isInteger(tolerance) ||
+    tolerance < MIN_LATE_TOLERANCE_MINUTES ||
+    tolerance > MAX_LATE_TOLERANCE_MINUTES
+  ) {
+    errors.lateToleranceMinutes = `Toleransi keterlambatan harus bilangan bulat ${MIN_LATE_TOLERANCE_MINUTES}–${MAX_LATE_TOLERANCE_MINUTES} menit`;
+  }
+
   return errors;
 }
 
@@ -119,8 +136,8 @@ export function hasLabInputErrors(errors: LabInputErrors): boolean {
 }
 
 /**
- * Periksa apakah perangkat berada di dalam radius lab.
- * Hasil `withinRadius` adalah satu-satunya syarat lokasi untuk presensi.
+- Periksa apakah perangkat berada di dalam radius lab.
+- Hasil `withinRadius` adalah satu-satunya syarat lokasi untuk presensi.
  */
 export function evaluateGeofence(
   device: DeviceFix | null | undefined,
