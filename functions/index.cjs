@@ -12,6 +12,7 @@ const {
   sessionCreatedEvents,
   sessionEvents,
   leaveEvents,
+  inboxEntries,
   pushMessage,
 } = require('./pushEvents.cjs');
 
@@ -26,16 +27,39 @@ const tokenPattern = /^(Expo|Exponent)PushToken\[[A-Za-z0-9_-]+\]$/;
 const tokenCollection = (uid) =>
   db.collection('users').doc(uid).collection('push_tokens');
 
-async function enqueue(eventId, eventTime, notices) {
+const ignoreExisting = (error) => (error.code === 6 ? null : error);
+
+async function enqueue(eventId, eventTime, notices, source) {
   const occurredAt = Date.parse(eventTime) || Date.now();
   const sendUntil = occurredAt + 60 * minute;
-  if (sendUntil <= Date.now()) return;
+  const inbox = inboxEntries(eventId, notices, source, new Date(occurredAt));
+  const inboxByKey = new Map(
+    inbox.map((entry) => [entry.data.type + '/' + entry.uid, entry]),
+  );
   const writer = db.bulkWriter();
   const writes = [];
 
   try {
-    for (const { recipients, ...notice } of notices) {
+    // Inbox selalu ditulis, walau push sudah kedaluwarsa atau token tidak ada.
+    for (const entry of inbox) {
+      writes.push(
+        writer
+          .create(
+            db
+              .collection('users')
+              .doc(entry.uid)
+              .collection('notifications')
+              .doc(entry.id),
+            entry.data,
+          )
+          .catch(ignoreExisting),
+      );
+    }
+    // Push yang sudah lewat 60 menit tidak dikirim lagi (inbox tetap ada).
+    const pushNotices = sendUntil > Date.now() ? notices : [];
+    for (const { recipients, ...notice } of pushNotices) {
       for (const uid of recipients) {
+        const entry = inboxByKey.get(notice.type + '/' + uid);
         const tokens = await tokenCollection(uid).get();
         for (const device of tokens.docs) {
           if (!tokenPattern.test(device.get('token'))) continue;
@@ -47,6 +71,9 @@ async function enqueue(eventId, eventTime, notices) {
               .create(jobs.doc(id), {
                 ...notice,
                 uid,
+                title: entry.data.title,
+                body: entry.data.body,
+                notificationId: entry.id,
                 installationId: device.id,
                 phase: 'send',
                 dueAt: occurredAt,
@@ -54,10 +81,7 @@ async function enqueue(eventId, eventTime, notices) {
                 expireAt: new Date(occurredAt + 7 * day),
                 attempts: 0,
               })
-              .catch((error) => {
-                if (error.code !== 6) return error;
-                return null;
-              }),
+              .catch(ignoreExisting),
           );
         }
       }
@@ -77,6 +101,7 @@ exports.notifySessionScheduled = onDocumentCreated(
       event.id,
       event.time,
       sessionCreatedEvents(event.data.data(), event.params.sessionId),
+      event.data.data(),
     );
   },
 );
@@ -93,6 +118,7 @@ exports.notifySessionChanged = onDocumentUpdated(
         event.data.after.data(),
         event.params.sessionId,
       ),
+      event.data.after.data(),
     );
   },
 );
@@ -109,6 +135,7 @@ exports.notifyLeaveDecided = onDocumentUpdated(
         event.data.after.data(),
         event.params.leaveId,
       ),
+      event.data.after.data(),
     );
   },
 );
