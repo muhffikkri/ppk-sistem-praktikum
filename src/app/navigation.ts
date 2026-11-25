@@ -29,6 +29,8 @@ export type RootStackParamList = {
   AssistantLeaveReviewList: undefined;
   AssistantLabList: undefined;
   AssistantLabForm: { labId?: string };
+  AslabLabDistribution: { labId?: string };
+  AslabLabImport: { labId?: string; kind?: 'labs' | 'students' | 'assistants' };
   StudentAllSessions: undefined;
   StudentAllAttendance: undefined;
   Calendar: undefined;
@@ -42,4 +44,5 @@ export type RootStackParamList = {
 export const POVLABEL: Record<ActorRole, string> = {
   praktikan: 'Praktikan',
   asisten: 'Asisten',
+  aslab: 'Aslab',
 };
