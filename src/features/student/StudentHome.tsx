@@ -22,6 +22,7 @@ import {
   type BadgeTone,
 } from '../../shared/ui';
 import { useAuth, useStudentAttendanceViewModel } from '../../state';
+import { formatWeekdayDayMonth } from '../../shared/format/date';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 import { NotificationBellButton } from '../notifications/NotificationBellButton';
 
@@ -56,19 +57,6 @@ function isSameDay(a: string, b: Date) {
     d.getMonth() === b.getMonth() &&
     d.getDate() === b.getDate()
   );
-}
-
-function formatTodayLong(iso: string): string {
-  // "Senin, 17 November" — nama hari pendek + tanggal, tanpa tahun.
-  const d = new Date(iso);
-  const weekday = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(
-    d,
-  );
-  const date = new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'long',
-  }).format(d);
-  return `${weekday}, ${date}`;
 }
 
 export function StudentHome({ navigation }: { navigation: Nav }) {
@@ -148,7 +136,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 
   const header = (
     <Header
-      eyebrow={formatTodayLong(today.toISOString())}
+      eyebrow={formatWeekdayDayMonth(today)}
       title={user?.displayName?.trim() || 'Praktikan'}
     />
   );

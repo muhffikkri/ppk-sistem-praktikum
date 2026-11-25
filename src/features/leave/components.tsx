@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import type { AiClassificationResult, LeaveRequest } from '../../domain/types';
+import { formatDateTime } from '../../shared/format/date';
 import {
   Banner,
   Button,
@@ -87,7 +88,7 @@ export function RequestCard({ item }: { item: LeaveRequest }) {
         </View>
         <Text variant="caption" tone="muted" numberOfLines={1}>
           {item.studentName} ·{' '}
-          {new Date(item.sessionStartsAt).toLocaleString('id-ID')}
+          {formatDateTime(new Date(item.sessionStartsAt))}
         </Text>
         <Text variant="body" numberOfLines={4}>
           {item.reason}
@@ -100,7 +101,7 @@ export function RequestCard({ item }: { item: LeaveRequest }) {
         ) : null}
         {item.reviewedAt ? (
           <Text variant="caption" tone="muted">
-            Diperiksa: {new Date(item.reviewedAt).toLocaleString('id-ID')}
+            Diperiksa: {formatDateTime(new Date(item.reviewedAt))}
           </Text>
         ) : null}
       </CardContent>

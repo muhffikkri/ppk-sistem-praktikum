@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { formatHourMinute } from '../../shared/format/date';
 import {
   Banner,
   Button,
@@ -98,10 +99,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           title="Presensi Berhasil"
           message={
             attendance?.checkedInAt
-              ? `Tercatat pada ${new Date(attendance.checkedInAt).toLocaleTimeString('id-ID', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}.`
+              ? `Tercatat pada ${formatHourMinute(new Date(attendance.checkedInAt))}.`
               : 'Kehadiran Anda berhasil dicatat.'
           }
         />
