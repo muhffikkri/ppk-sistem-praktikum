@@ -21,8 +21,11 @@ export function LeaveProvider({
   children,
 }: PropsWithChildren<{ db: Firestore; user: UserProfile | null }>) {
   const service = useMemo(() => createLeaveService(db), [db]);
+  // Stable value: a new object here re-rendered every leave consumer on each
+  // AppNavigator render.
+  const value = useMemo(() => ({ user, service }), [user, service]);
   return (
-    <Context.Provider key={user?.uid ?? 'signed-out'} value={{ user, service }}>
+    <Context.Provider key={user?.uid ?? 'signed-out'} value={value}>
       {children}
     </Context.Provider>
   );
