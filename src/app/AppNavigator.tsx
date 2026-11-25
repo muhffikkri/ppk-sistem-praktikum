@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import PagerView, {
   type PagerViewOnPageSelectedEvent,
@@ -60,6 +60,7 @@ import { db } from '../services/firebase';
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
 
 import {
+  type ActorRole,
   NotificationInboxProvider,
   useActorRole,
   useAuth,
@@ -135,6 +136,42 @@ function neighbourTabs(index: number): Set<DockTabKey> {
   );
 }
 
+// Tab pages are rendered inside DockTabs rather than as their own routes, so
+// they get a fixed stand-in route. Module-level objects keep the props
+// referentially stable across DockTabs re-renders.
+const DOCK_PAGE_ROUTES = Object.fromEntries(
+  DOCK_ORDER.map((key) => [key, { key, name: key, params: undefined }]),
+) as Record<DockTabKey, { key: string; name: string; params: undefined }>;
+
+type DockPageProps = {
+  tab: DockTabKey;
+  role: ActorRole;
+  navigation: NativeStackScreenProps<RootStackParamList, 'DockTabs'>['navigation'];
+};
+
+// Memoized so a tab change (a `setParams` on DockTabs) does not re-render
+// every mounted page.
+const DockPage = memo(function DockPage({ tab, role, navigation }: DockPageProps) {
+  const nav = navigation as any;
+  const route = DOCK_PAGE_ROUTES[tab] as any;
+  if (tab === 'Home') return <HomeScreen navigation={nav} route={route} />;
+  if (tab === 'Schedule') {
+    return role === 'asisten' ? (
+      <AssistantScheduleScreen navigation={nav} route={route} />
+    ) : (
+      <StudentScheduleScreen navigation={nav} route={route} />
+    );
+  }
+  if (tab === 'Attendance') {
+    return role === 'asisten' ? (
+      <AssistantAllAttendanceScreen navigation={nav} route={route} />
+    ) : (
+      <StudentAttendanceHistoryScreen navigation={nav} route={route} />
+    );
+  }
+  return <ProfileScreen navigation={nav} route={route} />;
+});
+
 function DockTabsScreen({
   navigation,
   route,
@@ -173,27 +210,6 @@ function DockTabsScreen({
     if (tab && tab !== activeTab) navigation.setParams({ tab });
   };
 
-  const page = (key: DockTabKey) => {
-    const nav = navigation as any;
-    const fakeRoute = { key, name: key, params: undefined } as any;
-    if (key === 'Home') return <HomeScreen navigation={nav} route={fakeRoute} />;
-    if (key === 'Schedule') {
-      return actorRole === 'asisten' ? (
-        <AssistantScheduleScreen navigation={nav} route={fakeRoute} />
-      ) : (
-        <StudentScheduleScreen navigation={nav} route={fakeRoute} />
-      );
-    }
-    if (key === 'Attendance') {
-      return actorRole === 'asisten' ? (
-        <AssistantAllAttendanceScreen navigation={nav} route={fakeRoute} />
-      ) : (
-        <StudentAttendanceHistoryScreen navigation={nav} route={fakeRoute} />
-      );
-    }
-    return <ProfileScreen navigation={nav} route={fakeRoute} />;
-  };
-
   return (
     <PagerView
       ref={pagerRef}
@@ -203,7 +219,9 @@ function DockTabsScreen({
     >
       {DOCK_ORDER.map((key) => (
         <View key={key} style={styles.page} collapsable={false}>
-          {mounted.has(key) ? page(key) : null}
+          {mounted.has(key) ? (
+            <DockPage tab={key} role={actorRole} navigation={navigation} />
+          ) : null}
         </View>
       ))}
     </PagerView>
