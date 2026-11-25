@@ -104,6 +104,8 @@ export function LoginScreen({ navigation }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="email"
+          textContentType="emailAddress"
+          importantForAutofill="yes"
           editable={!submitting}
           error={emailError}
         />
@@ -119,8 +121,9 @@ export function LoginScreen({ navigation }: Props) {
           secureTextEntry={!showPassword}
           autoCapitalize="none"
           autoCorrect={false}
-          autoComplete="password"
+          autoComplete="current-password"
           textContentType="password"
+          importantForAutofill="yes"
           editable={!submitting}
           error={passwordError}
           rightAccessory={
