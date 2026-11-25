@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,7 +52,10 @@ function DockFab({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={onPress}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
       android_ripple={FAB_RIPPLE}
       style={styles.fabSlot}
       {...handlers}
@@ -91,7 +95,12 @@ export function BottomDock({
         key={tab.key}
         accessibilityRole="button"
         accessibilityState={{ selected: active }}
-        onPress={() => onTabPress(tab.key)}
+        onPress={() => {
+          // One selection tick per actual tab change; the ripple is the
+          // visual that stands on its own when haptics are off.
+          if (!active) void Haptics.selectionAsync();
+          onTabPress(tab.key);
+        }}
         android_ripple={TAB_RIPPLE}
         style={({ pressed }) => [
           styles.tabSlot,
