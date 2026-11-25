@@ -37,7 +37,7 @@ const STATUS_LABEL = {
 } as const;
 const STATUS_TONE: Record<Session['status'], BadgeTone> = {
   open: 'violet',
-  scheduled: 'lavender',
+  scheduled: 'lime',
   closed: 'neutral',
 };
 

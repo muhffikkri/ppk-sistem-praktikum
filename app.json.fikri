@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "PPK Mobile",
+    "slug": "ppk-mobile",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.muhffikkris.ppkmobile",
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCkXvzw4zBPPza-98nIH-M0MIIxaT01wPY"
+        }
+      },
+      "adaptiveIcon": {
+        "backgroundColor": "#F4F2F9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "736d7efd-ad41-4fa4-a147-57e6bf106ce6"
+      }
+    },
+    "owner": "muhffikkris-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/736d7efd-ad41-4fa4-a147-57e6bf106ce6"
+    },
+    "plugins": [
+      "expo-status-bar",
+      "expo-font",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Izinkan PPK Mobile menggunakan lokasi saat presensi dan saat menampilkan posisi Anda di peta."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F2F9"
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ]
+  }
+}

@@ -34,7 +34,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_TONE: Record<string, BadgeTone> = {
   open: 'violet',
-  scheduled: 'lavender',
+  scheduled: 'lime',
   closed: 'neutral',
 };
 
@@ -168,8 +168,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                   ? 'Sedang berlangsung'
                   : 'Sesi berikutnya'
               }
-              tone="lavender"
-              dot
+              tone="lime"
               live={hero.status === 'open'}
             />
             <Text variant="displayHero" tone="onDark">
