@@ -8,6 +8,7 @@ import {
   Header,
   ListRow,
   Screen,
+  ScreenList,
   SectionHeader,
   spacing,
   StatusBadge,
@@ -51,50 +52,48 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title={session.courseName}
-        description={`${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
-      />
-
-      <View style={styles.summary}>
-        <StatusBadge
-          label={sessionStatusLabel[session.status]}
-          tone={sessionStatusTone[session.status]}
-        />
-        <Text variant="bodyStrong">{attendees.length} praktikan hadir</Text>
-      </View>
-
-      <View style={styles.section}>
-        <SectionHeader title="Daftar hadir" />
-        {attendees.length === 0 ? (
-          <EmptyState
-            icon="people-outline"
-            title="Belum ada presensi"
-            description="Praktikan yang presensi akan muncul di sini."
+    <ScreenList
+      withDock={false}
+      data={attendees}
+      keyExtractor={(record) => record.id}
+      header={
+        <>
+          <TopBar onBack={() => navigation.goBack()} />
+          <Header
+            title={session.courseName}
+            description={`${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
           />
-        ) : (
-          attendees.map((record) => (
-            <ListRow
-              key={record.id}
-              title={record.studentName}
-              meta={`NIM ${record.studentId}`}
-              leading={<Avatar name={record.studentName} tone="lime" />}
-              trailing={
-                <Text variant="bodyStrong">
-                  {formatClock(record.checkedInAt)}
-                </Text>
-              }
+          <View style={styles.summary}>
+            <StatusBadge
+              label={sessionStatusLabel[session.status]}
+              tone={sessionStatusTone[session.status]}
             />
-          ))
-        )}
-      </View>
-    </Screen>
+            <Text variant="bodyStrong">{attendees.length} praktikan hadir</Text>
+          </View>
+        </>
+      }
+      sectionHeader={<SectionHeader title="Daftar hadir" />}
+      empty={
+        <EmptyState
+          icon="people-outline"
+          title="Belum ada presensi"
+          description="Praktikan yang presensi akan muncul di sini."
+        />
+      }
+      renderItem={({ item: record }) => (
+        <ListRow
+          title={record.studentName}
+          meta={`NIM ${record.studentId}`}
+          leading={<Avatar name={record.studentName} tone="lime" />}
+          trailing={
+            <Text variant="bodyStrong">{formatClock(record.checkedInAt)}</Text>
+          }
+        />
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   summary: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  section: { gap: spacing.sm },
 });
