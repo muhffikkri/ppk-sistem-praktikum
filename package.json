@@ -25,6 +25,7 @@
     "expo-updates": "~58.0.22",
     "expo-web-browser": "~58.1.0",
     "firebase": "^13.2.0",
+    "qrcode-generator": "^2.0.4",
     "react": "19.3.0",
     "react-native": "0.88.1",
     "react-native-maps": "1.29.11",
@@ -57,7 +58,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/features/leave/leave.test.ts src/domain/geofenceRules.test.ts src/features/maps/maps.test.ts",
+    "test": "tsx --test src/features/leave/leave.test.ts src/domain/geofenceRules.test.ts src/features/maps/maps.test.ts src/domain/sessionQr.test.ts src/features/assistant/components/qrRows.test.ts",
     "verify:contracts": "tsx scripts/verify-contracts.ts",
     "check:ui": "tsx scripts/check-ui-tokens.ts",
     "seed": "tsx scripts/seed-firestore.ts"
