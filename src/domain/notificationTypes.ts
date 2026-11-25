@@ -5,7 +5,13 @@
  */
 
 export type NotificationType =
-  'session_scheduled' | 'session_opened' | 'schedule_changed' | 'leave_decided';
+  | 'session_scheduled'
+  | 'session_opened'
+  | 'schedule_changed'
+  | 'leave_decided'
+  | 'fine_issued'
+  | 'payment_success'
+  | 'payment_failed';
 
 export type InboxNotification = {
   id: string;
@@ -14,6 +20,7 @@ export type InboxNotification = {
   body: string;
   sessionId?: string;
   leaveId?: string;
+  fineId?: string;
   createdAt: string; // ISO 8601 UTC
   readAt: string | null; // ISO 8601 UTC
 };
@@ -22,13 +29,18 @@ export type InboxNotification = {
 export type NotificationRoute =
   | { screen: 'StudentCheckIn'; sessionId: string }
   | { screen: 'StudentSessionDetail'; sessionId: string }
-  | { screen: 'StudentLeaveList' };
+  | { screen: 'StudentLeaveList' }
+  | { screen: 'StudentFineDetail'; fineId: string }
+  | { screen: 'StudentFineList' };
 
 const TYPES: readonly NotificationType[] = [
   'session_scheduled',
   'session_opened',
   'schedule_changed',
   'leave_decided',
+  'fine_issued',
+  'payment_success',
+  'payment_failed',
 ];
 
 export function isNotificationType(value: unknown): value is NotificationType {
@@ -36,7 +48,10 @@ export function isNotificationType(value: unknown): value is NotificationType {
 }
 
 export function notificationRoute(
-  notification: Pick<InboxNotification, 'type' | 'sessionId' | 'leaveId'>,
+  notification: Pick<
+    InboxNotification,
+    'type' | 'sessionId' | 'leaveId' | 'fineId'
+  >,
 ): NotificationRoute | null {
   switch (notification.type) {
     case 'session_opened':
@@ -50,6 +65,12 @@ export function notificationRoute(
         : null;
     case 'leave_decided':
       return notification.leaveId ? { screen: 'StudentLeaveList' } : null;
+    case 'fine_issued':
+    case 'payment_success':
+    case 'payment_failed':
+      return notification.fineId
+        ? { screen: 'StudentFineDetail', fineId: notification.fineId }
+        : { screen: 'StudentFineList' };
     default:
       return null;
   }
@@ -73,6 +94,7 @@ export function toInboxNotification(
       ? { sessionId: data.sessionId }
       : {}),
     ...(typeof data.leaveId === 'string' ? { leaveId: data.leaveId } : {}),
+    ...(typeof data.fineId === 'string' ? { fineId: data.fineId } : {}),
     createdAt: data.createdAt,
     readAt: typeof data.readAt === 'string' ? data.readAt : null,
   };

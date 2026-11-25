@@ -41,6 +41,10 @@ function AppNavigation() {
         return false;
       if (route.screen === 'StudentLeaveList') {
         navigation.navigate('StudentLeaveList');
+      } else if (route.screen === 'StudentFineList') {
+        navigation.navigate('StudentFineList');
+      } else if (route.screen === 'StudentFineDetail') {
+        navigation.navigate('StudentFineDetail', { fineId: route.fineId });
       } else {
         navigation.navigate(route.screen, { sessionId: route.sessionId });
       }
