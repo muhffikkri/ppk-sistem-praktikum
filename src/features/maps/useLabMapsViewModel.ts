@@ -14,10 +14,12 @@ import {
 import { subscribeLabActivities } from '../../services/firestore/labActivityService';
 import { useAuth } from '../../state';
 
+// Balanced accuracy is enough to show the user's dot on the campus map.
+// Check-in takes its own high-accuracy fix in deviceLocationService.
 const WATCH_OPTIONS: Location.LocationOptions = {
-  accuracy: Location.Accuracy.High,
-  timeInterval: 3000,
-  distanceInterval: 5,
+  accuracy: Location.Accuracy.Balanced,
+  timeInterval: 5000,
+  distanceInterval: 10,
 };
 
 export function useLabMapsViewModel() {
