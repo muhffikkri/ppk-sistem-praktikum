@@ -1,12 +1,14 @@
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   onAuthStateChanged,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
   updateProfile,
-  type UserCredential,
 } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import {
@@ -19,6 +21,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Platform } from 'react-native';
 
 import type {
   ActionFailureReason,
@@ -33,6 +36,8 @@ import {
   disablePushBeforeLogout,
   resumePushRegistration,
 } from '../services/firestore/notificationTokenService';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -128,6 +133,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [needsRoleSelection, setNeedsRoleSelection] = useState(false);
   const registeringRef = useRef(false);
+  const googleResolveRef = useRef<((result: AsyncActionResult) => void) | null>(null);
+
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+  const [, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
+    webClientId: googleWebClientId || undefined,
+    androidClientId: googleAndroidClientId || undefined,
+    iosClientId: googleIosClientId || undefined,
+  });
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || !googleResponse) return;
+    const resolve = googleResolveRef.current;
+    if (!resolve) return;
+
+    const finish = (result: AsyncActionResult) => {
+      googleResolveRef.current = null;
+      resolve(result);
+    };
+
+    if (googleResponse.type !== 'success') {
+      finish(
+        googleResponse.type === 'cancel' || googleResponse.type === 'dismiss'
+          ? { ok: false, reason: 'unknown_error', message: 'Login Google dibatalkan.' }
+          : { ok: false, reason: 'unknown_error', message: 'Login Google gagal. Coba lagi.' },
+      );
+      return;
+    }
+
+    const idToken = googleResponse.params?.id_token;
+    if (!idToken) {
+      finish({ ok: false, reason: 'unknown_error', message: 'Token Google tidak diterima.' });
+      return;
+    }
+
+    const credential = GoogleAuthProvider.credential(idToken);
+    signInWithCredential(auth, credential)
+      .then(() => finish({ ok: true }))
+      .catch((err) => {
+        const mapped = mapFirebaseAuthError(err);
+        setError(mapped.message);
+        finish({ ok: false, reason: mapped.reason, message: mapped.message });
+      });
+  }, [googleResponse]);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
@@ -213,22 +263,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: false, reason: 'unknown_error', message };
     }
 
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      const result: UserCredential = await signInWithPopup(auth, provider);
-
-      // Setelah Google login berhasil, cek apakah profil sudah ada di Firestore.
-      // Jika sudah ada (mis. sebelumnya daftar dengan email/password), role akan
-      // diambil dari Firestore melalui onAuthStateChanged di atas.
-      // Jika belum ada, needsRoleSelection akan true dan user diarahkan ke RoleSelectionScreen.
-      return { ok: true };
-    } catch (err) {
-      const mapped = mapFirebaseAuthError(err);
-      setError(mapped.message);
-      return { ok: false, reason: mapped.reason, message: mapped.message };
+    if (Platform.OS === 'web') {
+      try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await signInWithPopup(auth, provider);
+        return { ok: true };
+      } catch (err) {
+        const mapped = mapFirebaseAuthError(err);
+        setError(mapped.message);
+        return { ok: false, reason: mapped.reason, message: mapped.message };
+      }
     }
-  }, []);
+
+    if (!googleWebClientId) {
+      const message =
+        'Google login native belum dikonfigurasi. Isi EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID di .env.';
+      setError(message);
+      return { ok: false, reason: 'unknown_error', message };
+    }
+
+    return new Promise<AsyncActionResult>((resolve) => {
+      googleResolveRef.current = resolve;
+      promptGoogleAsync().catch((err) => {
+        googleResolveRef.current = null;
+        const mapped = mapFirebaseAuthError(err);
+        setError(mapped.message);
+        resolve({ ok: false, reason: mapped.reason, message: mapped.message });
+      });
+    });
+  }, [googleWebClientId, promptGoogleAsync]);
 
   const clearError = useCallback(() => {
     setError(null);

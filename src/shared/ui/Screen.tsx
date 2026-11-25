@@ -22,6 +22,8 @@ export type ScreenProps = PropsWithChildren<{
    * Set `false` for auth screens, which must clear the system bar themselves.
    */
   withDock?: boolean;
+  /** Set false for fixed layouts like camera/scan screens. */
+  scroll?: boolean;
   /**
    * Layout-only style for the content column. Pass
    * `{ flexGrow: 1, justifyContent: 'space-between' }` to pin the last block
@@ -33,6 +35,7 @@ export type ScreenProps = PropsWithChildren<{
 export function Screen({
   children,
   withDock = true,
+  scroll = true,
   contentStyle,
 }: ScreenProps) {
   const { width } = useWindowDimensions();
@@ -47,23 +50,32 @@ export function Screen({
     ? DOCK_FAB_OVERLAP + spacing['2xl']
     : insets.bottom + spacing['2xl'];
 
+  const content = (
+    <View
+      style={[
+        styles.content,
+        !scroll && styles.flex,
+        !isNarrow && styles.contentWide,
+        contentStyle,
+      ]}
+    >
+      {children}
+    </View>
+  );
+
   return (
     <SafeAreaView edges={['left', 'right', 'top']} style={styles.safeArea}>
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={[styles.scroll, { paddingBottom }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View
-          style={[
-            styles.content,
-            !isNarrow && styles.contentWide,
-            contentStyle,
-          ]}
+      {scroll ? (
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[styles.scroll, { paddingBottom }]}
+          keyboardShouldPersistTaps="handled"
         >
-          {children}
-        </View>
-      </ScrollView>
+          {content}
+        </ScrollView>
+      ) : (
+        <View style={[styles.flex, styles.scroll, { paddingBottom }]}>{content}</View>
+      )}
     </SafeAreaView>
   );
 }

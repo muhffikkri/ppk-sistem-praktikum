@@ -33,6 +33,7 @@ import {
 } from '../features/student';
 
 import {
+  BarcodeScanScreen,
   StudentCheckInScreen,
 } from '../features/checkin';
 
@@ -234,7 +235,7 @@ export function AppNavigator() {
       if (name === 'Home' || name === 'Profile') return setActiveKey(name);
       if (name === DOCK_ROUTE_FOR_POV[actorRole].Schedule) return setActiveKey('Schedule');
       if (name === DOCK_ROUTE_FOR_POV[actorRole].Attendance) return setActiveKey('Attendance');
-      setActiveKey('');
+      // Non-dock route: keep origin tab active until user picks another dock tab.
     };
     sync(navigation.getState?.());
     return navigation.addListener('state', (e) => sync(e.data?.state));
@@ -514,6 +515,12 @@ export function AppNavigator() {
 
                 options={{ headerShown: false }}
               />
+
+              <Stack.Screen
+                name="BarcodeScan"
+                component={BarcodeScanScreen}
+                options={{ headerShown: false }}
+              />
             </Stack.Navigator>
 
             <BottomDock
@@ -524,17 +531,10 @@ export function AppNavigator() {
               onTabPress={onTabPress}
 
               fab={{
-                glyph: 'document-text',
-
-                label: 'Izin',
-
+                glyph: 'camera',
+                label: 'Scan presensi',
                 onPress: () => {
-                  // Izin bukan tab dock: route non-tab, jadi tidak ada tab aktif.
-                  navigation.navigate(
-                    actorRole === 'asisten'
-                      ? 'AssistantLeaveReviewList'
-                      : 'StudentLeaveList',
-                  );
+                  navigation.navigate('BarcodeScan');
                 },
               }}
             />
