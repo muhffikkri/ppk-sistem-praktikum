@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import type { Session } from '../../domain/types';
+import { formatDateTime } from '../../shared/format/date';
 import { Banner, SelectField, spacing } from '../../shared/ui';
 import {
   leaveFailure,
@@ -77,7 +78,7 @@ export function StudentLeaveSessionPicker({
           options={sessions.map((session) => ({
             value: session.id,
             label: `${session.courseName} · ${session.groupName}`,
-            description: new Date(session.startsAt).toLocaleString('id-ID'),
+            description: formatDateTime(new Date(session.startsAt)),
           }))}
           onChange={onSelect}
         />

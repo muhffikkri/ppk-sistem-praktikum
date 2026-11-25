@@ -1,13 +1,15 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import { parseSessionQr } from '../../domain/sessionQr';
+import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
 import {
   Banner,
   Button,
+  colors,
   EmptyState,
   Header,
   LoadingState,
@@ -22,7 +24,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'BarcodeScan'>;
 export function BarcodeScanScreen({ navigation }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  // The camera can report several frames before `scanned` re-renders; the
+  // ref drops those so only the first code navigates.
+  const handled = useRef(false);
   const [invalid, setInvalid] = useState(false);
+  // Start the camera after the push animation so it does not stall it.
+  const cameraReady = useTransitionReady();
 
   if (!permission) {
     return (
@@ -64,23 +71,27 @@ export function BarcodeScanScreen({ navigation }: Props) {
         description="Arahkan kamera ke kode presensi yang ditampilkan asisten."
       />
       <View style={styles.cameraWrap}>
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={
-            scanned
-              ? undefined
-              : ({ data }) => {
-                  setScanned(true);
-                  const sessionId = parseSessionQr(data);
-                  if (sessionId) {
-                    navigation.replace('StudentCheckIn', { sessionId });
-                  } else {
-                    setInvalid(true);
+        {cameraReady ? (
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={
+              scanned
+                ? undefined
+                : ({ data }) => {
+                    if (handled.current) return;
+                    handled.current = true;
+                    setScanned(true);
+                    const sessionId = parseSessionQr(data);
+                    if (sessionId) {
+                      navigation.replace('StudentCheckIn', { sessionId });
+                    } else {
+                      setInvalid(true);
+                    }
                   }
-                }
-          }
-        />
+            }
+          />
+        ) : null}
       </View>
       {invalid ? (
         <View style={styles.result}>
@@ -93,6 +104,7 @@ export function BarcodeScanScreen({ navigation }: Props) {
             label="Scan Lagi"
             variant="outline"
             onPress={() => {
+              handled.current = false;
               setInvalid(false);
               setScanned(false);
             }}
@@ -113,6 +125,7 @@ const styles = StyleSheet.create({
     minHeight: 320,
     overflow: 'hidden',
     marginTop: spacing.md,
+    backgroundColor: colors.ink,
   },
   result: {
     gap: spacing.sm,

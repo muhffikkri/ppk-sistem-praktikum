@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { formatWeekdayDayMonth } from '../../shared/format/date';
 import { colors, IconButton, radius, spacing, Text } from '../../shared/ui';
 import type { CalendarDay } from './useCalendarViewModel';
 
@@ -25,11 +26,7 @@ export function WeekStrip({ days, onSelect, onPrev, onNext }: Props) {
           <Pressable
             key={day.date.toDateString()}
             accessibilityRole="button"
-            accessibilityLabel={day.date.toLocaleDateString('id-ID', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })}
+            accessibilityLabel={formatWeekdayDayMonth(day.date)}
             accessibilityState={{ selected: day.isSelected }}
             onPress={() => onSelect(day.date)}
             style={[

@@ -2,7 +2,8 @@
  * ViewModel hook for Interactive Lab Maps — Sprint 3 (SRS-3.3)
  * Mengelola state real-time aktivitas lab, pelacakan posisi GPS pengguna, dan interaksi peta.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 import {
   DEFAULT_CAMPUS_CENTER,
@@ -12,6 +13,14 @@ import {
 } from '../../domain/geoTypes';
 import { subscribeLabActivities } from '../../services/firestore/labActivityService';
 import { useAuth } from '../../state';
+
+// Balanced accuracy is enough to show the user's dot on the campus map.
+// Check-in takes its own high-accuracy fix in deviceLocationService.
+const WATCH_OPTIONS: Location.LocationOptions = {
+  accuracy: Location.Accuracy.Balanced,
+  timeInterval: 5000,
+  distanceInterval: 10,
+};
 
 export function useLabMapsViewModel() {
   const { user } = useAuth();
@@ -33,9 +42,7 @@ export function useLabMapsViewModel() {
     permissionGranted: null,
   });
 
-  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(
-    null,
-  );
+  const navigation = useNavigation();
 
   // 1. Subscribe ke aktivitas lab (Firestore)
   useEffect(() => {
@@ -71,9 +78,68 @@ export function useLabMapsViewModel() {
     setAttempt((n) => n + 1);
   };
 
-  // 2. Lacak lokasi perangkat pengguna secara real-time
+  // 2. Lacak lokasi perangkat pengguna secara real-time, hanya selama layar
+  // peta fokus. Memakai event focus/blur (bukan useIsFocused): layar yang
+  // tertutup di-freeze sehingga render ulang tidak terjadi sampai kembali.
   useEffect(() => {
     let isMounted = true;
+    let focused = navigation.isFocused();
+    let granted = false;
+    let starting = false;
+    let subscription: Location.LocationSubscription | null = null;
+
+    const onLocation = (loc: Location.LocationObject) => {
+      if (!isMounted) return;
+      setUserLocation({
+        coordinates: {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          altitude: loc.coords.altitude,
+          accuracy: loc.coords.accuracy,
+        },
+        accuracy: loc.coords.accuracy,
+        timestamp: loc.timestamp,
+        error: null,
+        isLocating: false,
+        permissionGranted: true,
+      });
+    };
+
+    const failWith = (e: unknown) => {
+      if (!isMounted) return;
+      setUserLocation((prev) => ({
+        ...prev,
+        error:
+          e instanceof Error ? e.message : 'Gagal memperoleh lokasi perangkat.',
+        isLocating: false,
+        permissionGranted: false,
+      }));
+    };
+
+    async function startWatching() {
+      if (!isMounted || !focused || !granted || subscription || starting) {
+        return;
+      }
+      starting = true;
+      try {
+        const next = await Location.watchPositionAsync(
+          WATCH_OPTIONS,
+          onLocation,
+        );
+        // Screen left (or blurred) while the watcher was starting.
+        if (!isMounted || !focused) next.remove();
+        else subscription = next;
+      } catch (e) {
+        failWith(e);
+      } finally {
+        starting = false;
+      }
+    }
+
+    function stopWatching() {
+      subscription?.remove();
+      subscription = null;
+    }
 
     async function startLocationTracking() {
       try {
@@ -97,75 +163,36 @@ export function useLabMapsViewModel() {
           const initialPos = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced,
           });
-          if (isMounted) {
-            setUserLocation({
-              coordinates: {
-                latitude: initialPos.coords.latitude,
-                longitude: initialPos.coords.longitude,
-                altitude: initialPos.coords.altitude,
-                accuracy: initialPos.coords.accuracy,
-              },
-              accuracy: initialPos.coords.accuracy,
-              timestamp: initialPos.timestamp,
-              error: null,
-              isLocating: false,
-              permissionGranted: true,
-            });
-          }
+          onLocation(initialPos);
         } catch {
           // Abaikan jika initial GPS timeout, watcher di bawah akan update
         }
 
-        // Mulai watcher lokasi berkesinambungan selama halaman aktif
-        const sub = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.High,
-            timeInterval: 3000,
-            distanceInterval: 5,
-          },
-          (loc) => {
-            if (!isMounted) return;
-            setUserLocation({
-              coordinates: {
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-                altitude: loc.coords.altitude,
-                accuracy: loc.coords.accuracy,
-              },
-              accuracy: loc.coords.accuracy,
-              timestamp: loc.timestamp,
-              error: null,
-              isLocating: false,
-              permissionGranted: true,
-            });
-          },
-        );
-
-        locationSubscriptionRef.current = sub;
+        granted = true;
+        await startWatching();
       } catch (e) {
-        if (!isMounted) return;
-        setUserLocation((prev) => ({
-          ...prev,
-          error:
-            e instanceof Error
-              ? e.message
-              : 'Gagal memperoleh lokasi perangkat.',
-          isLocating: false,
-          permissionGranted: false,
-        }));
+        failWith(e);
       }
     }
 
-    startLocationTracking();
+    const offFocus = navigation.addListener('focus', () => {
+      focused = true;
+      void startWatching();
+    });
+    const offBlur = navigation.addListener('blur', () => {
+      focused = false;
+      stopWatching();
+    });
+
+    void startLocationTracking();
 
     return () => {
       isMounted = false;
-      if (locationSubscriptionRef.current) {
-        locationSubscriptionRef.current.remove();
-        locationSubscriptionRef.current = null;
-      }
+      offFocus();
+      offBlur();
+      stopWatching();
     };
-  }, []);
+  }, [navigation]);
 
   // Filter daftar lab sesuai opsi yang dipilih
   const filteredActivities = useMemo(() => {

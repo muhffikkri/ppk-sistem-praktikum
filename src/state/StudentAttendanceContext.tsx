@@ -1,7 +1,9 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
   useState,
   type ReactNode,
@@ -171,61 +173,91 @@ export function StudentAttendanceProvider({
     };
   }, [enabled, user?.uid, retryCounter]);
 
-  const getSessionById = (sessionId: string) =>
-    state.sessions.find((s) => s.id === sessionId);
-
-  const getAttendanceForSession = (sessionId: string) =>
-    state.attendanceHistory.find((r) => r.sessionId === sessionId);
-
-  const checkIn = async (sessionId: string): Promise<AsyncActionResult> => {
-    if (!enabled || !user) {
-      return forbidden();
+  // O(1) lookups; rebuilt only when the snapshot data changes.
+  const sessionsById = useMemo(
+    () => new Map(state.sessions.map((s) => [s.id, s])),
+    [state.sessions],
+  );
+  const attendanceBySession = useMemo(() => {
+    const map = new Map<string, AttendanceRecord>();
+    // History is ordered newest first; keep the first record per session,
+    // matching the previous `find` semantics.
+    for (const record of state.attendanceHistory) {
+      if (!map.has(record.sessionId)) map.set(record.sessionId, record);
     }
+    return map;
+  }, [state.attendanceHistory]);
 
-    if (state.submittingSessionId !== null) {
-      return {
-        ok: false,
-        reason: 'validation_error',
-        message: 'Presensi sedang diproses.',
-      };
-    }
+  const getSessionById = useCallback(
+    (sessionId: string) => sessionsById.get(sessionId),
+    [sessionsById],
+  );
 
-    const session = state.sessions.find((s) => s.id === sessionId);
-    if (!session) {
-      return {
-        ok: false,
-        reason: 'session_not_found',
-        message: 'Sesi tidak ditemukan.',
-      };
-    }
+  const getAttendanceForSession = useCallback(
+    (sessionId: string) => attendanceBySession.get(sessionId),
+    [attendanceBySession],
+  );
 
-    dispatch({ type: 'SET_SUBMITTING', sessionId });
-    try {
-      return await checkInStudent({
-        session,
-        student: user,
-        existing: state.attendanceHistory,
-      });
-    } finally {
-      dispatch({ type: 'SET_SUBMITTING', sessionId: null });
-    }
-  };
+  const { submittingSessionId, attendanceHistory } = state;
+  const checkIn = useCallback(
+    async (sessionId: string): Promise<AsyncActionResult> => {
+      if (!enabled || !user) {
+        return forbidden();
+      }
 
-  const viewModel: StudentAttendanceViewModel = {
-    classes: state.classes,
-    sessions: state.sessions,
-    currentStudent: enabled ? user : null,
-    attendanceHistory: state.attendanceHistory,
-    loading: state.loading,
-    submittingSessionId: state.submittingSessionId,
-    error: state.error,
-    getSessionById,
-    getAttendanceForSession,
-    checkIn,
-    retry: () => {
-      if (enabled) setRetryCounter((c) => c + 1);
+      if (submittingSessionId !== null) {
+        return {
+          ok: false,
+          reason: 'validation_error',
+          message: 'Presensi sedang diproses.',
+        };
+      }
+
+      const session = sessionsById.get(sessionId);
+      if (!session) {
+        return {
+          ok: false,
+          reason: 'session_not_found',
+          message: 'Sesi tidak ditemukan.',
+        };
+      }
+
+      dispatch({ type: 'SET_SUBMITTING', sessionId });
+      try {
+        return await checkInStudent({
+          session,
+          student: user,
+          existing: attendanceHistory,
+        });
+      } finally {
+        dispatch({ type: 'SET_SUBMITTING', sessionId: null });
+      }
     },
-  };
+    [enabled, user, submittingSessionId, sessionsById, attendanceHistory],
+  );
+
+  const retry = useCallback(() => {
+    if (enabled) setRetryCounter((c) => c + 1);
+  }, [enabled]);
+
+  // A stable value keeps every consumer from re-rendering when the provider
+  // re-renders without a data change.
+  const viewModel = useMemo<StudentAttendanceViewModel>(
+    () => ({
+      classes: state.classes,
+      sessions: state.sessions,
+      currentStudent: enabled ? user : null,
+      attendanceHistory: state.attendanceHistory,
+      loading: state.loading,
+      submittingSessionId: state.submittingSessionId,
+      error: state.error,
+      getSessionById,
+      getAttendanceForSession,
+      checkIn,
+      retry,
+    }),
+    [state, enabled, user, getSessionById, getAttendanceForSession, checkIn, retry],
+  );
 
   return (
     <StudentAttendanceContext.Provider value={viewModel}>

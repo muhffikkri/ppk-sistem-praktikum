@@ -39,6 +39,9 @@
       }
     },
     "owner": "elvish20s-team",
+    "experiments": {
+      "reactCompiler": true
+    },
     "runtimeVersion": {
       "policy": "appVersion"
     },

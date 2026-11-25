@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../theme/tokens';
+import { androidClip, rippleOnLight } from './ripple';
 import { Text } from './Text';
 
 export type ListRowProps = {
@@ -60,7 +61,8 @@ export function ListRow({
       accessibilityLabel={accessibilityLabel ?? [title, meta].join(', ')}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      android_ripple={rippleOnLight}
+      style={({ pressed }) => [styles.row, androidClip, pressed && styles.pressed]}
     >
       {content}
     </Pressable>

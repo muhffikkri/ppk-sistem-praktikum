@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../app/navigation';
 import type { AiClassificationResult, Session } from '../../domain/types';
+import { formatDateTime } from '../../shared/format/date';
 import {
   Banner,
   Button,
@@ -125,7 +126,7 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
             <CardContent>
               <InfoRow
                 label="Waktu"
-                value={new Date(session.startsAt).toLocaleString('id-ID')}
+                value={formatDateTime(new Date(session.startsAt))}
               />
             </CardContent>
           </Card>

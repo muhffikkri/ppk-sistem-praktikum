@@ -1,5 +1,4 @@
 import {
-  Pressable,
   type PressableProps,
   type StyleProp,
   StyleSheet,
@@ -16,6 +15,12 @@ import {
   spacing,
   typography,
 } from '../../theme/tokens';
+import { interpolate, useAnimatedStyle } from 'react-native-reanimated';
+
+import { rippleOnDark, rippleOnLight } from './ripple';
+import { AnimatedPressable, usePressFeedback } from './usePressFeedback';
+
+const PRESSED_OPACITY = 0.92;
 
 type CardVariant =
   | 'panel' // white panel + border + card shadow (sticker sheet default card)
@@ -41,7 +46,6 @@ export function Card({
   ...pressableProps
 }: CardProps) {
   const isInteractive = interactive ?? 'onPress' in pressableProps;
-
   if (!isInteractive) {
     return (
       <View
@@ -52,20 +56,44 @@ export function Card({
       </View>
     );
   }
+  return (
+    <PressableCard variant={variant} style={style} {...pressableProps}>
+      {children}
+    </PressableCard>
+  );
+}
+
+// Split out so the press hooks only run for interactive cards.
+function PressableCard({
+  children,
+  variant = 'panel',
+  style,
+  onPressIn,
+  onPressOut,
+  ...pressableProps
+}: Omit<CardProps, 'interactive'>) {
+  const { progress, scaleStyle, handlers } = usePressFeedback({
+    onPressIn,
+    onPressOut,
+  });
+  const dimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.get(), [0, 1], [1, PRESSED_OPACITY]),
+  }));
 
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.base,
-        styles[variant],
-        style,
-        pressed && styles.pressed,
-      ]}
+      android_ripple={
+        variant === 'heroViolet' || variant === 'heroInk'
+          ? rippleOnDark
+          : rippleOnLight
+      }
+      style={[styles.base, styles[variant], style, dimStyle, scaleStyle]}
       {...pressableProps}
+      {...handlers}
     >
       {children}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -138,7 +166,6 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
   },
   overlineDark: { color: colors.onInkMuted },
-  pressed: { opacity: 0.92 },
 
   panel: {
     backgroundColor: colors.panel,

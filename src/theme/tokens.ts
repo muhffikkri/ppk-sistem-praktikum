@@ -92,6 +92,15 @@ export const radius = {
   full: 999,
 } as const;
 
+// Android press ripple colors (drawn natively, so feedback appears on the
+// touch frame even while the JS thread is busy).
+export const ripple = {
+  // ink at 8% for panel, surface, lavender and lime fills
+  onLight: 'rgba(23,20,31,0.08)',
+  // white at 18% for violet and ink fills
+  onDark: 'rgba(255,255,255,0.18)',
+} as const;
+
 export const shadow = {
   // 0 4px 20px -2px rgba(23,20,31,.05)
   subtle: {

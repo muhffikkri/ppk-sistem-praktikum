@@ -13,6 +13,7 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { groupBySession } from './batching';
 import { normalizeAttendanceRecord } from './normalize';
 import { closeSessionRule, openSessionRule } from '../../domain/sessionRules';
 import {
@@ -580,6 +581,32 @@ export function subscribeAttendanceForSession(
       onData(records);
     },
     (err: any) => {
+      onError(err.message || 'Gagal memuat kehadiran');
+    },
+  );
+}
+/**
+ * Attendance for up to 30 sessions through one listener (`in` filter cap).
+ * Records are sorted by check-in time on the client, so the query needs no
+ * extra composite index. Every requested session gets an entry.
+ */
+export function subscribeAttendanceForSessionChunk(
+  sessionIds: string[],
+  onData: (bySession: Record<string, AttendanceRecord[]>) => void,
+  onError: (msg: string) => void,
+) {
+  const q = query(attendanceCol, where('sessionId', 'in', sessionIds));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const records = snap.docs
+        .map((d) => normalizeAttendanceRecord(d.id, d.data()))
+        .sort((a, b) =>
+          (a.checkedInAt ?? '').localeCompare(b.checkedInAt ?? ''),
+        );
+      onData(groupBySession(sessionIds, records));
+    },
+    (err) => {
       onError(err.message || 'Gagal memuat kehadiran');
     },
   );
