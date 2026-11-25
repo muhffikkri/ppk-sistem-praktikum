@@ -190,6 +190,7 @@ export function LabLocationPickerModal({
           <IconButton
             icon={locating ? 'sync-outline' : 'locate-outline'}
             accessibilityLabel="Gunakan lokasi saya sekarang"
+            disabled={locating}
             onPress={handleUseCurrentLocation}
           />
         </View>
