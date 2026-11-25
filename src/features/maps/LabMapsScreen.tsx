@@ -14,6 +14,7 @@ import { Button } from '../../shared/ui/Button';
 import { IconButton } from '../../shared/ui/IconButton';
 import { Text } from '../../shared/ui/Text';
 import { LoadingState } from '../../shared/ui/LoadingState';
+import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
 import { useAuth } from '../../state';
 import type { RootStackParamList } from '../../app/navigation';
 import { useLabMapsViewModel } from './useLabMapsViewModel';
@@ -28,6 +29,8 @@ export function LabMapsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const mapRef = useRef<MapView | null>(null);
+  // Mount the native map after the push animation so it does not stall it.
+  const mapReady = useTransitionReady();
 
   const {
     activities,
@@ -108,65 +111,69 @@ export function LabMapsScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       {/* Peta Interaktif */}
-      <MapView
-        ref={mapRef}
-        style={StyleSheet.absoluteFill}
-        initialRegion={{
-          latitude: defaultCenter.latitude,
-          longitude: defaultCenter.longitude,
-          latitudeDelta: 0.0035,
-          longitudeDelta: 0.0035,
-        }}
-        showsUserLocation={userLocation.permissionGranted === true}
-        showsMyLocationButton={false}
-        showsCompass
-        toolbarEnabled={false}
-      >
-        {/* Lingkaran Radius Presensi Laboratorium */}
-        {filteredActivities.map((act) => (
-          <Circle
-            key={`radius-${act.lab.id}`}
-            center={act.lab.coordinates}
-            radius={Math.min(act.lab.radiusMeters, 35)}
-            fillColor={
-              act.isOccupied
-                ? colors.mapCircleOccupied
-                : colors.mapCircleAvailable
-            }
-            strokeColor={
-              act.isOccupied
-                ? colors.mapCircleOccupiedBorder
-                : colors.mapCircleAvailableBorder
-            }
-            strokeWidth={1.5}
-          />
-        ))}
+      {mapReady ? (
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFill}
+          initialRegion={{
+            latitude: defaultCenter.latitude,
+            longitude: defaultCenter.longitude,
+            latitudeDelta: 0.0035,
+            longitudeDelta: 0.0035,
+          }}
+          showsUserLocation={userLocation.permissionGranted === true}
+          showsMyLocationButton={false}
+          showsCompass
+          toolbarEnabled={false}
+        >
+          {/* Lingkaran Radius Presensi Laboratorium */}
+          {filteredActivities.map((act) => (
+            <Circle
+              key={`radius-${act.lab.id}`}
+              center={act.lab.coordinates}
+              radius={Math.min(act.lab.radiusMeters, 35)}
+              fillColor={
+                act.isOccupied
+                  ? colors.mapCircleOccupied
+                  : colors.mapCircleAvailable
+              }
+              strokeColor={
+                act.isOccupied
+                  ? colors.mapCircleOccupiedBorder
+                  : colors.mapCircleAvailableBorder
+              }
+              strokeWidth={1.5}
+            />
+          ))}
 
-        {/* Marker Laboratorium */}
-        {filteredActivities.map((act) => (
-          <Marker
-            key={`marker-${act.lab.id}`}
-            coordinate={act.lab.coordinates}
-            title={act.lab.name}
-            description={
-              act.currentSession
-                ? `Berlangsung: ${act.currentSession.courseName}`
-                : 'Tersedia'
-            }
-            pinColor={act.isOccupied ? colors.violet : colors.success}
-            onPress={() => setSelectedLab(act)}
-          />
-        ))}
+          {/* Marker Laboratorium */}
+          {filteredActivities.map((act) => (
+            <Marker
+              key={`marker-${act.lab.id}`}
+              coordinate={act.lab.coordinates}
+              title={act.lab.name}
+              description={
+                act.currentSession
+                  ? `Berlangsung: ${act.currentSession.courseName}`
+                  : 'Tersedia'
+              }
+              pinColor={act.isOccupied ? colors.violet : colors.success}
+              onPress={() => setSelectedLab(act)}
+            />
+          ))}
 
-        {/* Marker Posisi Pengguna Khusus (jika belum muncul di native) */}
-        {userLocation.coordinates && (
-          <Marker
-            coordinate={userLocation.coordinates}
-            title="Lokasi Anda"
-            pinColor={colors.blue}
-          />
-        )}
-      </MapView>
+          {/* Marker Posisi Pengguna Khusus (jika belum muncul di native) */}
+          {userLocation.coordinates && (
+            <Marker
+              coordinate={userLocation.coordinates}
+              title="Lokasi Anda"
+              pinColor={colors.blue}
+            />
+          )}
+        </MapView>
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.mapPlaceholder]} />
+      )}
 
       {/* Floating Header & Legend */}
       <View
@@ -269,6 +276,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  mapPlaceholder: { backgroundColor: colors.surface },
   centerContainer: {
     flex: 1,
     alignItems: 'center',
