@@ -2,8 +2,6 @@ import { StackActions, useNavigation } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-
-
 import { memo, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import PagerView, {
@@ -42,6 +40,8 @@ import {
 } from '../features/checkin';
 
 import {
+  AslabLabDistributionScreen,
+  AslabLabImportScreen,
   AssistantLabFormScreen,
   AssistantLabListScreen,
 } from '../features/labs';
@@ -106,7 +106,7 @@ const DOCK_TABS: DockTab[] = [
 ];
 
 const DOCK_ROUTE_FOR_POV: Record<
-  'praktikan' | 'asisten',
+  ActorRole,
   { Schedule: keyof RootStackParamList; Attendance: keyof RootStackParamList }
 > = {
   praktikan: {
@@ -116,6 +116,12 @@ const DOCK_ROUTE_FOR_POV: Record<
   },
 
   asisten: {
+    Schedule: 'AssistantSchedule',
+
+    Attendance: 'AssistantAllAttendance',
+  },
+
+  aslab: {
     Schedule: 'AssistantSchedule',
 
     Attendance: 'AssistantAllAttendance',
@@ -160,14 +166,14 @@ const DockPage = memo(function DockPage({ tab, role, navigation }: DockPageProps
   const route = DOCK_PAGE_ROUTES[tab] as any;
   if (tab === 'Home') return <HomeScreen navigation={nav} route={route} />;
   if (tab === 'Schedule') {
-    return role === 'asisten' ? (
+    return role === 'asisten' || role === 'aslab' ? (
       <AssistantScheduleScreen navigation={nav} route={route} />
     ) : (
       <StudentScheduleScreen navigation={nav} route={route} />
     );
   }
   if (tab === 'Attendance') {
-    return role === 'asisten' ? (
+    return role === 'asisten' || role === 'aslab' ? (
       <AssistantAllAttendanceScreen navigation={nav} route={route} />
     ) : (
       <StudentAttendanceHistoryScreen navigation={nav} route={route} />
@@ -507,6 +513,18 @@ export function AppNavigator() {
                 <Stack.Screen
                   name="AssistantLabForm"
                   component={AssistantLabFormScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AslabLabDistribution"
+                  component={AslabLabDistributionScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="AslabLabImport"
+                  component={AslabLabImportScreen}
                   options={{ headerShown: false }}
                 />
               </Stack.Group>
