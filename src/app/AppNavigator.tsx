@@ -127,6 +127,14 @@ const AuthStack = createNativeStackNavigator<{
 type DockTabKey = 'Home' | 'Schedule' | 'Attendance' | 'Profile';
 const DOCK_ORDER: DockTabKey[] = ['Home', 'Schedule', 'Attendance', 'Profile'];
 
+function neighbourTabs(index: number): Set<DockTabKey> {
+  return new Set(
+    [index - 1, index, index + 1]
+      .filter((i) => i >= 0 && i < DOCK_ORDER.length)
+      .map((i) => DOCK_ORDER[i]),
+  );
+}
+
 function DockTabsScreen({
   navigation,
   route,
@@ -137,6 +145,16 @@ function DockTabsScreen({
   const pagerRef = useRef<PagerView>(null);
   // Page the native pager is showing; lets us skip redundant setPage calls.
   const pagerPosition = useRef(activeIndex);
+
+  // Mount a page on first visit (plus its neighbours, so a swipe never
+  // reveals a blank page) and keep it mounted afterwards to preserve scroll.
+  const [mounted, setMounted] = useState<ReadonlySet<DockTabKey>>(() =>
+    neighbourTabs(activeIndex),
+  );
+  const wanted = neighbourTabs(activeIndex);
+  if ([...wanted].some((tab) => !mounted.has(tab))) {
+    setMounted(new Set([...mounted, ...wanted]));
+  }
 
   // Dock taps change the `tab` param; move the pager to match.
   useEffect(() => {
@@ -185,7 +203,7 @@ function DockTabsScreen({
     >
       {DOCK_ORDER.map((key) => (
         <View key={key} style={styles.page} collapsable={false}>
-          {page(key)}
+          {mounted.has(key) ? page(key) : null}
         </View>
       ))}
     </PagerView>
