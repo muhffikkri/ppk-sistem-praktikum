@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const appJson = require('./app.json');
-
 /**
  * Android size options. The minify/shrink flags only apply to release
  * variants (preview, production); the development client is a debug build.
@@ -27,8 +25,9 @@ function androidBuildProperties() {
 }
 
 /** @type {import('expo/config').ExpoConfig} */
-module.exports = () => {
-  const config = { ...appJson.expo };
+module.exports = ({ config: staticConfig }) => {
+  // `staticConfig` is the `expo` object from app.json.
+  const config = { ...staticConfig };
 
   // EAS file secret: GOOGLE_SERVICES_JSON is a file path on build runners.
   const secretPath = process.env.GOOGLE_SERVICES_JSON;
@@ -46,5 +45,5 @@ module.exports = () => {
     ['expo-build-properties', { android: androidBuildProperties() }],
   ];
 
-  return { expo: config };
+  return config;
 };
