@@ -316,6 +316,10 @@ export function AppNavigator() {
 
                 contentStyle: { backgroundColor: colors.surface },
 
+                // Screens covered by a pushed screen skip re-renders until
+                // they are focused again.
+                freezeOnBlur: true,
+
                 headerRight: () => (
                   <Pressable
                     accessibilityRole="button"
