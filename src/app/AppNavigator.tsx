@@ -4,8 +4,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
 
-import { useEffect, useMemo, useState } from 'react';
-import { Animated, PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import PagerView, {
+  type PagerViewOnPageSelectedEvent,
+} from 'react-native-pager-view';
 
 import {
   LoginScreen,
@@ -129,47 +132,28 @@ function DockTabsScreen({
   route,
 }: NativeStackScreenProps<RootStackParamList, 'DockTabs'>) {
   const actorRole = useActorRole();
-  const { width } = useWindowDimensions();
   const activeTab = (route.params?.tab as DockTabKey | undefined) ?? 'Home';
   const activeIndex = Math.max(0, DOCK_ORDER.indexOf(activeTab));
-  const [translateX] = useState(() => new Animated.Value(-activeIndex * width));
-  const drag = useMemo(() => ({ x: 0 }), []);
+  const pagerRef = useRef<PagerView>(null);
+  // Page the native pager is showing; lets us skip redundant setPage calls.
+  const pagerPosition = useRef(activeIndex);
 
+  // Dock taps change the `tab` param; move the pager to match.
   useEffect(() => {
-    Animated.spring(translateX, {
-      toValue: -activeIndex * width,
-      useNativeDriver: true,
-      tension: 68,
-      friction: 12,
-    }).start();
-  }, [activeIndex, translateX, width]);
+    if (pagerPosition.current !== activeIndex) {
+      pagerPosition.current = activeIndex;
+      pagerRef.current?.setPage(activeIndex);
+    }
+  }, [activeIndex]);
 
-  const panHandlers = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) =>
-          Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.1,
-        onPanResponderGrant: () => {
-          translateX.stopAnimation((v) => {
-            drag.x = v;
-          });
-        },
-        onPanResponderMove: (_, g) => {
-          const min = -(DOCK_ORDER.length - 1) * width;
-          const next = Math.max(min, Math.min(0, drag.x + g.dx));
-          translateX.setValue(next);
-        },
-        onPanResponderRelease: (_, g) => {
-          const threshold = width * 0.18;
-          let nextIndex = activeIndex;
-          if (g.dx < -threshold && activeIndex < DOCK_ORDER.length - 1) nextIndex = activeIndex + 1;
-          if (g.dx > threshold && activeIndex > 0) nextIndex = activeIndex - 1;
-          navigation.setParams({ tab: DOCK_ORDER[nextIndex] });
-        },
-        onPanResponderTerminate: () => navigation.setParams({ tab: DOCK_ORDER[activeIndex] }),
-      }).panHandlers,
-    [activeIndex, drag, navigation, translateX, width],
-  );
+  // Swipes settle natively; mirror the page back into the route param so
+  // the BottomDock highlight follows.
+  const onPageSelected = (e: PagerViewOnPageSelectedEvent) => {
+    const position = e.nativeEvent.position;
+    pagerPosition.current = position;
+    const tab = DOCK_ORDER[position];
+    if (tab && tab !== activeTab) navigation.setParams({ tab });
+  };
 
   const page = (key: DockTabKey) => {
     const nav = navigation as any;
@@ -193,22 +177,18 @@ function DockTabsScreen({
   };
 
   return (
-    <View style={{ flex: 1, overflow: 'hidden' }} {...panHandlers}>
-      <Animated.View
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          width: width * DOCK_ORDER.length,
-          transform: [{ translateX }],
-        }}
-      >
-        {DOCK_ORDER.map((key) => (
-          <View key={key} style={{ width }}>
-            {page(key)}
-          </View>
-        ))}
-      </Animated.View>
-    </View>
+    <PagerView
+      ref={pagerRef}
+      style={styles.pager}
+      initialPage={activeIndex}
+      onPageSelected={onPageSelected}
+    >
+      {DOCK_ORDER.map((key) => (
+        <View key={key} style={styles.page} collapsable={false}>
+          {page(key)}
+        </View>
+      ))}
+    </PagerView>
   );
 }
 
@@ -563,6 +543,10 @@ export function AppNavigator() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
+
+  pager: { flex: 1 },
+
+  page: { flex: 1 },
 
   changeRole: {
     minHeight: 44,
