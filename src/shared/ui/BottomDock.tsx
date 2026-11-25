@@ -6,10 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   colors,
   radius,
+  ripple,
   shadow,
   spacing,
   typography,
 } from '../../theme/tokens';
+
+// Borderless so the ripple reads as a circle on the dark dock.
+const TAB_RIPPLE = { color: ripple.onDark, borderless: true, radius: 28 };
+const FAB_RIPPLE = { color: ripple.onLight, borderless: true, radius: 36 };
 
 /** How far the center FAB rises above the dock into the screen content. */
 export const DOCK_FAB_OVERLAP = 30;
@@ -62,7 +67,11 @@ export function BottomDock({
         accessibilityRole="button"
         accessibilityState={{ selected: active }}
         onPress={() => onTabPress(tab.key)}
-        style={styles.tabSlot}
+        android_ripple={TAB_RIPPLE}
+        style={({ pressed }) => [
+          styles.tabSlot,
+          pressed && styles.tabSlotPressed,
+        ]}
       >
         <Ionicons name={tab.glyph} size={22} color={iconColor} />
         <Text style={[styles.tabLabel, { color: iconColor }]}>{tab.label}</Text>
@@ -79,6 +88,7 @@ export function BottomDock({
             accessibilityRole="button"
             accessibilityLabel={fab.label}
             onPress={fab.onPress}
+            android_ripple={FAB_RIPPLE}
             style={({ pressed }) => [
               styles.fabSlot,
               pressed && styles.fabSlotPressed,
@@ -115,6 +125,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     minHeight: 52,
   },
+  tabSlotPressed: { opacity: 0.7 },
   tabGlyph: { ...typography.title, fontSize: 20 },
   tabLabel: { ...typography.caption, fontSize: 9, fontWeight: '600' },
   fabSlot: {

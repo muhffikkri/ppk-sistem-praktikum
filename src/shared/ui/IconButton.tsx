@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, type PressableProps, StyleSheet, View } from 'react-native';
 
-import { colors, radius, typography } from '../../theme/tokens';
+import { colors, radius, ripple, typography } from '../../theme/tokens';
 import { Text } from './Text';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -22,6 +22,9 @@ export type IconButtonProps = Omit<
 };
 
 const SIZE = 40;
+// Borderless so the ripple needs no overflow clip: clipping would cut off
+// the badge, which sits outside the button's corner.
+const RIPPLE = { color: ripple.onLight, borderless: true, radius: SIZE / 2 };
 // Extends the 40px visual target to the 44px minimum touch target.
 const HIT_SLOP = (44 - SIZE) / 2;
 
@@ -49,6 +52,7 @@ export function IconButton({
         badge ? `${accessibilityLabel}, ${badge} baru` : accessibilityLabel
       }
       hitSlop={HIT_SLOP}
+      android_ripple={RIPPLE}
       style={({ pressed }) => [
         styles.base,
         styles[variant],

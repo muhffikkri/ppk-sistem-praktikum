@@ -9,6 +9,7 @@ import {
 
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import type { IconName } from './IconButton';
+import { androidClip, rippleOnDark, rippleOnLight } from './ripple';
 import { Text, type TextTone } from './Text';
 
 type ButtonVariant =
@@ -70,6 +71,7 @@ export function Button({
       accessibilityLabel={iconOnly ? label : undefined}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
+      android_ripple={variant === 'primary' ? rippleOnDark : rippleOnLight}
       style={({ pressed }) => [
         styles.button,
         styles[size],
@@ -108,6 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     ...shadow.card,
+    ...androidClip,
   },
   md: { minHeight: 48, paddingHorizontal: spacing['2xl'] },
   sm: { minHeight: 40, paddingHorizontal: spacing.lg },

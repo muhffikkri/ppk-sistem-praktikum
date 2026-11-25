@@ -16,6 +16,7 @@ import {
   spacing,
   typography,
 } from '../../theme/tokens';
+import { rippleOnDark, rippleOnLight } from './ripple';
 
 type CardVariant =
   | 'panel' // white panel + border + card shadow (sticker sheet default card)
@@ -56,6 +57,11 @@ export function Card({
   return (
     <Pressable
       accessibilityRole="button"
+      android_ripple={
+        variant === 'heroViolet' || variant === 'heroInk'
+          ? rippleOnDark
+          : rippleOnLight
+      }
       style={({ pressed }) => [
         styles.base,
         styles[variant],
