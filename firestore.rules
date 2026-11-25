@@ -23,6 +23,24 @@ service cloud.firestore {
       return hasRole('student');
     }
 
+    function isAslab() {
+      return hasRole('aslab');
+    }
+
+    function isLabManagerForCourse(data) {
+      return isAslab()
+        && (
+          !('courseId' in data)
+          || data.courseId == null
+          || data.courseId == ''
+          || (
+            'managedCourseIds' in userDoc().data
+            && userDoc().data.managedCourseIds is list
+            && data.courseId in userDoc().data.managedCourseIds
+          )
+        );
+    }
+
     function sessionData(sessionId) {
       return get(/databases/$(database)/documents/sessions/$(sessionId)).data;
     }
@@ -35,7 +53,7 @@ service cloud.firestore {
 
     // 1. Profil Pengguna
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAssistant());
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAssistant() || isAslab());
 
       allow create: if isSignedIn()
         && request.auth.uid == uid
@@ -48,7 +66,8 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.role == resource.data.role
-        && request.resource.data.email == resource.data.email;
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.get('managedCourseIds', []) == resource.data.get('managedCourseIds', []);
 
       allow delete: if false;
     }
@@ -80,7 +99,16 @@ service cloud.firestore {
     // 2. Kelas & Peserta
     match /classes/{classId} {
       allow read: if (isAssistant() && request.auth.uid in resource.data.assistantIds)
-        || (isStudent() && request.auth.uid in resource.data.participantIds);
+        || (isStudent() && request.auth.uid in resource.data.participantIds)
+        || (isAslab() && (
+          !('courseId' in resource.data)
+          || resource.data.courseId == null
+          || (
+            'managedCourseIds' in userDoc().data
+            && userDoc().data.managedCourseIds is list
+            && resource.data.courseId in userDoc().data.managedCourseIds
+          )
+        ));
 
       allow create: if isAssistant()
         && request.resource.data.createdBy == request.auth.uid
@@ -90,10 +118,12 @@ service cloud.firestore {
         && request.resource.data.groupName is string
         && request.resource.data.groupName.size() > 0;
 
-      allow update: if isAssistant()
+      allow update: if (isAssistant()
         && request.auth.uid in resource.data.assistantIds
         && request.auth.uid in request.resource.data.assistantIds
-        && request.resource.data.createdBy == resource.data.createdBy;
+        && request.resource.data.createdBy == resource.data.createdBy)
+        || (isAslab()
+          && request.resource.data.createdBy == resource.data.createdBy);
 
       allow delete: if isAssistant() && request.auth.uid in resource.data.assistantIds;
     }
@@ -101,7 +131,8 @@ service cloud.firestore {
     // 3. Jadwal & Sesi Praktikum
     match /sessions/{sessionId} {
       allow read: if (isAssistant() && request.auth.uid in resource.data.assistantIds)
-        || (isStudent() && request.auth.uid in resource.data.participantIds);
+        || (isStudent() && request.auth.uid in resource.data.participantIds)
+        || isAslab();
 
       allow create: if isAssistant()
         && request.resource.data.createdBy == request.auth.uid
@@ -112,15 +143,19 @@ service cloud.firestore {
         && request.resource.data.endsAt is string
         && request.auth.uid in request.resource.data.assistantIds;
 
-      allow update: if isAssistant()
+      allow update: if (isAssistant()
         && request.auth.uid in resource.data.assistantIds
         && request.resource.data.createdBy == resource.data.createdBy
-        && validTransition(resource.data.status, request.resource.data.status);
+        && validTransition(resource.data.status, request.resource.data.status))
+        || (isAslab()
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.startsAt == resource.data.startsAt
+          && request.resource.data.endsAt == resource.data.endsAt);
 
       allow delete: if isAssistant() && request.auth.uid in resource.data.assistantIds;
     }
 
-    // 3b. Master Laboratorium (Sprint 3) — acuan geofence presensi & peta
+    // 3b. Master Laboratorium — acuan geofence presensi & peta
     function validLab(data) {
       return data.name is string && data.name.size() > 0
         && data.building is string && data.building.size() > 0
@@ -136,25 +171,20 @@ service cloud.firestore {
     match /labs/{labId} {
       allow read: if isSignedIn();
 
-      allow create: if isAssistant()
+      allow create: if isLabManagerForCourse(request.resource.data)
         && request.resource.data.createdBy == request.auth.uid
         && validLab(request.resource.data);
 
-      allow update: if isAssistant()
+      allow update: if isLabManagerForCourse(resource.data)
+        && isLabManagerForCourse(request.resource.data)
         && request.resource.data.createdBy == resource.data.createdBy
         && validLab(request.resource.data);
 
-      allow delete: if isAssistant();
+      allow delete: if false;
     }
 
     // Geofence presensi: sesi wajib terhubung ke labs/{labId}, perangkat wajib
     // mengirim koordinat + jarak, dan keduanya harus konsisten dengan radius lab.
-    // Rules tidak punya cos(): 1° lintang ≈ 111.320 m, 1° bujur ≥ 110.000 m untuk
-    // lintang wilayah Indonesia (|lat| ≤ ~11°), jadi kotak batas ini tidak menolak
-    // posisi yang sah di dalam radius.
-    // Pembagi wajib float (111320.0): int / int di rules adalah pembagian bulat,
-    // sehingga 50 / 111320 = 0 dan semua presensi tertolak. Toleransi +1 m
-    // menutup selisih pembulatan jarak di aplikasi (Math.round).
     function withinLabGeofence(data, session) {
       return session.labId is string
         && exists(/databases/$(database)/documents/labs/$(session.labId))
@@ -183,9 +213,11 @@ service cloud.firestore {
     match /attendance/{attendanceId} {
       // get dokumen milik sendiri boleh walau belum ada (cek duplikasi setelah permission-denied)
       allow get: if isAssistant()
+        || isAslab()
         || (isStudent() && attendanceId.matches('^.+_' + request.auth.uid + '$'));
 
       allow list: if isAssistant()
+        || isAslab()
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
       allow create: if isStudent()
@@ -211,6 +243,7 @@ service cloud.firestore {
     // 5. Pengajuan Izin & Pemeriksaan Asisten
     match /leave_requests/{leaveId} {
       allow read: if isAssistant()
+        || isAslab()
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
       allow create: if isStudent()

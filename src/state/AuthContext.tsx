@@ -28,6 +28,7 @@ import type {
   AsyncActionResult,
   AuthContextValue,
   AuthStatus,
+  PublicSelectableRole,
   UserProfile,
   UserRole,
 } from '../domain/types';
@@ -42,6 +43,19 @@ WebBrowser.maybeCompleteAuthSession();
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeRole(rawRole: unknown): UserRole {
+  if (rawRole === 'aslab') return 'aslab';
+  if (rawRole === 'assistant') return 'assistant';
+  return 'student';
+}
+
+function normalizeManagedCourseIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (item): item is string => typeof item === 'string' && item.trim().length > 0,
+  );
+}
 
 function mapFirebaseAuthError(err: unknown): {
   reason: ActionFailureReason;
@@ -190,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!firebaseUser) {
         setUser(null);
+        setNeedsRoleSelection(false);
         setAuthStatus('unauthenticated');
         return;
       }
@@ -203,8 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (snap.exists()) {
             const data = snap.data() as Partial<UserProfile>;
             // Role disimpan di Firestore dan dipakai sebagai kebenaran tunggal.
-            const role: UserRole =
-              data.role === 'assistant' ? 'assistant' : 'student';
+            const role = normalizeRole(data.role);
+            const managedCourseIds = normalizeManagedCourseIds(data.managedCourseIds);
             setUser({
               uid: firebaseUser.uid,
               displayName:
@@ -214,11 +229,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 'Pengguna',
               email: data.email || firebaseUser.email || '',
               role,
+              managedCourseIds,
               createdAt:
                 typeof data.createdAt === 'string'
                   ? data.createdAt
                   : new Date().toISOString(),
             });
+            setNeedsRoleSelection(false);
             setError(null);
             setAuthStatus('authenticated');
             return;
@@ -338,7 +355,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: string;
       email: string;
       password: string;
-      role: UserRole;
+      role: PublicSelectableRole;
     }): Promise<AsyncActionResult> => {
       setError(null);
 
@@ -393,6 +410,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         await setDoc(doc(db, 'users', credential.user.uid), profile);
         setUser(profile);
+        setNeedsRoleSelection(false);
         setAuthStatus('authenticated');
         return { ok: true };
       } catch (err) {
@@ -407,7 +425,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const setUserRole = useCallback(
-    async (role: UserRole): Promise<AsyncActionResult> => {
+    async (role: PublicSelectableRole): Promise<AsyncActionResult> => {
       setError(null);
 
       if (!isFirebaseConfigured) {
@@ -431,10 +449,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        // Cek apakah profil sudah ada di Firestore (mis. user sudah pernah login
-        // dengan email/password sebelumnya dan baru saja login dengan Google).
-        // Role yang dipilih di RoleSelectionScreen akan ditulis ke Firestore,
-        // sehingga role konsisten terlepas dari metode login yang digunakan.
         const profile: UserProfile = {
           uid: currentUser.uid,
           displayName:
@@ -474,6 +488,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await signOut(auth);
       setUser(null);
+      setNeedsRoleSelection(false);
       setAuthStatus('unauthenticated');
       return { ok: true };
     } catch (err) {
@@ -555,9 +570,10 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-export type ActorRole = 'praktikan' | 'asisten';
+export type ActorRole = 'praktikan' | 'asisten' | 'aslab';
 
 export function useActorRole(): ActorRole {
   const { user } = useAuth();
+  if (user?.role === 'aslab') return 'aslab';
   return user?.role === 'assistant' ? 'asisten' : 'praktikan';
 }

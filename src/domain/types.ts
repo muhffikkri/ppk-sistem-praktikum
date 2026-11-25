@@ -3,13 +3,18 @@
  * Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
  */
 
-export type UserRole = 'student' | 'assistant';
+export type UserRole = 'student' | 'assistant' | 'aslab';
+
+/** Role yang boleh dipilih sendiri saat registrasi publik (SRS-4.01). */
+export type PublicSelectableRole = Exclude<UserRole, 'aslab'>;
 
 export type UserProfile = {
   uid: string;
   displayName: string;
   email: string;
   role: UserRole;
+  /** Daftar ID/kode mata kuliah yang dikelola khusus untuk peran `aslab` (SRS-4.01). */
+  managedCourseIds?: string[];
   createdAt: string; // ISO 8601 UTC
 };
 
@@ -121,10 +126,10 @@ export type AuthContextValue = {
     displayName: string;
     email: string;
     password: string;
-    role: UserRole;
+    role: PublicSelectableRole;
   }) => Promise<AsyncActionResult>;
   loginWithGoogle: () => Promise<AsyncActionResult>;
-  setUserRole: (role: UserRole) => Promise<AsyncActionResult>;
+  setUserRole: (role: PublicSelectableRole) => Promise<AsyncActionResult>;
   logout: () => Promise<AsyncActionResult>;
   updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
   clearError: () => void;
@@ -192,7 +197,10 @@ export type AssistantLeaveViewModel = {
 // --- Tipe transisi Sprint 1 yang masih dipakai domain rules & fixtures ---
 
 export type SessionActionFailure =
-  'session_not_found' | 'invalid_status' | 'already_checked_in';
+  | 'session_not_found'
+  | 'invalid_status'
+  | 'already_checked_in';
 
 export type SessionActionResult =
-  { ok: true } | { ok: false; reason: SessionActionFailure };
+  | { ok: true }
+  | { ok: false; reason: SessionActionFailure };
