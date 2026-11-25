@@ -1,11 +1,17 @@
 import { useState } from 'react';
 
+import {
+  buildSessionRosterRecap,
+  type SessionRecapResult,
+} from '../../domain/sessionRecapRules';
 import type {
   AttendanceRecord,
+  LeaveRequest,
   Session,
   SessionActionFailure,
 } from '../../domain/types';
 import { useAssistantSessionsViewModel } from '../../state';
+import { useAssistantLeaveViewModel } from '../leave';
 import { formatClock } from './formatters';
 
 export type AssistantFeedback =
@@ -19,6 +25,7 @@ type LastAction =
 export type AssistantSessionDetailViewModel = {
   session: Session | undefined;
   attendees: AttendanceRecord[];
+  recap: SessionRecapResult;
   canOpen: boolean;
   canClose: boolean;
   statusHint: string;
@@ -83,6 +90,15 @@ export function useAssistantSessionDetail(
 
   const session = viewModel.getSessionById(sessionId);
   const attendees = viewModel.getAttendanceForSession(sessionId);
+  const leaveState = useAssistantLeaveViewModel();
+  const sessionLeaves = leaveState.leaveRequests.filter(
+    (l: LeaveRequest) => l.sessionId === sessionId,
+  );
+  const recap = buildSessionRosterRecap({
+    participantIds: session?.participantIds ?? [],
+    attendees,
+    leaves: sessionLeaves,
+  });
 
   const openSession = async () => {
     const result = await viewModel.openSession(sessionId);
@@ -105,6 +121,7 @@ export function useAssistantSessionDetail(
   return {
     session,
     attendees,
+    recap,
     canOpen: session?.status === 'scheduled',
     canClose: session?.status === 'open',
     statusHint: statusHintFor(session),
