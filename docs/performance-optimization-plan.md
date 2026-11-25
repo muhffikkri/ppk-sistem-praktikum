@@ -450,3 +450,27 @@ Perintah di atas harus tidak mengeluarkan apa pun.
 | Re-render Home per 1 update attendance | | | | |
 | Listener Firestore aktif (asisten, 20 sesi) | | | | |
 | Cold start → Home tampil (ms) | | | | |
+
+## 7. Status implementasi
+
+Dikerjakan di branch `perf/app-responsiveness`. Semua item wajib selesai; beberapa
+item berubah bentuk atau sengaja tidak dikerjakan:
+
+| Item | Status | Catatan |
+|------|--------|---------|
+| A1–A6 | selesai | `popTo` + merge param, `PagerView`, lazy mount (tab aktif + tetangga), `DockPage` memo, `freezeOnBlur`, opsi stack di-hoist, retry Home lewat view model |
+| B1 | selesai | Healthcheck 82/82 komponen. Dua pelanggaran aturan React diperbaiki; `AssistantDemoContext` yang tidak dipakai dihapus. Bundle terverifikasi berisi output compiler |
+| C1–C4 | selesai | Listener attendance dan izin asisten digabung per 30 sesi (`in`), diurutkan di klien sehingga tidak butuh indeks baru. Aturan Firestore (`isAssistant()` boleh `list`) tidak berubah |
+| C5 | tidak dikerjakan | Sort ulang sesi dibiarkan: React Compiler sudah memoize hasilnya, dan menghapusnya berisiko mengubah urutan bila format `startsAt` tidak seragam |
+| C6 | selesai | Tiga modul formatter kembar disatukan di `src/shared/format/date.ts`, dengan test kesetaraan output |
+| C7 | tidak dikerjakan | Firestore SDK sudah menggabungkan query lab yang identik; dampaknya kecil |
+| D1–D4 | selesai | D3 hanya untuk dock dan FAB scan |
+| E1–E3 | selesai | Tambahan: peta hanya dipusatkan ke pengguna sekali (sebelumnya setiap update GPS), watcher yang bocor saat layar ditutup lebih awal diperbaiki, dan scan QR hanya memproses kode pertama |
+| E4 | tidak dikerjakan | Transisi layar tetap default platform |
+| F1 | selesai | `ScreenList` dipakai di 6 layar list |
+| F2 | tidak dikerjakan | Perlu persetujuan desain |
+| G1 | selesai | |
+| G2 | tidak dikerjakan | Tidak berlaku di Expo Go, dan nama family iOS perlu dicek di perangkat |
+
+Belum diverifikasi: pengukuran di perangkat (bagian 1 dan 6) dan uji regresi
+bagian 5 harus dijalankan di build release.
