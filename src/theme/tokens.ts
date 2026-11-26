@@ -54,6 +54,12 @@ export const colors = {
 
   // Neutral fill for non-selected sentiment score bars.
   scoreNeutral: '#e0e0e0',
+
+  // Google brand colors, dipakai hanya untuk logo pihak ketiga.
+  googleBlue: '#4285F4',
+  googleGreen: '#34A853',
+  googleYellow: '#FBBC05',
+  googleRed: '#EB4335',
 } as const;
 
 // Named tokens matching the sticker sheet's semantic roles.

@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
   type PressableProps,
@@ -34,6 +35,8 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   iconOnly?: boolean;
   /** Ionicons name rendered before the label. */
   icon?: IconName;
+  /** Custom leading icon (for example a multi-color SVG logo). */
+  iconElement?: ReactNode;
   loading?: boolean;
 };
 
@@ -68,6 +71,7 @@ export function Button({
   size = 'md',
   iconOnly = false,
   icon,
+  iconElement,
   loading = false,
   disabled,
   onPressIn,
@@ -117,6 +121,8 @@ export function Button({
       <View style={styles.row}>
         {loading ? (
           <ActivityIndicator size="small" color={color} />
+        ) : iconElement ? (
+          iconElement
         ) : icon ? (
           <Ionicons name={icon} size={size === 'sm' ? 16 : 18} color={color} />
         ) : null}

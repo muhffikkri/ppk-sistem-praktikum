@@ -17,6 +17,7 @@ import { Banner } from '../../shared/ui/Banner';
 import { Text } from '../../shared/ui/Text';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import { useAuth } from '../../state';
+import { GoogleLogo } from './GoogleLogo';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Landing'>;
 
@@ -117,8 +118,8 @@ export function LandingScreen({ navigation }: Props) {
         {/* 3 Core Feature Cards Array */}
         <View style={styles.featureGrid}>
           {/* Feature 1: Jadwal & Sesi */}
-          <View style={styles.featureCard}>
-            <View style={[styles.iconCircle, { backgroundColor: colors.lime }]}>
+          <View style={[styles.featureCard, styles.featureCardHighlighted]}>
+            <View style={styles.iconCircle}>
               <Ionicons name="calendar" size={18} color={colors.ink} />
             </View>
             <Text
@@ -135,9 +136,7 @@ export function LandingScreen({ navigation }: Props) {
 
           {/* Feature 2: Kode Presensi */}
           <View style={[styles.featureCard, styles.featureCardHighlighted]}>
-            <View
-              style={[styles.iconCircle, { backgroundColor: colors.onPrimary }]}
-            >
+            <View style={styles.iconCircle}>
               <Ionicons name="scan-outline" size={18} color={colors.violet} />
             </View>
             <Text
@@ -147,17 +146,14 @@ export function LandingScreen({ navigation }: Props) {
             >
               Kode Presensi
             </Text>
-            <Text
-              variant="captionStrong"
-              style={[styles.featureSub, styles.featureSubStrong]}
-            >
+            <Text variant="captionStrong" style={styles.featureSub}>
               Penanda lab yang akurat
             </Text>
           </View>
 
           {/* Feature 3: Modul & BAP */}
           <View style={styles.featureCard}>
-            <View style={[styles.iconCircle, { backgroundColor: colors.pink }]}>
+            <View style={styles.iconCircle}>
               <Ionicons
                 name="checkmark-done"
                 size={18}
@@ -240,7 +236,7 @@ export function LandingScreen({ navigation }: Props) {
             {googlePending ? (
               <ActivityIndicator size="small" color={colors.lavender} />
             ) : (
-              <Ionicons name="logo-google" size={16} color={colors.lavender} />
+              <GoogleLogo size={16} />
             )}
             <Text variant="label" tone="violet">
               Masuk dengan Akun Google
@@ -331,9 +327,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   titlePrimary: {
+    fontSize: 50,
     includeFontPadding: false,
   },
   titleItalic: {
+    fontSize: 50,
     color: colors.lime,
     marginLeft: 2,
     includeFontPadding: false,
@@ -399,6 +397,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
+    backgroundColor: colors.onPrimary,
   },
   featureTitle: {
     textAlign: 'center',
@@ -427,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lime,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     ...shadow.elevated,
   },
@@ -447,6 +446,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.onLightSubtle,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'absolute',
+    right: 15,
   },
   secondaryBtn: {
     height: 52,

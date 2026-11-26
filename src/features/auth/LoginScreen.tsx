@@ -16,6 +16,7 @@ import {
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { AuthSwitchLink } from './AuthSwitchLink';
+import { GoogleLogo } from './GoogleLogo';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -30,6 +31,7 @@ export function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
 
   const activeError = localError ?? error;
   // Validation messages render under their own field; everything else is a banner.
@@ -64,9 +66,15 @@ export function LoginScreen({ navigation }: Props) {
   };
 
   const handleGoogleLogin = async () => {
+    if (googlePending || submitting) return;
     setLocalError(null);
     clearError();
-    await loginWithGoogle();
+    setGooglePending(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGooglePending(false);
+    }
   };
 
   const handleBack = () => {
@@ -157,12 +165,14 @@ export function LoginScreen({ navigation }: Props) {
           variant="primary"
           icon="log-in-outline"
           loading={submitting}
+          disabled={googlePending}
           onPress={handleLogin}
         />
         <Button
           label="Masuk dengan Google"
           variant="outline"
-          icon="logo-google"
+          iconElement={<GoogleLogo size={18} />}
+          loading={googlePending}
           disabled={submitting}
           onPress={handleGoogleLogin}
         />
