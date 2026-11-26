@@ -11,6 +11,7 @@ import {
   where,
   type Firestore,
 } from 'firebase/firestore';
+import { canSubmitLeave } from '../../domain/leaveRules';
 import type {
   ActionFailureReason,
   LeaveRequest,
@@ -170,6 +171,12 @@ export function createLeaveService(db: Firestore) {
       requireRole(user, 'student');
       const reason = validateReason(input);
       const session = await this.getSession(sessionId);
+      if (!canSubmitLeave(session)) {
+        throw new LeaveError(
+          'invalid_status',
+          'Izin hanya bisa diajukan untuk sesi yang belum selesai.',
+        );
+      }
       if (!session.classId || !session.participantIds?.includes(user.uid))
         throw new LeaveError(
           'forbidden',

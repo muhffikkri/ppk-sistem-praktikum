@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { canSubmitLeave } from '../../domain/leaveRules';
 import type { Session } from '../../domain/types';
 import { formatDateTime } from '../../shared/format/date';
 import { Banner, SelectField, spacing } from '../../shared/ui';
@@ -51,6 +52,9 @@ export function StudentLeaveSessionPicker({
       stop?.();
     };
   }, [user, service, revision]);
+
+  // Sesi yang sudah ditutup/selesai tidak bisa diajukan izin.
+  const eligible = sessions.filter((session) => canSubmitLeave(session));
   return (
     <View style={{ gap: spacing.md }}>
       <ListFeedback
@@ -63,19 +67,19 @@ export function StudentLeaveSessionPicker({
           setRevision((value) => value + 1);
         }}
       />
-      {!loading && !error && sessions.length === 0 ? (
+      {!loading && !error && eligible.length === 0 ? (
         <Banner
           tone="warning"
-          title="Belum ada sesi terdaftar"
-          message="Sesi muncul setelah asisten mendaftarkanmu sebagai peserta."
+          title="Belum ada sesi yang bisa diajukan izin"
+          message="Izin hanya tersedia untuk sesi yang belum selesai."
         />
       ) : null}
-      {sessions.length > 0 ? (
+      {eligible.length > 0 ? (
         <SelectField<string>
           label="Sesi"
           placeholder="Pilih sesi untuk mengajukan izin"
           value={null}
-          options={sessions.map((session) => ({
+          options={eligible.map((session) => ({
             value: session.id,
             label: `${session.courseName} · ${session.groupName}`,
             description: formatDateTime(new Date(session.startsAt)),

@@ -63,7 +63,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/features/leave/leave.test.ts src/domain/geofenceRules.test.ts src/features/maps/maps.test.ts src/domain/sessionQr.test.ts src/features/assistant/components/qrRows.test.ts src/domain/notificationTypes.test.ts src/features/notifications/formatNotificationTime.test.ts src/services/firestore/batching.test.ts src/shared/format/date.test.ts src/domain/asprakScope.test.ts src/domain/sessionRecapRules.test.ts",
+    "test": "tsx --test src/features/leave/leave.test.ts src/domain/geofenceRules.test.ts src/features/maps/maps.test.ts src/domain/sessionQr.test.ts src/features/assistant/components/qrRows.test.ts src/domain/notificationTypes.test.ts src/features/notifications/formatNotificationTime.test.ts src/services/firestore/batching.test.ts src/shared/format/date.test.ts src/domain/asprakScope.test.ts src/domain/sessionRecapRules.test.ts src/domain/sessionRules.test.ts src/domain/leaveRules.test.ts",
     "verify:contracts": "tsx scripts/verify-contracts.ts",
     "check:ui": "tsx scripts/check-ui-tokens.ts",
     "seed": "tsx scripts/seed-firestore.ts",
