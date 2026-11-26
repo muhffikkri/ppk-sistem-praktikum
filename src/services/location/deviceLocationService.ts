@@ -2,10 +2,7 @@ import * as Location from 'expo-location';
 import type { DeviceFix } from '../../domain/geoTypes';
 
 export type LocationPermissionStatus =
-  | 'granted'
-  | 'denied'
-  | 'unavailable'
-  | 'unknown';
+  'granted' | 'denied' | 'unavailable' | 'unknown';
 
 export type LocationReadResult =
   | { ok: true; fix: DeviceFix }

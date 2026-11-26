@@ -62,7 +62,11 @@ export function ListRow({
       accessibilityHint={accessibilityHint}
       onPress={onPress}
       android_ripple={rippleOnLight}
-      style={({ pressed }) => [styles.row, androidClip, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.row,
+        androidClip,
+        pressed && styles.pressed,
+      ]}
     >
       {content}
     </Pressable>

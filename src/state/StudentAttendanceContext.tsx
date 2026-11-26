@@ -256,7 +256,15 @@ export function StudentAttendanceProvider({
       checkIn,
       retry,
     }),
-    [state, enabled, user, getSessionById, getAttendanceForSession, checkIn, retry],
+    [
+      state,
+      enabled,
+      user,
+      getSessionById,
+      getAttendanceForSession,
+      checkIn,
+      retry,
+    ],
   );
 
   return (

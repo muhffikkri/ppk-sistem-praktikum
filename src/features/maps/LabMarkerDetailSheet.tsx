@@ -52,7 +52,9 @@ export function LabMarkerDetailSheet({
           <Text variant="caption" tone="muted">
             {lab.building}
             {lab.floor ? ` · ${lab.floor}` : ''}
-            {distance !== null ? ` · ${formatDistance(distance)} dari Anda` : ''}
+            {distance !== null
+              ? ` · ${formatDistance(distance)} dari Anda`
+              : ''}
           </Text>
         </View>
 
@@ -75,9 +77,7 @@ export function LabMarkerDetailSheet({
       <View
         style={[
           styles.radiusBadge,
-          isInsideRadius === true
-            ? styles.radiusInside
-            : styles.radiusOutside,
+          isInsideRadius === true ? styles.radiusInside : styles.radiusOutside,
         ]}
       >
         <Text

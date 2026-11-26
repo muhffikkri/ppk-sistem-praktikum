@@ -204,8 +204,8 @@ function LabForm({
       <View style={styles.form}>
         <SectionHeader title="Titik lokasi" />
         <Text variant="body" tone="muted">
-          Pilih lokasi lab langsung di peta atau gunakan lokasi saat ini. Anda juga
-          dapat mengetik koordinat manual di bawah.
+          Pilih lokasi lab langsung di peta atau gunakan lokasi saat ini. Anda
+          juga dapat mengetik koordinat manual di bawah.
         </Text>
 
         <View style={styles.pickerActions}>

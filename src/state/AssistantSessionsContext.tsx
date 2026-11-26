@@ -399,7 +399,9 @@ export const AssistantSessionsProvider = ({
             ? createSession(uid, input)
             : Promise.resolve(unauthenticated()),
       updateSession: (sessionId: string, input: SessionInput) =>
-        enabled ? updateSession(sessionId, input) : Promise.resolve(forbidden()),
+        enabled
+          ? updateSession(sessionId, input)
+          : Promise.resolve(forbidden()),
       deleteSession: (sessionId: string) =>
         enabled ? deleteSession(sessionId) : Promise.resolve(forbidden()),
       addParticipantByEmail: (classId: string, email: string) =>

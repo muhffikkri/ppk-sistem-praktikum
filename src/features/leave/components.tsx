@@ -87,8 +87,7 @@ export function RequestCard({ item }: { item: LeaveRequest }) {
           />
         </View>
         <Text variant="caption" tone="muted" numberOfLines={1}>
-          {item.studentName} ·{' '}
-          {formatDateTime(new Date(item.sessionStartsAt))}
+          {item.studentName} · {formatDateTime(new Date(item.sessionStartsAt))}
         </Text>
         <Text variant="body" numberOfLines={4}>
           {item.reason}

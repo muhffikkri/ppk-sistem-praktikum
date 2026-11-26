@@ -73,26 +73,42 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
           <CardContent>
             <View style={styles.detailGrid}>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Mata Kuliah</Text>
+                <Text variant="caption" tone="muted">
+                  Mata Kuliah
+                </Text>
                 <Text variant="captionStrong">{session.courseName}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Kelas</Text>
+                <Text variant="caption" tone="muted">
+                  Kelas
+                </Text>
                 <Text variant="captionStrong">{session.groupName}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Waktu</Text>
+                <Text variant="caption" tone="muted">
+                  Waktu
+                </Text>
                 <Text variant="captionStrong">
-                  {formatSessionDate(session.startsAt)} · {formatTimeRange(session.startsAt, session.endsAt)}
+                  {formatSessionDate(session.startsAt)} ·{' '}
+                  {formatTimeRange(session.startsAt, session.endsAt)}
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Laboratorium</Text>
-                <Text variant="captionStrong">{session.lab ?? 'Tidak ditentukan'}</Text>
+                <Text variant="caption" tone="muted">
+                  Laboratorium
+                </Text>
+                <Text variant="captionStrong">
+                  {session.lab ?? 'Tidak ditentukan'}
+                </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Status</Text>
-                <Text variant="captionStrong" tone={isOpen ? 'violet' : 'muted'}>
+                <Text variant="caption" tone="muted">
+                  Status
+                </Text>
+                <Text
+                  variant="captionStrong"
+                  tone={isOpen ? 'violet' : 'muted'}
+                >
                   {STATUS_LABEL[session.status] ?? session.status}
                 </Text>
               </View>
@@ -116,7 +132,11 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
       <View style={styles.actions}>
         {!isAlreadyCheckedIn ? (
           <Button
-            label={isOpen ? 'Buka Presensi Lokasi' : `Sesi ${STATUS_LABEL[session.status] ?? session.status}`}
+            label={
+              isOpen
+                ? 'Buka Presensi Lokasi'
+                : `Sesi ${STATUS_LABEL[session.status] ?? session.status}`
+            }
             variant="primary"
             disabled={!isOpen}
             onPress={() => navigation.navigate('StudentCheckIn', { sessionId })}
@@ -125,7 +145,9 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
         <Button
           label="Ajukan Izin Ketidakhadiran"
           variant="outline"
-          onPress={() => navigation.navigate('StudentLeaveRequestForm', { sessionId })}
+          onPress={() =>
+            navigation.navigate('StudentLeaveRequestForm', { sessionId })
+          }
         />
       </View>
     </Screen>

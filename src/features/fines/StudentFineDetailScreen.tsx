@@ -80,7 +80,10 @@ export function StudentFineDetailScreen({ navigation, route }: Props) {
   return (
     <Screen>
       <TopBar onBack={() => navigation.goBack()} />
-      <Header title="Detail tagihan" description="Informasi denda keterlambatan" />
+      <Header
+        title="Detail tagihan"
+        description="Informasi denda keterlambatan"
+      />
 
       {loading ? <LoadingState label="Memuat detail tagihan…" /> : null}
 
@@ -117,7 +120,11 @@ export function StudentFineDetailScreen({ navigation, route }: Props) {
           </Card>
 
           {payError ? (
-            <Banner tone="danger" title="Pembayaran gagal dimulai" message={payError} />
+            <Banner
+              tone="danger"
+              title="Pembayaran gagal dimulai"
+              message={payError}
+            />
           ) : null}
 
           {fine.status === 'unpaid' ? (
