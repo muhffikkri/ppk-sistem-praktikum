@@ -50,11 +50,52 @@ service cloud.firestore {
         && request.time.toMillis() <= data.endsAtMs;
     }
 
-    function validTransition(from, to, data) {
-      return from == to
-        || (from == 'scheduled' && to == 'open' && withinOpenWindow(data))
-        || (from == 'open' && to == 'closed')
-        || (from == 'closed' && to == 'open' && withinOpenWindow(data));
+    // Edit hanya untuk sesi scheduled: lab/class tidak boleh berubah saat open.
+    function validSessionEdit() {
+      return resource.data.status == 'scheduled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'classId', 'courseName', 'groupName', 'participantIds', 'assistantIds',
+          'title', 'lab', 'labId', 'startsAt', 'endsAt', 'startsAtMs', 'endsAtMs',
+          'updatedAt'
+        ])
+        && request.resource.data.startsAt is string
+        && request.resource.data.endsAt is string
+        && request.resource.data.startsAtMs is int
+        && request.resource.data.endsAtMs is int
+        && request.resource.data.endsAtMs > request.resource.data.startsAtMs
+        && exists(/databases/$(database)/documents/classes/$(request.resource.data.classId))
+        && request.auth.uid in get(/databases/$(database)/documents/classes/$(request.resource.data.classId)).data.assistantIds;
+    }
+
+    // Transisi status hanya boleh mengubah field yang relevan.
+    function validStatusPatch() {
+      return (
+        resource.data.status == 'scheduled'
+        && request.resource.data.status == 'open'
+        && withinOpenWindow(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'openedAt', 'closedAt'
+        ])
+      ) || (
+        resource.data.status == 'open'
+        && request.resource.data.status == 'closed'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'closedAt'
+        ])
+      ) || (
+        resource.data.status == 'closed'
+        && request.resource.data.status == 'open'
+        && withinOpenWindow(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'openedAt', 'closedAt'
+        ])
+      ) || (
+        resource.data.status == 'scheduled'
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'cancelledAt'
+        ])
+      );
     }
 
     // Izin hanya sampai batas waktu sesi; sesi closed tidak menerima izin.
@@ -166,13 +207,14 @@ service cloud.firestore {
       allow update: if isAssistant()
         && request.auth.uid in resource.data.assistantIds
         && request.resource.data.createdBy == resource.data.createdBy
-        && validTransition(
-          resource.data.status,
-          request.resource.data.status,
-          request.resource.data
+        && (
+          (resource.data.status == request.resource.data.status
+            && validSessionEdit())
+          || validStatusPatch()
         );
 
-      allow delete: if isAssistant() && request.auth.uid in resource.data.assistantIds;
+      // Batalkan, jangan hapus: peserta sudah menerima notifikasi jadwal.
+      allow delete: if false;
     }
 
     // 3b. Master Laboratorium (Sprint 3) — acuan geofence presensi & peta
@@ -286,7 +328,7 @@ service cloud.firestore {
         && request.resource.data.reason.size() > 0
         && validStudentNim(request.resource.data)
         && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
-        && sessionData(request.resource.data.sessionId).status != 'closed'
+        && sessionData(request.resource.data.sessionId).status in ['scheduled', 'open']
         && withinLeaveWindow(sessionData(request.resource.data.sessionId))
         && request.auth.uid in sessionData(request.resource.data.sessionId).participantIds
         && !exists(/databases/$(database)/documents/attendance/$(leaveId));
@@ -307,7 +349,7 @@ service cloud.firestore {
           && request.resource.data.reviewedBy == null
           && request.resource.data.reviewedAt == null
           && validStudentNim(request.resource.data)
-          && sessionData(resource.data.sessionId).status != 'closed'
+          && sessionData(resource.data.sessionId).status in ['scheduled', 'open']
           && withinLeaveWindow(sessionData(resource.data.sessionId))
           && !exists(/databases/$(database)/documents/attendance/$(leaveId))
         ) || (

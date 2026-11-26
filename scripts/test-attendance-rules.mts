@@ -107,6 +107,17 @@ await adminDb.doc('assistant_invites/invited@rules.test').set({
 });
 const { id: labId, ...labDoc } = lab;
 await adminDb.doc(`labs/${labId}`).set(labDoc);
+const classDoc = () => ({
+  courseName: 'Praktikum',
+  groupName: 'A',
+  participantIds: ['budi'],
+  assistantIds: ['asisten'],
+  createdBy: 'asisten',
+  createdAt: lab.createdAt,
+  updatedAt: lab.updatedAt,
+});
+await adminDb.doc('classes/c1').set(classDoc());
+await adminDb.doc('classes/c2').set(classDoc());
 
 const minuteMs = 60_000;
 const nowMs = Date.now();
@@ -149,6 +160,12 @@ await adminDb
 await adminDb
   .doc('sessions/s7-leave-closed')
   .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'closed'));
+await adminDb
+  .doc('sessions/s8-edit')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'scheduled'));
+await adminDb
+  .doc('sessions/s9-cancel')
+  .set(sessionDoc(nowMs + 60 * minuteMs, nowMs + 120 * minuteMs, 'scheduled'));
 
 const app = initializeApp({ projectId, apiKey: 'emulator' });
 const auth = getAuth(app);
@@ -368,6 +385,85 @@ for (const [label, sessionId, expected] of openCases) {
     expected,
   );
 }
+await signOut(auth);
+
+// --- Edit & batal sesi: hanya scheduled, patch sesuai status ---
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+const startedMs = nowMs - 10 * minuteMs;
+const endedMs = nowMs + 50 * minuteMs;
+check(
+  'edit sesi scheduled',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's8-edit'), {
+      title: 'Pertemuan 1',
+      startsAt: new Date(startedMs).toISOString(),
+      endsAt: new Date(endedMs).toISOString(),
+      startsAtMs: startedMs,
+      endsAtMs: endedMs,
+      updatedAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
+check(
+  'pindah kelas saat edit menyalin data kelas',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's8-edit'), {
+      classId: 'c2',
+      courseName: 'Praktikum',
+      groupName: 'A',
+      participantIds: ['budi'],
+      assistantIds: ['asisten'],
+      updatedAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
+check(
+  'lab tidak bisa diubah saat sesi open',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's1'), {
+      labId,
+      lab: lab.name,
+    }),
+  ),
+  'denied',
+);
+check(
+  'batalkan sesi scheduled',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's9-cancel'), {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
+check(
+  'sesi batal tidak bisa dibuka lagi',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's9-cancel'), {
+      status: 'open',
+      openedAt: new Date().toISOString(),
+    }),
+  ),
+  'denied',
+);
+check(
+  'sesi open tidak bisa dibatalkan',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's1'), {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+    }),
+  ),
+  'denied',
+);
+check(
+  'sesi tidak bisa dihapus',
+  await attempt(() => deleteDoc(doc(db, 'sessions', 's1'))),
+  'denied',
+);
 await signOut(auth);
 
 // --- Izin: jendela sesi, ID deterministik, dan konflik dengan presensi ---

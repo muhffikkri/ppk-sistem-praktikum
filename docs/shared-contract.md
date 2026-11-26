@@ -42,7 +42,7 @@ export type RootStackParamList = {
 
 ```ts
 export type DemoRole = "student" | "assistant";
-export type SessionStatus = "scheduled" | "open" | "closed";
+export type SessionStatus = "scheduled" | "open" | "closed" | "cancelled";
 
 export type Session = {
   id: string;
