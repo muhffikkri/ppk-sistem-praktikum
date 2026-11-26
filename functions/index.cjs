@@ -1,4 +1,5 @@
-const { createHash, createHmac } = require('node:crypto');
+const { Buffer } = require('node:buffer');
+const { createHash } = require('node:crypto');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const {
@@ -336,10 +337,6 @@ function mapMidtransStatus(payload) {
   if (tx === 'pending') return 'pending';
   if (['deny', 'cancel', 'expire', 'failure'].includes(tx)) return 'failed';
   return 'pending';
-}
-
-function terminal(status) {
-  return status === 'success' || status === 'failed';
 }
 
 async function fetchMidtransStatus(orderId) {
