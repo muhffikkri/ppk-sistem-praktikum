@@ -58,9 +58,11 @@ const STATUS_TONE: Record<Session['status'], BadgeTone> = {
 
 function TimelineCard({
   session,
+  attendanceLabel,
   onPress,
 }: {
   session: Session;
+  attendanceLabel?: string;
   onPress: () => void;
 }) {
   const isOpen = session.status === 'open';
@@ -112,6 +114,11 @@ function TimelineCard({
           <Text variant="caption" tone="muted" numberOfLines={1}>
             {`${session.groupName}${session.lab ? ` · ${session.lab}` : ''}`}
           </Text>
+          {attendanceLabel ? (
+            <Text variant="caption" tone="violet" numberOfLines={1}>
+              {attendanceLabel}
+            </Text>
+          ) : null}
         </View>
         <StatusBadge
           label={STATUS_LABEL[session.status]}
@@ -183,6 +190,16 @@ export function CalendarScreen({ navigation }: Props) {
   const viewLabel =
     view === 'today' ? 'Hari Ini' : view === 'month' ? 'Bulan Ini' : 'Terpilih';
 
+  const attendanceLabel = (session: Session) => {
+    if (!isAssistant) return undefined;
+    const present = assistant.getAttendanceForSession(session.id).length;
+    const participants =
+      session.participantIds ??
+      assistant.getClassById(session.classId ?? '')?.participantIds ??
+      [];
+    return `Hadir ${present}/${participants.length}`;
+  };
+
   const openDetail = (session: Session) => {
     setPreview(null);
     if (isAssistant) {
@@ -214,7 +231,12 @@ export function CalendarScreen({ navigation }: Props) {
   return (
     <Screen>
       <RootTopBar />
-      <Header eyebrow="LabPresensi · Informatika" title={cal.monthYear} />
+      <Header
+        eyebrow={
+          isAssistant ? 'LabPresensi · Asprak' : 'LabPresensi · Informatika'
+        }
+        title={cal.monthYear}
+      />
 
       <SegmentedControl
         options={VIEWS}
@@ -256,7 +278,9 @@ export function CalendarScreen({ navigation }: Props) {
             numberOfLines={1}
             style={styles.sectionTitle}
           >
-            {`${visibleSessions.length} Sesi Praktikum ${viewLabel}`}
+            {isAssistant
+              ? `${visibleSessions.length} sesi diampu ${viewLabel}`
+              : `${visibleSessions.length} Sesi Praktikum ${viewLabel}`}
           </Text>
           {hasOpenSession ? (
             <StatusBadge label="Ada sesi aktif" tone="violet" />
@@ -280,6 +304,7 @@ export function CalendarScreen({ navigation }: Props) {
               <TimelineCard
                 key={s.id}
                 session={s}
+                attendanceLabel={attendanceLabel(s)}
                 onPress={() => setPreview(s)}
               />
             ))}
@@ -297,10 +322,15 @@ export function CalendarScreen({ navigation }: Props) {
             />
           </View>
           <View style={styles.guidanceBody}>
-            <Text variant="bodyStrong">Tata Tertib Presensi Lab</Text>
+            <Text variant="bodyStrong">
+              {isAssistant
+                ? 'Kelola Sesi Praktikum'
+                : 'Tata Tertib Presensi Lab'}
+            </Text>
             <Text variant="caption" tone="muted">
-              Presensi praktikum hanya dapat dilakukan melalui QR code di
-              laboratorium maksimal 15 menit setelah sesi dimulai.
+              {isAssistant
+                ? 'Buka sesi maksimal 15 menit sebelum jadwal dan tutup setelah selesai. QR presensi hanya berlaku saat sesi terbuka.'
+                : 'Presensi praktikum hanya dapat dilakukan melalui QR code di laboratorium maksimal 15 menit setelah sesi dimulai.'}
             </Text>
           </View>
         </View>
@@ -314,6 +344,14 @@ export function CalendarScreen({ navigation }: Props) {
         onDetail={openDetail}
         onOpenSession={(s) => act(s, 'open')}
         onCloseSession={(s) => act(s, 'close')}
+        onQr={(s) => {
+          setPreview(null);
+          navigation.navigate('AssistantSessionQr', { sessionId: s.id });
+        }}
+        onRecap={(s) => {
+          setPreview(null);
+          navigation.navigate('AssistantAttendanceRoster', { sessionId: s.id });
+        }}
       />
     </Screen>
   );
