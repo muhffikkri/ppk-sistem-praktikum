@@ -24,6 +24,7 @@ import {
 import { Platform } from 'react-native';
 
 import { isAssistantRole } from '../domain/asprakScope';
+import { normalizeNim, NIM_INVALID } from '../domain/nim';
 import type {
   ActionFailureReason,
   AsyncActionResult,
@@ -357,6 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: string;
       email: string;
       password: string;
+      nim: string;
     }): Promise<AsyncActionResult> => {
       setError(null);
 
@@ -369,7 +371,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const trimmedName = input.displayName.trim();
       const normalizedEmail = input.email.trim().toLowerCase();
+      const nim = normalizeNim(input.nim);
 
+      if (!nim) {
+        const message = NIM_INVALID;
+        setError(message);
+        return { ok: false, reason: 'validation_error', message };
+      }
       if (trimmedName.length < 2) {
         const message = 'Nama lengkap minimal 2 karakter.';
         setError(message);
@@ -400,6 +408,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           displayName: trimmedName,
           email: normalizedEmail,
           role: 'student',
+          nim,
           createdAt: new Date().toISOString(),
         };
 
@@ -506,8 +515,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const updateDisplayName = useCallback(
-    async (displayName: string): Promise<AsyncActionResult> => {
+  const updateUserProfile = useCallback(
+    async (input: {
+      displayName: string;
+      nim?: string;
+    }): Promise<AsyncActionResult> => {
       setError(null);
       if (!user) {
         const message = 'Anda harus masuk terlebih dahulu.';
@@ -515,15 +527,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, reason: 'unauthenticated', message };
       }
 
-      const trimmed = displayName.trim();
+      const trimmed = input.displayName.trim();
       if (trimmed.length < 2) {
         const message = 'Nama lengkap minimal 2 karakter.';
         setError(message);
         return { ok: false, reason: 'validation_error', message };
       }
+      const nim = input.nim?.trim() ? normalizeNim(input.nim) : undefined;
+      if (input.nim?.trim() && !nim) {
+        const message = NIM_INVALID;
+        setError(message);
+        return { ok: false, reason: 'validation_error', message };
+      }
 
       try {
-        await updateDoc(doc(db, 'users', user.uid), { displayName: trimmed });
+        const patch: Partial<UserProfile> = { displayName: trimmed };
+        if (nim) patch.nim = nim;
+        await updateDoc(doc(db, 'users', user.uid), patch);
         if (auth.currentUser) {
           await updateProfile(auth.currentUser, { displayName: trimmed });
         }
@@ -548,7 +568,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithGoogle,
       setUserRole,
       logout,
-      updateDisplayName,
+      updateUserProfile,
       clearError,
     }),
     [
@@ -561,7 +581,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithGoogle,
       setUserRole,
       logout,
-      updateDisplayName,
+      updateUserProfile,
       clearError,
     ],
   );

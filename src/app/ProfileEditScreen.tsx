@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { normalizeNim, NIM_INVALID } from '../domain/nim';
 import {
   Banner,
   Button,
@@ -16,8 +17,9 @@ import type { RootStackParamList } from './navigation';
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileEdit'>;
 
 export function ProfileEditScreen({ navigation }: Props) {
-  const { user, updateDisplayName, clearError } = useAuth();
+  const { user, updateUserProfile, clearError } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+  const [nim, setNim] = useState(user?.nim ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -32,10 +34,14 @@ export function ProfileEditScreen({ navigation }: Props) {
       setErrorMessage('Nama lengkap minimal 2 karakter.');
       return;
     }
+    if (nim.trim() && !normalizeNim(nim)) {
+      setErrorMessage(NIM_INVALID);
+      return;
+    }
 
     setSubmitting(true);
     try {
-      const res = await updateDisplayName(displayName);
+      const res = await updateUserProfile({ displayName, nim });
       if (!res.ok) {
         setErrorMessage(res.message);
         return;
@@ -69,6 +75,19 @@ export function ProfileEditScreen({ navigation }: Props) {
           }}
           editable={!submitting}
           testID="field-Nama Lengkap"
+        />
+        <TextField
+          label="NIM"
+          value={nim}
+          onChangeText={(text) => {
+            setNim(text);
+            if (errorMessage) setErrorMessage(null);
+          }}
+          placeholder="Nomor induk mahasiswa"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          editable={!submitting}
+          testID="field-NIM"
         />
         <TextField label="Email" value={user?.email ?? '-'} editable={false} />
         <TextField

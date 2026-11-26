@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
+import { normalizeNim, NIM_INVALID } from '../../domain/nim';
 import { isFirebaseConfigured } from '../../services/firebase';
 import {
   Banner,
@@ -26,6 +27,7 @@ const FIELD_MESSAGES: string[] = [
   NAME_TOO_SHORT,
   EMAIL_REQUIRED,
   PASSWORD_TOO_SHORT,
+  NIM_INVALID,
 ];
 
 export function RegisterScreen({ navigation }: Props) {
@@ -33,6 +35,7 @@ export function RegisterScreen({ navigation }: Props) {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nim, setNim] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +49,7 @@ export function RegisterScreen({ navigation }: Props) {
   const emailError = localError === EMAIL_REQUIRED ? localError : undefined;
   const passwordError =
     localError === PASSWORD_TOO_SHORT ? localError : undefined;
+  const nimError = localError === NIM_INVALID ? localError : undefined;
 
   const clearRegisterError = () => {
     setRegisterError(null);
@@ -67,6 +71,10 @@ export function RegisterScreen({ navigation }: Props) {
       setLocalError(NAME_TOO_SHORT);
       return;
     }
+    if (!normalizeNim(nim)) {
+      setLocalError(NIM_INVALID);
+      return;
+    }
     if (!email.trim()) {
       setLocalError(EMAIL_REQUIRED);
       return;
@@ -78,7 +86,7 @@ export function RegisterScreen({ navigation }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await register({ displayName, email, password });
+      const res = await register({ displayName, email, password, nim });
       if (!res.ok) {
         setRegisterError(res.message);
       }
@@ -115,6 +123,20 @@ export function RegisterScreen({ navigation }: Props) {
           placeholder="Nama lengkap Anda"
           editable={!submitting}
           error={nameError}
+        />
+
+        <TextField
+          label="NIM"
+          value={nim}
+          onChangeText={(val) => {
+            setNim(val);
+            if (localError) setLocalError(null);
+          }}
+          placeholder="Nomor induk mahasiswa"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          editable={!submitting}
+          error={nimError}
         />
 
         <TextField

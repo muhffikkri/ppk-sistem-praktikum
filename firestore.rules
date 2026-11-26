@@ -23,6 +23,10 @@ service cloud.firestore {
       return hasRole('student');
     }
 
+    function validNim(data) {
+      return !('nim' in data) || (data.nim is string && data.nim.matches('^[A-Z0-9]{6,20}$'));
+    }
+
     function hasAssistantInvite() {
       return isSignedIn()
         && request.auth.token.email is string
@@ -51,12 +55,14 @@ service cloud.firestore {
           || (request.resource.data.role == 'assistant' && hasAssistantInvite())
         )
         && request.resource.data.displayName is string
-        && request.resource.data.displayName.size() > 0;
+        && request.resource.data.displayName.size() > 0
+        && validNim(request.resource.data);
 
       allow update: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
+        && validNim(request.resource.data)
         && (
           request.resource.data.role == resource.data.role
           || (resource.data.role == 'student'

@@ -10,6 +10,7 @@ export type UserProfile = {
   displayName: string;
   email: string;
   role: UserRole;
+  nim?: string;
   createdAt: string; // ISO 8601 UTC
 };
 
@@ -121,11 +122,15 @@ export type AuthContextValue = {
     displayName: string;
     email: string;
     password: string;
+    nim: string;
   }) => Promise<AsyncActionResult>;
   loginWithGoogle: () => Promise<AsyncActionResult>;
   setUserRole: (role: UserRole) => Promise<AsyncActionResult>;
   logout: () => Promise<AsyncActionResult>;
-  updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
+  updateUserProfile: (input: {
+    displayName: string;
+    nim?: string;
+  }) => Promise<AsyncActionResult>;
   clearError: () => void;
 };
 
