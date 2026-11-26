@@ -155,6 +155,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat sesi"
           message={vm.error}
+          hint="Periksa koneksi internet lalu coba lagi. Sesi yang tersimpan akan muncul kembali."
           onRetry={vm.retry}
         />
       </Screen>
