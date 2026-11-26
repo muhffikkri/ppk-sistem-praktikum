@@ -277,7 +277,16 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
         ) : null}
 
         {active ? (
-          <Card variant="heroInk" interactive={false}>
+          <Card
+            variant="heroInk"
+            accessibilityLabel="Detail sesi aktif"
+            accessibilityHint="Membuka detail sesi"
+            onPress={() =>
+              navigation.navigate('AssistantSessionDetail', {
+                sessionId: active.id,
+              })
+            }
+          >
             <CardContent>
               <View style={styles.heroTopRow}>
                 <StatusBadge
@@ -288,23 +297,6 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
                   }
                   tone={active.status === 'open' ? 'violet' : 'lavender'}
                 />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Kelola sesi"
-                  hitSlop={8}
-                  onPress={() =>
-                    navigation.navigate('AssistantSessionDetail', {
-                      sessionId: active.id,
-                    })
-                  }
-                  style={styles.heroSettings}
-                >
-                  <Ionicons
-                    name="settings-outline"
-                    size={18}
-                    color={colors.onInkMuted}
-                  />
-                </Pressable>
               </View>
               <Text variant="subtitle" tone="onDark">
                 {active.courseName}
@@ -443,15 +435,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  heroSettings: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.onInkSubtle,
-  },
-
   quickGrid: {
     flexDirection: 'row',
     alignItems: 'flex-start',
