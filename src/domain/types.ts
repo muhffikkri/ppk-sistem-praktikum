@@ -121,7 +121,6 @@ export type AuthContextValue = {
     displayName: string;
     email: string;
     password: string;
-    role: UserRole;
   }) => Promise<AsyncActionResult>;
   loginWithGoogle: () => Promise<AsyncActionResult>;
   setUserRole: (role: UserRole) => Promise<AsyncActionResult>;

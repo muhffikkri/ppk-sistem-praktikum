@@ -32,6 +32,7 @@ import type {
   UserProfile,
   UserRole,
 } from '../domain/types';
+import { hasAssistantInvite } from '../services/firestore/assistantInviteService';
 import { auth, db, isFirebaseConfigured } from '../services/firebase';
 import {
   disablePushBeforeLogout,
@@ -356,7 +357,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: string;
       email: string;
       password: string;
-      role: UserRole;
     }): Promise<AsyncActionResult> => {
       setError(null);
 
@@ -385,12 +385,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(message);
         return { ok: false, reason: 'validation_error', message };
       }
-      if (input.role !== 'student' && input.role !== 'assistant') {
-        const message = 'Peran akun tidak valid.';
-        setError(message);
-        return { ok: false, reason: 'validation_error', message };
-      }
-
       registeringRef.current = true;
       try {
         const credential = await createUserWithEmailAndPassword(
@@ -405,7 +399,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           uid: credential.user.uid,
           displayName: trimmedName,
           email: normalizedEmail,
-          role: input.role,
+          role: 'student',
           createdAt: new Date().toISOString(),
         };
 
@@ -446,6 +440,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const message = 'Peran tidak valid.';
         setError(message);
         return { ok: false, reason: 'validation_error', message };
+      }
+
+      if (
+        role === 'assistant' &&
+        !(await hasAssistantInvite(currentUser.email))
+      ) {
+        const message =
+          'Peran asisten memerlukan undangan dari pengelola praktikum.';
+        setError(message);
+        return { ok: false, reason: 'forbidden', message };
       }
 
       try {

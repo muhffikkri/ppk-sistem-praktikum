@@ -1,22 +1,16 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
-import type { UserRole } from '../../domain/types';
 import { isFirebaseConfigured } from '../../services/firebase';
 import {
   Banner,
   Button,
-  Card,
-  CardContent,
-  colors,
   Header,
   IconButton,
   Screen,
   spacing,
-  Text,
   TextField,
   TopBar,
 } from '../../shared/ui';
@@ -34,29 +28,11 @@ const FIELD_MESSAGES: string[] = [
   PASSWORD_TOO_SHORT,
 ];
 
-const ROLE_OPTIONS: {
-  value: UserRole;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: 'student',
-    label: 'Praktikan',
-    description: 'Lihat jadwal, presensi, & ajukan izin',
-  },
-  {
-    value: 'assistant',
-    label: 'Asisten praktikum',
-    description: 'Kelola kelas/sesi, rekap, & periksa izin',
-  },
-];
-
 export function RegisterScreen({ navigation }: Props) {
   const { register, clearError } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -102,12 +78,7 @@ export function RegisterScreen({ navigation }: Props) {
 
     setSubmitting(true);
     try {
-      const res = await register({
-        displayName,
-        email,
-        password,
-        role,
-      });
+      const res = await register({ displayName, email, password });
       if (!res.ok) {
         setRegisterError(res.message);
       }
@@ -122,7 +93,7 @@ export function RegisterScreen({ navigation }: Props) {
 
       <Header
         title="Buat akun"
-        description="Pilih peran dengan benar. Peran menentukan akses fitur dan data di aplikasi."
+        description="Akun baru dibuat sebagai praktikan. Peran asisten diberikan lewat undangan pengelola."
       />
 
       {!isFirebaseConfigured ? (
@@ -188,47 +159,6 @@ export function RegisterScreen({ navigation }: Props) {
             />
           }
         />
-
-        <View style={styles.roleBlock}>
-          <Text variant="label" tone="muted">
-            Daftar sebagai
-          </Text>
-          <View style={styles.roleRow}>
-            {ROLE_OPTIONS.map((option) => {
-              const selected = role === option.value;
-              return (
-                <Card
-                  key={option.value}
-                  variant="panel"
-                  accessibilityState={{ selected }}
-                  disabled={submitting}
-                  onPress={() => setRole(option.value)}
-                  style={[
-                    styles.roleCard,
-                    selected ? styles.roleSelected : styles.roleIdle,
-                  ]}
-                >
-                  <CardContent>
-                    <Text variant="bodyStrong" tone="ink">
-                      {option.label}
-                    </Text>
-                    <Text variant="caption" tone="muted">
-                      {option.description}
-                    </Text>
-                  </CardContent>
-                  {selected ? (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={20}
-                      color={colors.violet}
-                      style={styles.check}
-                    />
-                  ) : null}
-                </Card>
-              );
-            })}
-          </View>
-        </View>
       </View>
 
       {bannerError ? (
@@ -263,15 +193,5 @@ export function RegisterScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   fields: { gap: spacing.md },
-  roleBlock: { gap: spacing.xs },
-  roleRow: { flexDirection: 'row', gap: spacing.md },
-  roleCard: { flex: 1, borderWidth: 2 },
-  // Same 2px border in both states so the card height never jumps.
-  roleSelected: {
-    backgroundColor: colors.lavenderSubtle,
-    borderColor: colors.violet,
-  },
-  roleIdle: { borderColor: colors.border },
-  check: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   actions: { gap: spacing.sm },
 });

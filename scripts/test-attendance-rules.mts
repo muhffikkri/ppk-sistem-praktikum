@@ -361,7 +361,9 @@ check(
 );
 check(
   'baca undangan orang lain',
-  await attempt(() => getDoc(doc(db, 'assistant_invites', 'invited@rules.test'))),
+  await attempt(() =>
+    getDoc(doc(db, 'assistant_invites', 'invited@rules.test')),
+  ),
   'denied',
 );
 check(
@@ -378,7 +380,9 @@ await signOut(auth);
 await signInWithEmailAndPassword(auth, 'invited@rules.test', PASSWORD);
 check(
   'baca undangan sendiri',
-  await attempt(() => getDoc(doc(db, 'assistant_invites', 'invited@rules.test'))),
+  await attempt(() =>
+    getDoc(doc(db, 'assistant_invites', 'invited@rules.test')),
+  ),
   'allowed',
 );
 check(
