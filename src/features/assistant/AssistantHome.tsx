@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { studentIdentityMeta } from '../../domain/sessionRecapRules';
 import {
   AppTopBar,
   Banner,
@@ -263,7 +264,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
             <ListRow
               key={r.id}
               title={r.studentName}
-              meta={`NIM ${r.studentId}`}
+              meta={studentIdentityMeta(r)}
               trailing={
                 <Text variant="bodyStrong">{formatClock(r.checkedInAt)}</Text>
               }

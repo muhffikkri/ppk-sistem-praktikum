@@ -5,6 +5,7 @@ import type { AttendanceRecord, LeaveRequest, Session } from './types';
 import {
   buildSessionRosterRecap,
   determineParticipantStatus,
+  studentIdentityMeta,
 } from './sessionRecapRules';
 
 const mockSession = (status: Session['status']): Session => ({
@@ -174,4 +175,33 @@ test('buildSessionRosterRecap: menghasilkan ringkasan peserta lengkap dan agrega
     'mhs-03',
     'mhs-04',
   ]);
+});
+
+test('studentIdentityMeta: pakai NIM dari presensi/izin, bukan UID Firebase', () => {
+  const recap = buildSessionRosterRecap({
+    participantIds: ['uid-hadir', 'uid-izin'],
+    attendees: [
+      {
+        id: 'att-nim',
+        sessionId: 'session-101',
+        studentId: 'uid-hadir',
+        studentName: 'Hadir',
+        studentNim: 'A123456',
+        checkedInAt: '2026-11-25T08:10:00.000Z',
+      },
+    ],
+    leaves: [
+      mockLeave({
+        id: 'leave-nim',
+        studentId: 'uid-izin',
+        studentName: 'Izin',
+        studentNim: 'B654321',
+        status: 'approved',
+      }),
+    ],
+  });
+
+  assert.equal(studentIdentityMeta(recap.entries[0]), 'NIM A123456');
+  assert.equal(studentIdentityMeta(recap.entries[1]), 'NIM B654321');
+  assert.equal(studentIdentityMeta({}), '');
 });

@@ -5,6 +5,7 @@ export type StudentAttendanceStatus = 'present' | 'excused' | 'absent';
 export type SessionRosterEntry = {
   studentId: string;
   studentName: string;
+  studentNim?: string;
   status: StudentAttendanceStatus;
   checkedInAt?: string;
   leaveStatus?: 'pending' | 'approved' | 'rejected';
@@ -22,6 +23,11 @@ export type SessionRecapResult = {
   entries: SessionRosterEntry[];
   summary: SessionRosterSummary;
 };
+
+/** Teks identitas di roster; UID Firebase tidak pernah ditampilkan sebagai NIM. */
+export function studentIdentityMeta(entry: { studentNim?: string }): string {
+  return entry.studentNim ? `NIM ${entry.studentNim}` : '';
+}
 
 /**
  * Menentukan status kehadiran peserta perorangan (SRS-4.09 & Kontrak K6):
@@ -87,6 +93,7 @@ export function buildSessionRosterRecap(params: {
     return {
       studentId,
       studentName,
+      studentNim: attendee?.studentNim ?? leave?.studentNim,
       status,
       checkedInAt: attendee?.checkedInAt,
       leaveStatus: leave?.status,

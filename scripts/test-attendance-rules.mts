@@ -138,6 +138,7 @@ type Case = {
   label: string;
   fix: DeviceFix;
   sentDistance?: number;
+  studentNim?: string;
   expected: 'allowed' | 'denied';
 };
 
@@ -197,6 +198,26 @@ const cases: Case[] = [
     },
     expected: 'denied',
   },
+  {
+    label: 'NIM praktikan valid',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    studentNim: 'A123456',
+    expected: 'allowed',
+  },
+  {
+    label: 'UID dipakai sebagai NIM',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    studentNim: '3fQx9aK2',
+    expected: 'denied',
+  },
 ];
 
 let failures = 0;
@@ -213,6 +234,7 @@ for (const testCase of cases) {
       classId: 'c1',
       studentId: 'budi',
       studentName: 'Budi',
+      ...(testCase.studentNim ? { studentNim: testCase.studentNim } : {}),
       checkedInAt: new Date().toISOString(),
       deviceLocation: {
         latitude: testCase.fix.latitude,

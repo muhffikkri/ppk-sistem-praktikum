@@ -205,6 +205,7 @@ export function createLeaveService(db: Firestore) {
         sessionStartsAt: session.startsAt,
         studentId: user.uid,
         studentName: user.displayName,
+        ...(user.nim ? { studentNim: user.nim } : {}),
         reason,
         aiPrediction,
         status: 'pending',

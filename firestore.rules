@@ -27,6 +27,11 @@ service cloud.firestore {
       return !('nim' in data) || (data.nim is string && data.nim.matches('^[A-Z0-9]{6,20}$'));
     }
 
+    function validStudentNim(data) {
+      return !('studentNim' in data)
+        || (data.studentNim is string && data.studentNim.matches('^[A-Z0-9]{6,20}$'));
+    }
+
     function hasAssistantInvite() {
       return isSignedIn()
         && request.auth.token.email is string
@@ -218,9 +223,10 @@ service cloud.firestore {
 
       allow create: if isStudent()
         && request.resource.data.keys().hasOnly([
-          'id', 'sessionId', 'classId', 'studentId', 'studentName',
+          'id', 'sessionId', 'classId', 'studentId', 'studentName', 'studentNim',
           'checkedInAt', 'deviceLocation', 'distanceMeters'
         ])
+        && validStudentNim(request.resource.data)
         && request.resource.data.studentId == request.auth.uid
         && attendanceId == (request.resource.data.sessionId + '_' + request.auth.uid)
         && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))

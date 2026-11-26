@@ -64,6 +64,7 @@ export type AttendanceRecord = {
   classId?: string;
   studentId: string;
   studentName: string;
+  studentNim?: string;
   checkedInAt: string; // ISO 8601 UTC
 };
 
@@ -85,6 +86,7 @@ export type LeaveRequest = {
   sessionStartsAt: string; // ISO 8601 UTC
   studentId: string;
   studentName: string;
+  studentNim?: string;
   reason: string;
   aiPrediction: AiClassificationResult;
   status: LeaveStatus;

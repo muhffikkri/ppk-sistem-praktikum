@@ -3,9 +3,10 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import type {
-  SessionRosterEntry,
-  StudentAttendanceStatus,
+import {
+  studentIdentityMeta,
+  type SessionRosterEntry,
+  type StudentAttendanceStatus,
 } from '../../domain/sessionRecapRules';
 import {
   Avatar,
@@ -143,10 +144,13 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         const { badgeTone, badgeLabel, avatarTone } =
           STATUS_PRESENTATION[record.status];
 
+        const identity = studentIdentityMeta(record);
         const meta =
           record.status === 'excused'
-            ? `NIM ${record.studentId} · ${record.leaveReason ?? 'Izin disetujui'}`
-            : `NIM ${record.studentId}`;
+            ? [identity, record.leaveReason ?? 'Izin disetujui']
+                .filter(Boolean)
+                .join(' · ')
+            : identity;
 
         return (
           <ListRow

@@ -120,6 +120,7 @@ export async function checkInWithGeofence(
     classId: session.classId ?? '',
     studentId: student.uid,
     studentName: student.displayName,
+    ...(student.nim ? { studentNim: student.nim } : {}),
     checkedInAt: new Date().toISOString(),
     deviceLocation: {
       latitude: deviceFix.latitude,

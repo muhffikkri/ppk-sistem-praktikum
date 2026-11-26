@@ -146,6 +146,7 @@ export async function checkInStudent(input: {
       classId: session.classId ?? '',
       studentId: student.uid,
       studentName: student.displayName,
+      ...(student.nim ? { studentNim: student.nim } : {}),
       checkedInAt: new Date().toISOString(),
     });
     return { ok: true };
