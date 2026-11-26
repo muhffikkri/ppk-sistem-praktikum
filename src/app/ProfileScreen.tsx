@@ -22,6 +22,7 @@ import {
 import { canManageLabMaster, isAssistantRole } from '../domain/asprakScope';
 import type { UserRole } from '../domain/types';
 import { useAuth } from '../state';
+import { RootTopBar } from '../features/shell/RootTopBar';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
@@ -127,6 +128,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   return (
     <Screen>
+      <RootTopBar />
       <Header title="Profil" />
 
       {activeError ? (

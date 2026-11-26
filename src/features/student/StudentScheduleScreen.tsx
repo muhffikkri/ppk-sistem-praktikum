@@ -21,6 +21,7 @@ import {
   type SegmentedOption,
 } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
+import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentSchedule'>;
@@ -166,6 +167,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
+        <RootTopBar />
         <LoadingState label="Memuat jadwal…" />
       </Screen>
     );
@@ -174,6 +176,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
+        <RootTopBar />
         <ErrorState
           title="Gagal memuat jadwal"
           message={error}
@@ -203,6 +206,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
 
   return (
     <Screen>
+      <RootTopBar />
       <Header
         title="Jadwal"
         description={`${sorted.length} sesi praktikum terdaftar`}

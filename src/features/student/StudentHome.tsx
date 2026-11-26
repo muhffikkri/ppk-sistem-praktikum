@@ -1,7 +1,7 @@
 import React from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
@@ -26,7 +26,7 @@ import {
 } from '../../shared/ui';
 import { useAuth, useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
-import { NotificationBellButton } from '../notifications/NotificationBellButton';
+import { RootTopBar } from '../shell/RootTopBar';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -170,59 +170,6 @@ function QuickAction({
   );
 }
 
-/**
- * Home header follows the mockup: two-line brand + greeting on the left,
- * map / notification / profile actions on the right. Uses design-system
- * tokens and IconButton rather than copying the mockup's web navbar.
- */
-function HomeTopBar({
-  greeting,
-  onMap,
-  onNotifications,
-  onProfile,
-}: {
-  greeting: string;
-  onMap: () => void;
-  onNotifications: () => void;
-  onProfile: () => void;
-}) {
-  return (
-    <View style={styles.topBar}>
-      <View style={styles.topBarBrand}>
-        <View style={styles.topBarLogo} importantForAccessibility="no">
-          <Ionicons name="flask-outline" size={20} color={colors.violet} />
-        </View>
-        <View style={styles.topBarText}>
-          <Text variant="overline" tone="muted" numberOfLines={1}>
-            LabPresensi · FMIPA
-          </Text>
-          <Text variant="bodyStrong" numberOfLines={1}>
-            {greeting}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.topBarActions}>
-        <IconButton
-          icon="map-outline"
-          accessibilityLabel="Buka peta laboratorium"
-          onPress={onMap}
-        />
-        <NotificationBellButton onPress={onNotifications} />
-        <Pressable
-          onPress={onProfile}
-          accessibilityRole="button"
-          accessibilityLabel="Profil praktikan"
-          style={styles.avatarButton}
-        >
-          <View style={styles.avatarCircle} importantForAccessibility="no">
-            <Ionicons name="person" size={18} color={colors.onPrimary} />
-          </View>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 export function StudentHome({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
   const {
@@ -235,14 +182,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
     retry,
   } = useStudentAttendanceViewModel();
 
-  const topBar = (
-    <HomeTopBar
-      greeting={`Halo, ${user?.displayName?.trim().split(/\s+/)[0] || 'Praktikan'}`}
-      onMap={() => navigation.navigate('LabMaps')}
-      onNotifications={() => navigation.navigate('Notifications')}
-      onProfile={() => navigation.navigate('Profile')}
-    />
-  );
+  const topBar = <RootTopBar />;
 
   if (loading) {
     return (
@@ -567,47 +507,6 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 }
 
 const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    minHeight: 64,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  topBarBrand: {
-    flex: 1,
-    flexShrink: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  topBarLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    backgroundColor: colors.lavenderSubtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topBarText: { flex: 1, gap: spacing.xs },
-  topBarActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  avatarButton: { padding: spacing.xs, borderRadius: radius.full },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.full,
-    backgroundColor: colors.violet,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   feed: { gap: spacing.xl },
   section: { gap: spacing.sm },
 

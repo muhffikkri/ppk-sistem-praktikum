@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { colors, radius, spacing } from '../../theme/tokens';
-import type { IconName } from './IconButton';
+import { IconButton, type IconName } from './IconButton';
 import { Text } from './Text';
 
 export type AppTopBarProps = {
@@ -13,6 +13,9 @@ export type AppTopBarProps = {
   title: string;
   /** Optional violet overline under the title, e.g. the current portal. */
   subtitle?: string;
+  /** Renders a back button before the brand on full-screen pages. */
+  onBack?: () => void;
+  backLabel?: string;
   /** Right-hand actions, e.g. notification + profile IconButtons. */
   trailing?: ReactNode;
 };
@@ -27,10 +30,20 @@ export function AppTopBar({
   logoIcon,
   title,
   subtitle,
+  onBack,
+  backLabel = 'Kembali',
   trailing,
 }: AppTopBarProps) {
   return (
     <View style={styles.bar}>
+      {onBack ? (
+        <IconButton
+          icon="chevron-back"
+          variant="ghost"
+          accessibilityLabel={backLabel}
+          onPress={onBack}
+        />
+      ) : null}
       <View style={styles.brand}>
         <View style={styles.logo} accessibilityElementsHidden>
           <Ionicons name={logoIcon} size={20} color={colors.violet} />

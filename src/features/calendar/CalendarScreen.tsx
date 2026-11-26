@@ -28,9 +28,9 @@ import {
   useAuth,
   useStudentAttendanceViewModel,
 } from '../../state';
-import { NotificationBellButton } from '../notifications/NotificationBellButton';
 import { formatClock } from '../student/formatters';
 import { SessionPreviewSheet } from './SessionPreviewSheet';
+import { RootTopBar } from '../shell/RootTopBar';
 import { useCalendarViewModel } from './useCalendarViewModel';
 import { WeekStrip } from './WeekStrip';
 
@@ -142,6 +142,7 @@ export function CalendarScreen({ navigation }: Props) {
   if (source.loading) {
     return (
       <Screen>
+        <RootTopBar />
         <LoadingState label="Memuat kalender…" />
       </Screen>
     );
@@ -149,6 +150,7 @@ export function CalendarScreen({ navigation }: Props) {
   if (source.error) {
     return (
       <Screen>
+        <RootTopBar />
         <ErrorState
           title="Gagal memuat kalender"
           message={source.error}
@@ -213,15 +215,8 @@ export function CalendarScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <Header
-        eyebrow="LabPresensi · Informatika"
-        title={cal.monthYear}
-        trailing={
-          <NotificationBellButton
-            onPress={() => navigation.navigate('Notifications')}
-          />
-        }
-      />
+      <RootTopBar />
+      <Header eyebrow="LabPresensi · Informatika" title={cal.monthYear} />
 
       <SegmentedControl
         options={VIEWS}

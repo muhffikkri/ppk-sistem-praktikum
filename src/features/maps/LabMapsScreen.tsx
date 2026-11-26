@@ -9,6 +9,7 @@ import MapView, { Circle, Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
+import { AppTopBar } from '../../shared/ui/AppTopBar';
 import { Banner } from '../../shared/ui/Banner';
 import { Button } from '../../shared/ui/Button';
 import { IconButton } from '../../shared/ui/IconButton';
@@ -106,10 +107,29 @@ export function LabMapsScreen({ navigation }: Props) {
     }
   };
 
+  const topBar = (
+    <AppTopBar
+      logoIcon="map-outline"
+      title="Peta Laboratorium"
+      subtitle="Informatika · Real-time"
+      onBack={() => navigation.goBack()}
+      trailing={
+        <IconButton
+          icon="refresh-outline"
+          accessibilityLabel="Perbarui posisi GPS"
+          onPress={refreshLocation}
+        />
+      }
+    />
+  );
+
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <LoadingState label="Memuat peta laboratorium…" />
+      <View style={styles.container}>
+        {topBar}
+        <View style={styles.centerContainer}>
+          <LoadingState label="Memuat peta laboratorium…" />
+        </View>
       </View>
     );
   }
@@ -181,28 +201,9 @@ export function LabMapsScreen({ navigation }: Props) {
         <View style={[StyleSheet.absoluteFill, styles.mapPlaceholder]} />
       )}
 
-      {/* Floating Header & Legend */}
-      <View
-        style={[styles.topOverlay, { paddingTop: insets.top + spacing.sm }]}
-      >
-        <View style={styles.topBar}>
-          <IconButton
-            icon="arrow-back-outline"
-            accessibilityLabel="Kembali"
-            onPress={() => navigation.goBack()}
-          />
-          <View style={styles.titleBox}>
-            <Text variant="title">Peta Laboratorium</Text>
-            <Text variant="caption" tone="muted">
-              Informatika · Real-time
-            </Text>
-          </View>
-          <IconButton
-            icon="refresh-outline"
-            accessibilityLabel="Perbarui posisi GPS"
-            onPress={refreshLocation}
-          />
-        </View>
+      {/* Header & Legend */}
+      <View style={[styles.topOverlay, { paddingTop: insets.top }]}>
+        {topBar}
 
         {/* Banner Keterangan Warna & Filter */}
         <MapLegendBanner
@@ -295,21 +296,6 @@ const styles = StyleSheet.create({
     left: spacing.lg,
     right: spacing.lg,
     gap: spacing.sm,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.panel,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow.subtle,
-  },
-  titleBox: {
-    flex: 1,
-    paddingHorizontal: spacing.sm,
   },
   warningBanner: {
     backgroundColor: colors.dangerSoft,

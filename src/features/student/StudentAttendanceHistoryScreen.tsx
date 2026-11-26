@@ -24,6 +24,7 @@ import {
   punctualityOf,
 } from '../attendance/punctuality';
 import { useStudentAttendanceViewModel } from '../../state';
+import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<
@@ -48,6 +49,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
+        <RootTopBar />
         <LoadingState label="Memuat riwayat…" />
       </Screen>
     );
@@ -56,6 +58,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
+        <RootTopBar />
         <ErrorState
           title="Gagal memuat riwayat"
           message={error}
@@ -104,6 +107,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
       keyExtractor={(record) => record.id}
       header={
         <>
+          <RootTopBar />
           <Header
             eyebrow="LabPresensi · Informatika"
             title="Riwayat"

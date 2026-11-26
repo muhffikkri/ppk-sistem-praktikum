@@ -25,6 +25,7 @@ import {
   punctualityOf,
 } from '../attendance/punctuality';
 import { useAssistantSessionsViewModel } from '../../state';
+import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatSessionDate } from './formatters';
 
 type Props = NativeStackScreenProps<
@@ -49,6 +50,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
+        <RootTopBar />
         <LoadingState label="Memuat rekap presensi…" />
       </Screen>
     );
@@ -57,6 +59,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
+        <RootTopBar />
         <ErrorState
           title="Gagal memuat rekap presensi"
           message={error}
@@ -110,6 +113,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
       keyExtractor={(record) => record.id}
       header={
         <>
+          <RootTopBar />
           <Header
             eyebrow="LabPresensi · Asprak"
             title="Rekap"

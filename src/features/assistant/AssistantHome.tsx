@@ -8,7 +8,6 @@ import type { Session } from '../../domain/types';
 import { studentIdentityMeta } from '../../domain/sessionRecapRules';
 import { colors, radius, spacing } from '../../theme/tokens';
 import {
-  AppTopBar,
   Avatar,
   Banner,
   Button,
@@ -18,7 +17,6 @@ import {
   EmptyState,
   ErrorState,
   Header,
-  IconButton,
   LoadingState,
   Screen,
   SectionHeader,
@@ -33,7 +31,7 @@ import { formatWeekdayDayMonth } from '../../shared/format/date';
 import { useAssistantSessionsViewModel, useAuth } from '../../state';
 import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
 import { useAssistantLeaveViewModel } from '../leave';
-import { NotificationBellButton } from '../notifications/NotificationBellButton';
+import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatTimeRange } from '../student/formatters';
 import {
   sessionStatusLabel,
@@ -142,30 +140,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
 
-  const topBar = (
-    <AppTopBar
-      logoIcon="school-outline"
-      title="LabPresensi"
-      subtitle="Portal Asisten"
-      trailing={
-        <>
-          <IconButton
-            icon="map-outline"
-            accessibilityLabel="Peta Laboratorium"
-            onPress={() => navigation.navigate('LabMaps')}
-          />
-          <NotificationBellButton
-            onPress={() => navigation.navigate('Notifications')}
-          />
-          <IconButton
-            icon="person-outline"
-            accessibilityLabel="Profil"
-            onPress={() => navigation.navigate('Profile')}
-          />
-        </>
-      }
-    />
-  );
+  const topBar = <RootTopBar />;
 
   if (vm.loading) {
     return (

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { spacing } from '../../theme/tokens';
+import { colors, spacing } from '../../theme/tokens';
 import { IconButton } from './IconButton';
 import { Text } from './Text';
 
@@ -46,10 +46,14 @@ export function TopBar({
 
 const styles = StyleSheet.create({
   bar: {
-    minHeight: 44,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.panel,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   title: { flex: 1 },
   trailing: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

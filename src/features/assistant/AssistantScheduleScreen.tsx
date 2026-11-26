@@ -14,6 +14,7 @@ import {
   spacing,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
+import { RootTopBar } from '../shell/RootTopBar';
 import { AssistantSessionCard } from './components/AssistantSessionCard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSchedule'>;
@@ -32,6 +33,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
+        <RootTopBar />
         <LoadingState label="Memuat jadwal…" />
       </Screen>
     );
@@ -40,6 +42,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
+        <RootTopBar />
         <ErrorState
           title="Gagal memuat jadwal"
           message={error}
@@ -55,6 +58,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
 
   return (
     <Screen>
+      <RootTopBar />
       <Header
         title="Jadwal"
         description={`${sessions.length} sesi praktikum`}
