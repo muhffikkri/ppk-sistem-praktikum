@@ -1,7 +1,10 @@
-﻿import { StackActions, useNavigation } from '@react-navigation/native';
-
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
+import { StackActions, useNavigation } from '@react-navigation/native';
+import {
+  createNativeStackNavigator,
+  type NativeStackNavigationOptions,
+  type NativeStackNavigationProp,
+  type NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 import { memo, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import PagerView, {
@@ -9,9 +12,9 @@ import PagerView, {
 } from 'react-native-pager-view';
 
 import {
+  LandingScreen,
   LoginScreen,
   RegisterScreen,
-  LandingScreen,
   RoleSelectionScreen,
 } from '../features/auth';
 import {
@@ -25,7 +28,6 @@ import {
   AssistantSessionFormScreen,
   AssistantSessionQrScreen,
 } from '../features/assistant';
-
 import {
   StudentAllAttendanceScreen,
   StudentAllSessionsScreen,
@@ -33,14 +35,13 @@ import {
   StudentScheduleScreen,
   StudentSessionDetailScreen,
 } from '../features/student';
-
 import { BarcodeScanScreen, StudentCheckInScreen } from '../features/checkin';
-
 import {
+  AslabLabDistributionScreen,
+  AslabLabImportScreen,
   AssistantLabFormScreen,
   AssistantLabListScreen,
 } from '../features/labs';
-
 import {
   AssistantLeaveReviewListScreen,
   LeaveProvider,
@@ -52,58 +53,34 @@ import {
   StudentFineListScreen,
   StudentPaymentHistoryScreen,
 } from '../features/fines';
-
 import { LabMapsScreen } from '../features/maps';
 
 import { isAssistantRole } from '../domain/asprakScope';
 import { db } from '../services/firebase';
-
 import { DockTabActiveProvider } from '../shared/navigation/useTransientFeedback';
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
-
 import {
   type ActorRole,
   NotificationInboxProvider,
   useActorRole,
   useAuth,
 } from '../state';
-
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
 import { StudentAttendanceProvider } from '../state/StudentAttendanceContext';
 
 import { CalendarScreen } from './CalendarScreen';
-
 import { HomeScreen } from './HomeScreen';
-
-import type {
-  NativeStackNavigationOptions,
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from '@react-navigation/native-stack';
 import type { RootStackParamList } from './navigation';
-
 import { NotificationsScreen } from './NotificationsScreen';
-
 import { ProfileEditScreen } from './ProfileEditScreen';
-
 import { ProfileScreen } from './ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// 4 tab dock; FAB Izin berada di tengah.
-
-// Uses Ionicons from @expo/vector-icons.
-
-// The Jadwal / Presensi keys are stable; their target routes depend on
-// the active POV (see DOCK_ROUTE_FOR_POV below).
-
 const DOCK_TABS: DockTab[] = [
   { key: 'Home', label: 'Beranda', glyph: 'grid' },
-
   { key: 'Schedule', label: 'Jadwal', glyph: 'calendar' },
-
   { key: 'Attendance', label: 'Presensi', glyph: 'finger-print' },
-
   { key: 'Profile', label: 'Akun', glyph: 'person' },
 ];
 
@@ -113,13 +90,10 @@ const DOCK_ROUTE_FOR_POV: Record<
 > = {
   praktikan: {
     Schedule: 'StudentSchedule',
-
     Attendance: 'StudentAttendanceHistory',
   },
-
   asisten: {
     Schedule: 'AssistantSchedule',
-
     Attendance: 'AssistantAllAttendance',
   },
 };
@@ -142,9 +116,6 @@ function neighbourTabs(index: number): Set<DockTabKey> {
   );
 }
 
-// Tab pages are rendered inside DockTabs rather than as their own routes, so
-// they get a fixed stand-in route. Module-level objects keep the props
-// referentially stable across DockTabs re-renders.
 const DOCK_PAGE_ROUTES = Object.fromEntries(
   DOCK_ORDER.map((key) => [key, { key, name: key, params: undefined }]),
 ) as Record<DockTabKey, { key: string; name: string; params: undefined }>;
@@ -158,8 +129,6 @@ type DockPageProps = {
   >['navigation'];
 };
 
-// Memoized so a tab change (a `setParams` on DockTabs) does not re-render
-// every mounted page.
 const DockPage = memo(function DockPage({
   tab,
   role,
@@ -182,7 +151,7 @@ const DockPage = memo(function DockPage({
       <StudentAttendanceHistoryScreen navigation={nav} route={route} />
     );
   }
-  return <ProfileScreen navigation={navigation as any} route={route as any} />;
+  return <ProfileScreen navigation={nav} route={route} />;
 });
 
 function DockTabsScreen({
@@ -193,11 +162,8 @@ function DockTabsScreen({
   const activeTab = (route.params?.tab as DockTabKey | undefined) ?? 'Home';
   const activeIndex = Math.max(0, DOCK_ORDER.indexOf(activeTab));
   const pagerRef = useRef<PagerView>(null);
-  // Page the native pager is showing; lets us skip redundant setPage calls.
   const pagerPosition = useRef(activeIndex);
 
-  // Mount a page on first visit (plus its neighbours, so a swipe never
-  // reveals a blank page) and keep it mounted afterwards to preserve scroll.
   const [mounted, setMounted] = useState<ReadonlySet<DockTabKey>>(() =>
     neighbourTabs(activeIndex),
   );
@@ -206,7 +172,6 @@ function DockTabsScreen({
     setMounted(new Set([...mounted, ...wanted]));
   }
 
-  // Dock taps change the `tab` param; move the pager to match.
   useEffect(() => {
     if (pagerPosition.current !== activeIndex) {
       pagerPosition.current = activeIndex;
@@ -214,8 +179,6 @@ function DockTabsScreen({
     }
   }, [activeIndex]);
 
-  // Swipes settle natively; mirror the page back into the route param so
-  // the BottomDock highlight follows.
   const onPageSelected = (e: PagerViewOnPageSelectedEvent) => {
     const position = e.nativeEvent.position;
     pagerPosition.current = position;
@@ -262,16 +225,12 @@ function ProfileHeaderButton() {
 
 const renderProfileHeaderButton = () => <ProfileHeaderButton />;
 
-// Module-level so the navigator does not receive new options on every
-// AppNavigator render.
 const STACK_SCREEN_OPTIONS: NativeStackNavigationOptions = {
   headerStyle: { backgroundColor: colors.panel },
   headerTintColor: colors.violet,
   headerShadowVisible: false,
   headerBackButtonDisplayMode: 'minimal',
   contentStyle: { backgroundColor: colors.surface },
-  // Screens covered by a pushed screen skip re-renders until they are
-  // focused again.
   freezeOnBlur: true,
   headerRight: renderProfileHeaderButton,
 };
@@ -304,15 +263,11 @@ export function AppNavigator() {
         return setActiveKey('Schedule');
       if (name === DOCK_ROUTE_FOR_POV[actorRole].Attendance)
         return setActiveKey('Attendance');
-      // Non-dock route: keep origin tab active until user picks another dock tab.
     };
     sync(navigation.getState?.());
     return navigation.addListener('state', (e) => sync(e.data?.state));
   }, [actorRole, navigation]);
 
-  // Pop back to the existing DockTabs route and merge the tab param so the
-  // tab pages stay mounted. A reset would mint a new route key and remount
-  // every tab page on each tap.
   const onTabPress = (key: string) => {
     navigation.dispatch(
       StackActions.popTo(
@@ -323,7 +278,6 @@ export function AppNavigator() {
     );
   };
 
-  // When unauthenticated or loading, show auth stack (Landing â†’ Login/Register)
   if (authStatus === 'unauthenticated' || authStatus === 'loading') {
     return (
       <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -338,8 +292,6 @@ export function AppNavigator() {
     );
   }
 
-  // When authenticated but role not yet selected (Google first-time login),
-  // show RoleSelectionScreen before entering the app.
   if (needsRoleSelection) {
     return (
       <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -360,7 +312,6 @@ export function AppNavigator() {
               <View style={styles.content}>
                 <Stack.Navigator
                   initialRouteName="DockTabs"
-
                   screenOptions={STACK_SCREEN_OPTIONS}
                 >
                   <Stack.Screen
@@ -368,19 +319,13 @@ export function AppNavigator() {
                     component={DockTabsScreen}
                     options={{ headerShown: false }}
                   />
-
                   <Stack.Screen
                     name="Home"
-
                     component={HomeScreen}
-
                     options={{
                       title: 'Beranda',
-
                       headerRight: () => null,
-
                       headerBackTitle: '',
-
                       headerShown: false,
                     }}
                   />
@@ -388,80 +333,54 @@ export function AppNavigator() {
                   <Stack.Group screenOptions={{ title: 'Praktikan' }}>
                     <Stack.Screen
                       name="StudentSchedule"
-
                       component={StudentScheduleScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentSessionDetail"
-
                       component={StudentSessionDetailScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentCheckIn"
-
                       component={StudentCheckInScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentAttendanceHistory"
-
                       component={StudentAttendanceHistoryScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentAllSessions"
-
                       component={StudentAllSessionsScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentAllAttendance"
-
                       component={StudentAllAttendanceScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentLeaveRequestForm"
-
                       component={StudentLeaveRequestFormScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentLeaveList"
-
                       component={StudentLeaveListScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentFineList"
                       component={StudentFineListScreen}
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentFineDetail"
                       component={StudentFineDetailScreen}
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="StudentPaymentHistory"
                       component={StudentPaymentHistoryScreen}
@@ -472,122 +391,93 @@ export function AppNavigator() {
                   <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen
                       name="AssistantSchedule"
-
                       component={AssistantScheduleScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="AssistantSessionDetail"
-
                       component={AssistantSessionDetailScreen}
                     />
-
                     <Stack.Screen
                       name="AssistantSessionQr"
                       component={AssistantSessionQrScreen}
                     />
-
                     <Stack.Screen
                       name="AssistantAttendanceRoster"
-
                       component={AssistantAttendanceRosterScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="AssistantAllSessions"
-
                       component={AssistantAllSessionsScreen}
                     />
-
                     <Stack.Screen
                       name="AssistantAllAttendance"
-
                       component={AssistantAllAttendanceScreen}
                     />
-
                     <Stack.Screen
                       name="AssistantClassList"
-
                       component={AssistantClassListScreen}
                     />
-
                     <Stack.Screen
                       name="AssistantClassForm"
-
                       component={AssistantClassFormScreen}
                     />
-
                     <Stack.Screen
                       name="AssistantSessionForm"
-
                       component={AssistantSessionFormScreen}
                     />
-
                     <Stack.Screen
                       name="AssistantLeaveReviewList"
-
                       component={AssistantLeaveReviewListScreen}
-
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="AssistantLabList"
                       component={AssistantLabListScreen}
                       options={{ headerShown: false }}
                     />
-
                     <Stack.Screen
                       name="AssistantLabForm"
                       component={AssistantLabFormScreen}
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="AslabLabDistribution"
+                      component={AslabLabDistributionScreen}
+                    />
+                    <Stack.Screen
+                      name="AslabLabImport"
+                      component={AslabLabImportScreen}
                       options={{ headerShown: false }}
                     />
                   </Stack.Group>
 
                   <Stack.Screen
                     name="Calendar"
-
                     component={CalendarScreen}
-
                     options={{ headerShown: false }}
                   />
-
                   <Stack.Screen
                     name="Profile"
-
                     component={ProfileScreen}
-
                     options={{ headerShown: false }}
                   />
-
                   <Stack.Screen
                     name="ProfileEdit"
-
                     component={ProfileEditScreen}
-
                     options={{ headerShown: false }}
                   />
-
                   <Stack.Screen
                     name="Notifications"
-
                     component={NotificationsScreen}
-
                     options={{ headerShown: false }}
                   />
-
                   <Stack.Screen
                     name="LabMaps"
-
                     component={LabMapsScreen}
-
                     options={{ headerShown: false }}
                   />
-
                   <Stack.Screen
                     name="BarcodeScan"
                     component={BarcodeScanScreen}
@@ -598,13 +488,9 @@ export function AppNavigator() {
 
               <BottomDock
                 tabs={DOCK_TABS}
-
                 activeKey={activeKey}
-
                 onTabPress={onTabPress}
-
                 fab={
-                  // Asisten menampilkan kode presensi, tidak ikut presensi.
                   actorRole === 'praktikan'
                     ? {
                         glyph: 'camera',
@@ -629,20 +515,13 @@ export function AppNavigator() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   content: { flex: 1 },
-
   pager: { flex: 1 },
-
   page: { flex: 1 },
-
   changeRole: {
     minHeight: 44,
-
     paddingHorizontal: 8,
-
     justifyContent: 'center',
-
     borderRadius: 8,
   },
-
   pressed: { backgroundColor: colors.lavenderSubtle },
 });

@@ -30,6 +30,8 @@ export type RootStackParamList = {
   AssistantLeaveReviewList: undefined;
   AssistantLabList: undefined;
   AssistantLabForm: { labId?: string };
+  AslabLabDistribution: { labId?: string } | undefined;
+  AslabLabImport: undefined;
   StudentAllSessions: undefined;
   StudentAllAttendance: undefined;
   StudentFineList: undefined;
