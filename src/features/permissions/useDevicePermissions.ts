@@ -3,17 +3,10 @@ import { AppState, Linking, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import type { NotificationPermissionsStatus } from 'expo-notifications';
 import {
+  Notifications,
   preparePushChannel,
   pushSupported,
 } from '../../services/notifications/pushNotificationService';
-
-const Notifications = (() => {
-  try {
-    return require('expo-notifications');
-  } catch {
-    return null;
-  }
-})();
 
 export type PermissionState =
   | 'checking'

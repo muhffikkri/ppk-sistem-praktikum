@@ -139,8 +139,10 @@ export function subscribeLabActivities(
   onError?: (message: string) => void,
 ): () => void {
   // Lazy require: modul ini juga dipakai tes Node tanpa Firebase.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { db } = require('../firebase') as { db: Firestore };
   const { subscribeLabs } =
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('./labService') as typeof import('./labService');
 
   let currentLabs: LabLocation[] | null = null;

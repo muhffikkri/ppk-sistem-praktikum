@@ -2,8 +2,10 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { DevicePushToken } from 'expo-notifications';
 import { Platform } from 'react-native';
 
-const Notifications = (() => {
+// Runtime lookup keeps web/Expo Go bundles working without the native module.
+export const Notifications = (() => {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-notifications');
   } catch {
     return null;

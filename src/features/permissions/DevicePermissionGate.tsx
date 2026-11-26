@@ -9,14 +9,6 @@ import {
 import { ActivityIndicator, AppState } from 'react-native';
 import type * as NotificationsType from 'expo-notifications';
 
-const Notifications = (() => {
-  try {
-    return require('expo-notifications');
-  } catch {
-    return null;
-  }
-})();
-
 import { Banner, Button } from '../../shared/ui';
 import {
   removeNotificationToken,
@@ -26,6 +18,7 @@ import {
 import {
   enableForegroundNotifications,
   getPushToken,
+  Notifications,
   parsePushTarget,
   pushSupported,
   type PushTarget,
@@ -78,7 +71,9 @@ export function DevicePermissionGate({
       return;
     let active = true;
     let run = 0;
-    const register = async (nativeToken?: NotificationsType.DevicePushToken) => {
+    const register = async (
+      nativeToken?: NotificationsType.DevicePushToken,
+    ) => {
       const current = ++run;
       setRegistration('registering');
       try {
@@ -107,9 +102,11 @@ export function DevicePermissionGate({
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') void register();
     });
-    const tokenChanges = Notifications?.addPushTokenListener?.((token: NotificationsType.DevicePushToken) => {
-      void register(token);
-    });
+    const tokenChanges = Notifications?.addPushTokenListener?.(
+      (token: NotificationsType.DevicePushToken) => {
+        void register(token);
+      },
+    );
     return () => {
       active = false;
       appState.remove();
@@ -141,9 +138,10 @@ export function DevicePermissionGate({
       }
     }
 
-    const subscription = Notifications?.addNotificationResponseReceivedListener?.(
-      (response: NotificationsType.NotificationResponse) => receive(response),
-    );
+    const subscription =
+      Notifications?.addNotificationResponseReceivedListener?.(
+        (response: NotificationsType.NotificationResponse) => receive(response),
+      );
     void Notifications?.getLastNotificationResponseAsync?.()
       .then((response: NotificationsType.NotificationResponse | null) => {
         if (response) receive(response);
