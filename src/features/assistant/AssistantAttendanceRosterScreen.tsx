@@ -47,6 +47,15 @@ type StatusPresentation = {
   avatarTone: AvatarTone;
 };
 
+const LEAVE_STATUS_LABEL: Record<
+  NonNullable<SessionRosterEntry['leaveStatus']>,
+  string
+> = {
+  pending: 'Izin menunggu',
+  approved: 'Izin disetujui',
+  rejected: 'Izin ditolak',
+};
+
 const STATUS_PRESENTATION: Record<StudentAttendanceStatus, StatusPresentation> =
   {
     present: { badgeTone: 'lime', badgeLabel: 'Hadir', avatarTone: 'lime' },
@@ -145,12 +154,12 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
           STATUS_PRESENTATION[record.status];
 
         const identity = studentIdentityMeta(record);
-        const meta =
-          record.status === 'excused'
-            ? [identity, record.leaveReason ?? 'Izin disetujui']
-                .filter(Boolean)
-                .join(' · ')
-            : identity;
+        const leaveMeta = record.leaveStatus
+          ? [LEAVE_STATUS_LABEL[record.leaveStatus], record.leaveReason]
+              .filter(Boolean)
+              .join(' · ')
+          : '';
+        const meta = [identity, leaveMeta].filter(Boolean).join(' · ');
 
         return (
           <ListRow
