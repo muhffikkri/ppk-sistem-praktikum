@@ -42,10 +42,19 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/sessions/$(sessionId)).data;
     }
 
-    function validTransition(from, to) {
+    // Jendela aksi asisten: 15 menit sebelum mulai sampai waktu selesai.
+    function withinOpenWindow(data) {
+      return data.startsAtMs is int
+        && data.endsAtMs is int
+        && request.time.toMillis() >= data.startsAtMs - 15 * 60 * 1000
+        && request.time.toMillis() <= data.endsAtMs;
+    }
+
+    function validTransition(from, to, data) {
       return from == to
-        || (from == 'scheduled' && to == 'open')
-        || (from == 'open' && to == 'closed');
+        || (from == 'scheduled' && to == 'open' && withinOpenWindow(data))
+        || (from == 'open' && to == 'closed')
+        || (from == 'closed' && to == 'open' && withinOpenWindow(data));
     }
 
     // 1. Profil Pengguna
@@ -143,12 +152,19 @@ service cloud.firestore {
         && request.resource.data.closedAt == null
         && request.resource.data.startsAt is string
         && request.resource.data.endsAt is string
+        && request.resource.data.startsAtMs is int
+        && request.resource.data.endsAtMs is int
+        && request.resource.data.endsAtMs > request.resource.data.startsAtMs
         && request.auth.uid in request.resource.data.assistantIds;
 
       allow update: if isAssistant()
         && request.auth.uid in resource.data.assistantIds
         && request.resource.data.createdBy == resource.data.createdBy
-        && validTransition(resource.data.status, request.resource.data.status);
+        && validTransition(
+          resource.data.status,
+          request.resource.data.status,
+          request.resource.data
+        );
 
       allow delete: if isAssistant() && request.auth.uid in resource.data.assistantIds;
     }
@@ -232,6 +248,10 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
         && sessionData(request.resource.data.sessionId).status == 'open'
         && request.auth.uid in sessionData(request.resource.data.sessionId).participantIds
+        && request.time.toMillis()
+          >= sessionData(request.resource.data.sessionId).startsAtMs - 15 * 60 * 1000
+        && request.time.toMillis()
+          <= sessionData(request.resource.data.sessionId).endsAtMs + 10 * 60 * 1000
         && request.resource.data.checkedInAt is string
         && request.resource.data.studentName is string
         && withinLabGeofence(

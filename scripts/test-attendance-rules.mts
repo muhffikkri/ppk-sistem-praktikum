@@ -107,7 +107,10 @@ await adminDb.doc('assistant_invites/invited@rules.test').set({
 });
 const { id: labId, ...labDoc } = lab;
 await adminDb.doc(`labs/${labId}`).set(labDoc);
-await adminDb.doc('sessions/s1').set({
+
+const minuteMs = 60_000;
+const nowMs = Date.now();
+const sessionDoc = (startMs: number, endMs: number, status: string) => ({
   classId: 'c1',
   courseName: 'Praktikum',
   groupName: 'A',
@@ -115,13 +118,34 @@ await adminDb.doc('sessions/s1').set({
   labId,
   participantIds: ['budi'],
   assistantIds: ['asisten'],
-  startsAt: '2026-01-01T01:00:00.000Z',
-  endsAt: '2026-01-01T03:00:00.000Z',
-  status: 'open',
-  openedAt: '2026-01-01T01:00:00.000Z',
-  closedAt: null,
+  startsAt: new Date(startMs).toISOString(),
+  endsAt: new Date(endMs).toISOString(),
+  startsAtMs: startMs,
+  endsAtMs: endMs,
+  status,
+  openedAt: status === 'scheduled' ? null : new Date(startMs).toISOString(),
+  closedAt:
+    status === 'closed' ? new Date(startMs + minuteMs).toISOString() : null,
   createdBy: 'asisten',
 });
+await adminDb
+  .doc('sessions/s1')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'open'));
+await adminDb
+  .doc('sessions/s2-early')
+  .set(sessionDoc(nowMs + 60 * minuteMs, nowMs + 120 * minuteMs, 'open'));
+await adminDb
+  .doc('sessions/s3-late')
+  .set(sessionDoc(nowMs - 180 * minuteMs, nowMs - 120 * minuteMs, 'open'));
+await adminDb
+  .doc('sessions/s4-future')
+  .set(sessionDoc(nowMs + 60 * minuteMs, nowMs + 120 * minuteMs, 'scheduled'));
+await adminDb
+  .doc('sessions/s5-now')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'scheduled'));
+await adminDb
+  .doc('sessions/s6-closed')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'closed'));
 
 const app = initializeApp({ projectId, apiKey: 'emulator' });
 const auth = getAuth(app);
@@ -137,6 +161,7 @@ const north = (meters: number) => lab.location.latitude - meters / 111320;
 type Case = {
   label: string;
   fix: DeviceFix;
+  sessionId?: string;
   sentDistance?: number;
   studentNim?: string;
   expected: 'allowed' | 'denied';
@@ -218,19 +243,41 @@ const cases: Case[] = [
     studentNim: '3fQx9aK2',
     expected: 'denied',
   },
+  {
+    label: 'jauh sebelum jadwal',
+    sessionId: 's2-early',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    expected: 'denied',
+  },
+  {
+    label: 'setelah sesi selesai',
+    sessionId: 's3-late',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    expected: 'denied',
+  },
 ];
 
 let failures = 0;
 for (const testCase of cases) {
-  await adminDb.doc('attendance/s1_budi').delete();
+  const sid = testCase.sessionId ?? 's1';
+  const attendanceId = `${sid}_budi`;
+  await adminDb.doc(`attendance/${attendanceId}`).delete();
 
   await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
   const geofence = evaluateGeofence(testCase.fix, lab);
   let result: 'allowed' | 'denied' = 'allowed';
   try {
-    await setDoc(doc(db, 'attendance', 's1_budi'), {
-      id: 's1_budi',
-      sessionId: 's1',
+    await setDoc(doc(db, 'attendance', attendanceId), {
+      id: attendanceId,
+      sessionId: sid,
       classId: 'c1',
       studentId: 'budi',
       studentName: 'Budi',
@@ -252,7 +299,7 @@ for (const testCase of cases) {
   const roster = await getDocs(
     query(
       collection(db, 'attendance'),
-      where('sessionId', '==', 's1'),
+      where('sessionId', '==', sid),
       orderBy('checkedInAt', 'asc'),
     ),
   );
@@ -298,6 +345,27 @@ const check = (
     `${pass ? '✅' : '❌'} role: ${label}: server ${result} (harap ${expected})`,
   );
 };
+
+// --- Jendela buka sesi: rules memakai epoch ms, bukan status manual saja ---
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+const openCases: [string, string, 'allowed' | 'denied'][] = [
+  ['buka sesi jauh dari jadwal', 's4-future', 'denied'],
+  ['buka sesi dalam jendela', 's5-now', 'allowed'],
+  ['buka ulang sesi yang baru ditutup', 's6-closed', 'allowed'],
+];
+for (const [label, sessionId, expected] of openCases) {
+  check(
+    label,
+    await attempt(() =>
+      updateDoc(doc(db, 'sessions', sessionId), {
+        status: 'open',
+        openedAt: new Date().toISOString(),
+      }),
+    ),
+    expected,
+  );
+}
+await signOut(auth);
 
 await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
 const inboxCases: [string, () => Promise<unknown>, 'allowed' | 'denied'][] = [
