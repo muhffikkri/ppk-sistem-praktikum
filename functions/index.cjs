@@ -23,6 +23,7 @@ const {
   inboxEntries,
   pushMessage,
 } = require('./pushEvents.cjs');
+const { LATE_CHECK_IN_MS, closeExpiredSession } = require('./sessionClose.cjs');
 
 initializeApp();
 const db = getFirestore();
@@ -320,6 +321,23 @@ exports.retryPushAndCheckReceipts = onSchedule(
         due.docs.slice(i, i + 20).map((job) => deliver(job.ref)),
       );
     }
+  },
+);
+
+exports.closeExpiredSessions = onSchedule(
+  { schedule: 'every 1 minutes' },
+  async () => {
+    const threshold = new Date(Date.now() - LATE_CHECK_IN_MS).toISOString();
+    const due = await db
+      .collection('sessions')
+      .where('endsAt', '<=', threshold)
+      .get();
+    const writer = db.bulkWriter();
+    for (const snap of due.docs) {
+      const patch = closeExpiredSession(snap.data());
+      if (patch) writer.update(snap.ref, patch);
+    }
+    await writer.flush();
   },
 );
 
