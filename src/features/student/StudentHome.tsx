@@ -8,7 +8,6 @@ import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import {
   Avatar,
   Banner,
-  Button,
   Card,
   CardContent,
   EmptyState,
@@ -335,7 +334,12 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         </View>
 
         {hero ? (
-          <Card variant="heroViolet" interactive={false}>
+          <Card
+            variant="heroViolet"
+            accessibilityLabel={`Detail sesi ${hero.courseName}`}
+            accessibilityHint="Membuka detail sesi"
+            onPress={() => openDetail(hero.id)}
+          >
             <View style={styles.heroContent}>
               <View style={styles.heroTopRow}>
                 <StatusBadge
@@ -385,13 +389,27 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                     tone="success"
                   />
                 ) : hero.status === 'open' ? (
-                  <Button
-                    label="Presensi sekarang"
-                    variant="accent"
-                    icon="qr-code-outline"
-                    onPress={() => openDetail(hero.id)}
-                    accessibilityHint="Membuka detail sesi untuk presensi"
-                  />
+                  // The whole hero opens the same detail screen, so this is a
+                  // visual cue only — no nested pressable competing for taps.
+                  <View
+                    style={styles.heroCta}
+                    accessible={false}
+                    importantForAccessibility="no"
+                  >
+                    <Ionicons
+                      name="qr-code-outline"
+                      size={18}
+                      color={colors.ink}
+                    />
+                    <Text variant="bodyStrong" tone="ink">
+                      Presensi sekarang
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={colors.ink}
+                    />
+                  </View>
                 ) : (
                   <Text variant="caption" tone="onDarkMuted">
                     Dibuka asisten saat sesi dimulai
@@ -549,6 +567,16 @@ const styles = StyleSheet.create({
   },
   metaText: { flex: 1 },
   heroAction: { marginTop: spacing.xs },
+  heroCta: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing['2xl'],
+    borderRadius: radius['2xl'],
+    backgroundColor: colors.lime,
+  },
 
   metric: {
     gap: spacing.xs,
