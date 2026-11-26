@@ -99,7 +99,7 @@ export type PracticalClass = {
   updatedAt: string; // ISO 8601 UTC
 };
 
-export type SessionStatus = 'scheduled' | 'open' | 'closed';
+export type SessionStatus = 'scheduled' | 'open' | 'closed' | 'cancelled';
 
 export type Session = {
   id: string;

@@ -1,14 +1,14 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { View } from 'react-native';
 
+import { normalizeNim, NIM_INVALID } from '../domain/nim';
 import {
   Banner,
   Button,
   Screen,
-  spacing,
+  Stack,
   TextField,
-  TopBar,
+  BackButton,
 } from '../shared/ui';
 import { useAuth } from '../state';
 import type { RootStackParamList } from './navigation';
@@ -16,8 +16,9 @@ import type { RootStackParamList } from './navigation';
 type Props = NativeStackScreenProps<RootStackParamList, 'ProfileEdit'>;
 
 export function ProfileEditScreen({ navigation }: Props) {
-  const { user, updateDisplayName, clearError } = useAuth();
+  const { user, updateUserProfile, clearError } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+  const [nim, setNim] = useState(user?.nim ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -32,10 +33,14 @@ export function ProfileEditScreen({ navigation }: Props) {
       setErrorMessage('Nama lengkap minimal 2 karakter.');
       return;
     }
+    if (nim.trim() && !normalizeNim(nim)) {
+      setErrorMessage(NIM_INVALID);
+      return;
+    }
 
     setSubmitting(true);
     try {
-      const res = await updateDisplayName(displayName);
+      const res = await updateUserProfile({ displayName, nim });
       if (!res.ok) {
         setErrorMessage(res.message);
         return;
@@ -48,7 +53,7 @@ export function ProfileEditScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <TopBar title="Edit profil" onBack={() => navigation.goBack()} />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {errorMessage ? (
         <Banner
@@ -59,7 +64,7 @@ export function ProfileEditScreen({ navigation }: Props) {
         />
       ) : null}
 
-      <View style={{ gap: spacing.md }}>
+      <Stack gap="md">
         <TextField
           label="Nama Lengkap"
           value={displayName}
@@ -70,13 +75,26 @@ export function ProfileEditScreen({ navigation }: Props) {
           editable={!submitting}
           testID="field-Nama Lengkap"
         />
+        <TextField
+          label="NIM"
+          value={nim}
+          onChangeText={(text) => {
+            setNim(text);
+            if (errorMessage) setErrorMessage(null);
+          }}
+          placeholder="Nomor induk mahasiswa"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          editable={!submitting}
+          testID="field-NIM"
+        />
         <TextField label="Email" value={user?.email ?? '-'} editable={false} />
         <TextField
           label="Peran (Terkunci)"
           value={roleLabel}
           editable={false}
         />
-      </View>
+      </Stack>
 
       <Button
         label={submitting ? 'Menyimpan...' : 'Simpan Perubahan'}

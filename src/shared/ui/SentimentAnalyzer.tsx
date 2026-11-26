@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { createSentimentClassifier } from '../../../ai/sentiment';
 import model from '../../../ai/model-edom.json';
+import { colors } from '../../theme/tokens';
 
 type SentimentResult = {
   label: string | null;
@@ -103,8 +104,8 @@ export default function SentimentAnalyzer({
                         backgroundColor:
                           result.label !== null &&
                           result.label === model.labels[i]
-                            ? '#22C55E'
-                            : '#e0e0e0',
+                            ? colors.success
+                            : colors.scoreNeutral,
                       },
                     ]}
                   >
@@ -136,17 +137,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: colors.panel,
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#17141F',
+    color: colors.ink,
     marginBottom: 16,
     textAlign: 'center',
   },
   inputContainer: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.panel,
   },
   buttonWrapper: {
     marginVertical: 16,
@@ -167,10 +168,10 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#17141F',
+    color: colors.ink,
   },
   resultContainer: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
@@ -178,12 +179,12 @@ const styles = StyleSheet.create({
   resultLabel: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#17141F',
+    color: colors.ink,
     marginBottom: 4,
   },
   resultStatus: {
     fontSize: 14,
-    color: '#65394C',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   scoresContainer: {
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   },
   scoresTitle: {
     fontSize: 12,
-    color: '#65394C',
+    color: colors.inkMuted,
     marginBottom: 8,
   },
   scoresBar: {
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     fontSize: 11,
-    color: '#65394C',
+    color: colors.inkMuted,
     marginLeft: 4,
     flex: 1,
     textAlign: 'right',
@@ -214,12 +215,12 @@ const styles = StyleSheet.create({
   loading: {
     marginVertical: 16,
     textAlign: 'center',
-    color: '#17141F',
+    color: colors.ink,
   },
   note: {
     marginTop: 12,
     fontSize: 12,
-    color: '#65394C',
+    color: colors.inkMuted,
     textAlign: 'center',
   },
 });

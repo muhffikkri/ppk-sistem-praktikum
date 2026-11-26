@@ -1,11 +1,12 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, View } from 'react-native';
 
 import type { AuthStackParamList } from '../../app/navigation';
 import type { UserRole } from '../../domain/types';
 import { isFirebaseConfigured } from '../../services/firebase';
+import { hasAssistantInvite } from '../../services/firestore/assistantInviteService';
 import {
   Banner,
   Button,
@@ -13,10 +14,10 @@ import {
   CardContent,
   CardOverline,
   colors,
-  Header,
   Screen,
   spacing,
   Text,
+  BackButton,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 
@@ -47,7 +48,25 @@ export function RoleSelectionScreen({ navigation }: Props) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
+  const [canBeAssistant, setCanBeAssistant] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    hasAssistantInvite()
+      .then((invited) => {
+        if (active) setCanBeAssistant(invited);
+      })
+      .catch(() => {
+        // Orang tanpa undangan tetap bisa melanjutkan sebagai praktikan.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const roleOptions = ROLE_OPTIONS.filter(
+    (option) => option.value === 'student' || canBeAssistant,
+  );
   const activeError = roleError ?? error;
 
   const clearRoleError = () => {
@@ -72,10 +91,7 @@ export function RoleSelectionScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <Header
-        title="Pilih peran Anda"
-        description="Peran menentukan akses fitur dan data di aplikasi."
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {!isFirebaseConfigured ? (
         <Banner
@@ -95,7 +111,7 @@ export function RoleSelectionScreen({ navigation }: Props) {
       ) : null}
 
       <View style={styles.roles}>
-        {ROLE_OPTIONS.map((option) => {
+        {roleOptions.map((option) => {
           const selected = role === option.value;
           return (
             <Card
@@ -137,7 +153,8 @@ export function RoleSelectionScreen({ navigation }: Props) {
       </View>
 
       <Text variant="caption" tone="muted">
-        Peran tidak bisa diganti sendiri. Pilih dengan benar.
+        Peran tidak bisa diganti sendiri. Hubungi pengelola jika Anda asisten
+        yang belum terdaftar.
       </Text>
 
       <View style={styles.actions}>

@@ -2,10 +2,13 @@
 
 **Source of truth:** the raw sticker sheet lives in
 [`spec/design-sticker-sheet.md`](spec/design-sticker-sheet.md)
-(LabPresensi v1.2, "Sebenza" visual language). This file is the human +
-agent-readable reference: every token, component, and screen convention
-below is derived from that raw file. If the raw sticker sheet changes,
-update this document and `src/theme/tokens.ts` together.
+(LabPresensi v1.2, "Sebenza" visual language). The dashboard HTML supplied
+for the current build (`data-purpose="brand-header"` / `MainHeader`) is the
+authoritative reference for **root chrome** (top bar + dock) and supersedes
+the older sticker-sheet header. This file is the human + agent-readable
+reference: every token, component, and screen convention below is derived
+from those sources. If either source changes, update this document and
+`src/theme/tokens.ts` together.
 
 When an agentic AI works on this repo, read **this file first**. Do not
 invent colors, radii, spacing, or type styles — pull them from the tokens
@@ -20,6 +23,8 @@ defined here and from `src/theme/tokens.ts`.
 - **Aksi sesuai konteks:** tombol presensi hanya aktif untuk sesi terbuka;
   kontrol buka/tutup hanya tersedia untuk role asisten.
 - **Fokus satu tugas:** jadwal = titik masuk; detail sesi = aksi + info.
+- **Chrome minimum:** top bar hanya untuk halaman utama/navbar; halaman
+  dengan tombol back hanya menampil tombol back (tanpa judul/header bar).
 - **Responsif:** satu kolom nyaman disentuh; konten memanjang discroll.
 - **Feedback langsung:** aksi → banner konfirmasi + state diperbarui dari
   Firestore (listener realtime).
@@ -49,7 +54,10 @@ App (BottomDock: Beranda · Jadwal · [Izin] · Presensi · Akun)
 
 Autentikasi memakai Firebase Auth; peran disimpan di profil Firestore dan
 tidak bisa diganti sendiri oleh pengguna. FAB tengah dock membuka layar izin
-sesuai peran — tidak ada aksi QR.
+sesuai peran — tidak ada aksi QR. Untuk praktikan, FAB scanner presensi
+(`BarcodeScan` dengan `fromDock: true`) dianggap halaman utama: memakai
+`AppTopBar`. Rute `BarcodeScan` yang dibuka dari detail sesi memakai
+`BackButton` saja.
 
 ---
 
@@ -57,10 +65,11 @@ sesuai peran — tidak ada aksi QR.
 
 ### Font
 
-| Token      | Family               | Kegunaan                    |
-| ---------- | -------------------- | --------------------------- |
-| display    | `Fraunces` (serif)   | Judul, angka hero, headline |
-| sans       | `Plus Jakarta Sans`  | Body UI, label, caption     |
+| Token      | Family               | Kegunaan                         |
+| ---------- | -------------------- | -------------------------------- |
+| display    | `Fraunces` (serif)   | Judul, angka hero, headline      |
+| sans       | `Plus Jakarta Sans`  | Body UI, label, caption          |
+| brandTitle | `Plus Jakarta Sans`  | Nama produk di root top bar (18) |
 
 Fraunces memakai letter-spacing negatif (editorial):
 `display` `-0.03em`, `subtitle` `-0.02em`.
@@ -101,19 +110,19 @@ sebagai ikon.
 | Token           | Hex       | Keterangan                              |
 | --------------- | --------- | --------------------------------------- |
 | `violet`        | `#5B3BE8` | Primary: tombol, link, aksen, aktif     |
-| `violetDark`    | `#4427C6` | Hover/pressed dari violet                |
+| `violetDark`    | `#482CD4` | Hover/pressed dari violet                |
 | `violetLight`   | `#7356F5` | Aksen sekunder terang                   |
 | `lime`          | `#D3F36B` | Aksen high-visibility, highlight        |
-| `limeHover`     | `#C0E255` | Hover/pressed dari lime                 |
-| `lavender`      | `#E4DBFF` | Tint lembut, fill soft                  |
-| `lavenderSubtle`| `#F3EFFF` | Tint sangat lembut, hover panel         |
+| `limeHover`     | `#A3E635` | Hover/pressed dari lime                 |
+| `lavender`      | `#EDE7FF` | Tint lembut, border logo tile           |
+| `lavenderSubtle`| `#F3EEFF` | Tint sangat lembut, fill logo tile      |
 | `pink`          | `#FFC2D9` | Aksen dekoratif, tint "late/warning"    |
-| `ink`           | `#17141F` | Teks utama, permukaan gelap, bottom dock |
-| `inkMuted`      | `#5D586C` | Teks sekunder, caption                  |
+| `ink`           | `#161522` | Teks utama, permukaan gelap, bottom dock |
+| `inkMuted`      | `#64748B` | Teks sekunder, caption                  |
 | `inkSubtle`     | `#9A95A8` | Placeholder / disabled text             |
-| `surface`       | `#F4F2F9` | Canvas aplikasi (latar layar)          |
+| `surface`       | `#F8F7FD` | Canvas aplikasi (latar layar)          |
 | `panel`         | `#FFFFFF` | Kartu, input, modal (permukaan putih)   |
-| `border`        | `#E7E3F2` | Garis tepi utama                        |
+| `border`        | `#E8E5F3` | Garis tepi utama                        |
 | `borderSubtle`  | `#F0EDF7` | Garis tepi halus / divider              |
 | `pinkInk`       | `#8A0F41` | Teks di atas `pink` (badge late/izin)   |
 
@@ -164,7 +173,7 @@ sebagai ikon.
 | Token      | CSS (referensi)                                        |
 | ---------- | ------------------------------------------------------ |
 | `subtle`   | `0 4px 20px -2px rgba(23,20,31,.05)`                  |
-| `elevated` | `0 12px 32px -4px rgba(91,59,232,.12)`  (violet glow) |
+| `elevated` | `0 12px 32px -4px rgba(22,21,34,.08)`  (soft, tanpa glow) |
 | `card`     | `0 2px 10px rgba(0,0,0,.02), 0 0 1px rgba(0,0,0,.06)` |
 
 ### Type scale (px)
@@ -178,6 +187,7 @@ sebagai ikon.
 | `subtitle`      | Fraunces   |   18   |      26     | 400        | Judul kartu konten  |
 | `body`          | Sans       |   14   |      20     | 400        | Body text           |
 | `bodyStrong`    | Sans       |   14   |      20     | 600        | Body emphasized     |
+| `brandTitle`    | Sans       |   18   |      22     | 700        | "LabPresensi" di top bar |
 | `label`         | Sans       |   13   |      18     | 500        | Label form/row      |
 | `caption`       | Sans       |   12   |      16     | 400        | Caption, hint       |
 | `captionStrong` | Sans       |   12   |      16     | 600        | Badge, label tab    |
@@ -233,20 +243,37 @@ Semua tombol wajib `accessibilityRole="button"`.
 
 40×40 (hit-slop sampai 44), radius `lg`, ikon Ionicons 20.
 Variant `outline` (default, panel + `border`), `soft` (lavender, ikon
-violet), `ghost` (tanpa latar). `accessibilityLabel` **wajib** secara
-tipe — ikon tidak punya teks untuk dibacakan.
+violet), `ghost` (tanpa latar, dipakai `BackButton`), dan `circle`
+(rounded-full, panel + `border` + `shadow.card`, khusus shortcut root
+top bar). `accessibilityLabel` **wajib** secara tipe — ikon tidak punya
+teks untuk dibacakan.
 
-### TopBar
+### Chrome: `AppTopBar` (root/navbar) + `BackButton` (pushed)
 
-Untuk layar push (detail, form): `IconButton` kembali (bila `onBack`
-diberikan, label default "Kembali") + judul `bodyStrong` satu baris +
-slot `trailing`. Tinggi minimum 44.
+**Root top bar — `AppTopBar` / `RootTopBar`.** Hanya untuk halaman utama
+yang berada di navbar: Beranda, Jadwal, Presensi/Riwayat, Akun, Kalender,
+dan `BarcodeScan` yang dibuka dari FAB dock (`fromDock: true`). Mengikuti
+HTML referensi `data-purpose="brand-header"`:
 
-Aturan judul: jika layar sudah punya `Header` (judul besar), `TopBar` hanya
-berisi tombol kembali tanpa `title`. `TopBar` dengan `title` hanya dipakai
-saat layar belum punya `Header` (loading, error, atau sesi belum termuat).
-Layar yang dibuka dari tab dock tidak memakai `TopBar` sama sekali; header
-native juga dimatikan (`headerShown: false`).
+- latar `surface`, padding atas 8 / bawah 12 / horizontal 20, **tanpa**
+  garis bawah dan **tanpa** tombol back;
+- logo tile 40×40, radius 16, fill `lavenderSubtle`, border 1 `lavender`,
+  glyph Ionicons 20 `violet` (padanan `graduation-cap` → `school-outline`);
+- teks: `brandTitle` 18/700 ("LabPresensi") + `overline` violet
+  ("Portal Asisten" / "Portal Praktikan"), gap 4;
+- aksi kanan: tiga `IconButton variant="circle"` 40×40 — peta, notifikasi
+  (dot merah bila belum dibaca), profil. `RootTopBar` menyusun semua ini.
+
+**Pushed screens — `BackButton`.** Login, register, pilih peran, detail
+sesi, form, rekap, Notifications, LabMaps, scanner dari detail: **hanya**
+`BackButton` (ghost `chevron-back`, label "Kembali" / "Tutup"). Tidak ada
+`AppTopBar`, tidak ada `Header`, tidak ada native header
+(`headerShown: false`). `TopBar` lama sudah dihapus — jangan dibuat lagi.
+Judul/info tetap disampaikan oleh konten halaman (`Card`, `EmptyState`,
+`ErrorState`, `SectionHeader`), bukan oleh bar di atas.
+
+`Header` besar hanya dipakai pada halaman root/navbar yang memang perlu
+judul editorial (mis. sapaan Beranda, "Profil", "Jadwal hari ini").
 
 ### Header
 
@@ -271,6 +298,12 @@ bukan di setiap kartu.
   Props: `label`, `error?`, `hint?`, `rightAccessory?` (mis.
   `IconButton` lihat password), plus prop `TextInput` (`value`,
   `onChangeText`, `secureTextEntry`, `multiline`, …).
+- **Autofill kredensial login:** pakai `autoComplete="username"` pada
+  email + `autoComplete="current-password"` pada password, keduanya
+  `importantForAutofill="yes"`, `autoCorrect={false}`,
+  `autoCapitalize="none"`. Jangan set `textContentType` bersamaan —
+  field itu menang dan mengabaikan `autoComplete` lintas platform
+  (React Native TextInput docs). `returnKeyType`: `next` lalu `done`.
 - **Search bar:** `surface` + `border`, radius `2xl`, ikon kaca + shortcut ⌘K.
 - **Dropdown:** panel + `border`, label kecil atas + nilai bold bawah.
 - **Segmented switch:** container `surface`, item aktif `ink` (teks putih),
@@ -326,9 +359,11 @@ judul `bodyStrong`, deskripsi `body` (max 240px).
 
 `LoadingState`: satu-satunya blok loading — spinner violet + label
 body muted (default "Memuat…"), di tengah.
-`ErrorState`: `Banner` danger (judul default "Gagal memuat data",
-pesan dari service) + `Button` outline `sm` "Coba lagi" bila
-`onRetry` diberikan.
+`ErrorState`: blok `surface` dashed-border dengan aksen danger (ikon 48,
+judul `bodyStrong`, pesan dari service, `hint` singkat, `Button` primer
+"Coba lagi", serta `secondaryAction` opsional). Bedakan jelas:
+`EmptyState` = data valid tapi kosong (harus punya next step/CTA sesuai
+role), `ErrorState` = gagal memuat/aksi (harus punya retry).
 
 ### Screen
 
@@ -345,7 +380,8 @@ menolak literal hex/rgba di luar `src/theme`, `fontSize`/`fontFamily`/
 `fontWeight`/`fontStyle` di luar `src/theme` & `src/shared/ui`, `Text`
 dari `react-native` di layar, dan copy di luar SRS (QR, Beacon, Shift,
 SIAKAD, SSO, …). `--report` mencetak jumlah pelanggaran per file tanpa
-gagal.
+gagal. `npm run lint` menambah guard `react-native/no-inline-styles` dan
+`no-restricted-syntax` untuk object literal pada prop `style`.
 
 ### Bottom dock (mobile)
 
@@ -384,7 +420,9 @@ src/
 1. Jangan hardcode warna/radius/spacing/typo di component — selalu import
    dari `shared/ui` (yang me-re-export token) atau `theme/tokens`.
 2. Component layar = susunan primitif `shared/ui`, bukan style inline
-   ad-hoc. Style lokal hanya untuk layout (gap, direction, flex).
+   ad-hoc. Layout vertikal/horizontal pakai `<Stack gap="md">`;
+   `gap`/`direction` didefinisikan di `StyleSheet.create`, bukan object
+   literal di JSX.
 3. Nama prop component mengikuti naming sticker sheet (variant, tone,
    dark, live).
 4. Teks aksesibel wajib: `accessibilityRole`, `accessibilityLabel` pada
@@ -393,6 +431,25 @@ src/
    `react-native`, agar font & ukuran selalu dari token.
 6. Feedback setelah tulis ke Firestore hanya ditampilkan setelah promise
    berhasil; gagal → banner danger dengan pesan dari service.
+7. Feedback sukses/gagal bersifat **transient**: pakai
+   `useTransientFeedback` / `useTransientState`
+   (`src/shared/navigation/useTransientFeedback.tsx`). Banner hilang
+   setelah ~6 detik dan saat screen blur atau tab dock berubah (halaman
+   dock tetap mounted di `PagerView`, jadi focus navigation saja tidak
+   cukup). Error blocking yang butuh tindakan user tetap memakai
+   `ErrorState`, bukan banner otomatis.
+
+### Inline style
+
+- Warna, spacing, radius, dan tipografi selalu dari token
+  `src/theme/tokens.ts` (di-re-export oleh `src/shared/ui`).
+- `style={{ ... }}` dilarang; nilai literal di dalam `style={[styles.x,
+  { ... }]}` juga dilarang. Gunakan `StyleSheet.create` atau `Stack`.
+- Nilai runtime (ukuran QR dinamis, warna status, inset perangkat)
+  diperbolehkan, tetapi dihitung di luar JSX (`useMemo`/peta konstan),
+  mis. `const frameStyle = useMemo(() => ({ width: size }), [size])`.
+- `Text` dari `shared/ui`: `style` hanya untuk layout, bukan tipografi.
+- Guard: `npm run lint` dan `npm run check:ui` (keduanya berjalan di CI).
 
 ## Layar & elemen
 
@@ -400,9 +457,9 @@ src/
   `CardOverline` + judul `title` + deskripsi + `Button`.
 - **Jadwal:** section per status (`open` → `scheduled` → `closed`),
   judul section `overline`, isi = `AssistantSessionCard` / hero card.
-- **Detail sesi:** `Header` + `Banner` (feedback) + `Card` berisi
-  info row + aksi (`Button`). Praktikan: status presensi + waktu.
-  Asisten: jumlah hadir + buka/tutup.
+- **Detail sesi:** `BackButton` saja di atas, lalu `Banner` (feedback) +
+  `Card` berisi info row + aksi (`Button`). Praktikan: status presensi +
+  waktu. Asisten: jumlah hadir + buka/tutup. Tanpa `Header`/top bar.
 - **Rekap asisten:** summary row (badge + hitung) + `Card` berisi
   daftar kehadiran (attendance rows).
 - **Riwayat praktikan:** daftar catatan presensi, status + waktu.
@@ -446,10 +503,14 @@ Sebelum menambah/mengubah UI:
 - [ ] Baca `spec/design-sticker-sheet.md` (raw) + file ini.
 - [ ] Semua warna/spacing/radius/typo dari `src/theme/tokens.ts`,
       bukan literal baru.
-- [ ] Gunakan primitif `shared/ui` (Text, Button, IconButton, TopBar,
-      Header, SectionHeader, TextField, ListRow, Avatar, Card,
-      StatusBadge, Banner, LoadingState, ErrorState, Screen, EmptyState)
-      — buat primitif baru hanya jika belum ada.
+- [ ] Gunakan primitif `shared/ui` (Text, Button, IconButton, BackButton,
+      AppTopBar/RootTopBar, Header, SectionHeader, TextField, ListRow,
+      Avatar, Card, StatusBadge, Banner, LoadingState, ErrorState,
+      Screen, EmptyState) — buat primitif baru hanya jika belum ada.
+- [ ] Chrome: root/navbar → `RootTopBar`; pushed/back → `BackButton` only.
+      Jangan memakai `TopBar` lama atau native header.
+- [ ] Form login memakai hint autofill kredensial (`username` +
+      `current-password`) tanpa `textContentType`.
 - [ ] Tidak ada konten karangan (angka, nama, lokasi, fitur di luar SRS).
 - [ ] Jalankan `npm run typecheck`, `npm run lint`, dan
       `npm run format:check` sebelum selesai.

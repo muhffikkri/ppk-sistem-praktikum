@@ -37,18 +37,10 @@ const toneStyles: Record<
 export type StatusBadgeProps = {
   label: string;
   tone?: BadgeTone;
-  /** Small dot prefix (sticker sheet chips). */
-  dot?: boolean;
-  /** Pulsing dot for "active" states. */
-  live?: boolean;
 };
 
-export function StatusBadge({
-  label,
-  tone = 'neutral',
-  dot = false,
-  live = false,
-}: StatusBadgeProps) {
+/** Text-only status chip: colour comes from the tone, never a dot prefix. */
+export function StatusBadge({ label, tone = 'neutral' }: StatusBadgeProps) {
   const appearance = toneStyles[tone];
 
   return (
@@ -62,40 +54,21 @@ export function StatusBadge({
       ]}
       accessibilityLabel={label}
     >
-      {dot ? (
-        <View
-          accessibilityElementsHidden
-          style={[
-            styles.dot,
-            live ? styles.dotLive : { backgroundColor: appearance.fg },
-          ]}
-        />
-      ) : null}
       <Text style={[styles.label, { color: appearance.fg }]}>{label}</Text>
     </View>
   );
 }
 
 // Compat: pre-refactor screens use <StatusBadge status="open" />.
-const legacyStatusMap: Record<
-  string,
-  { label: string; tone: BadgeTone; live?: boolean }
-> = {
+const legacyStatusMap: Record<string, { label: string; tone: BadgeTone }> = {
   scheduled: { label: 'Terjadwal', tone: 'lavender' },
-  open: { label: 'Sesi Aktif', tone: 'violet', live: true },
+  open: { label: 'Sesi Aktif', tone: 'violet' },
   closed: { label: 'Tertutup', tone: 'neutral' },
 };
 
 export function LegacyStatusBadge({ status }: { status: string }) {
   const entry = legacyStatusMap[status] ?? legacyStatusMap.scheduled;
-  return (
-    <StatusBadge
-      label={entry.label}
-      tone={entry.tone}
-      live={entry.live}
-      dot={entry.tone === 'violet'}
-    />
-  );
+  return <StatusBadge label={entry.label} tone={entry.tone} />;
 }
 
 const styles = StyleSheet.create({
@@ -103,18 +76,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.full,
     borderWidth: 1,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  dotLive: { backgroundColor: colors.lime },
   label: { ...typography.caption, fontSize: 12, fontWeight: '700' },
 });
 

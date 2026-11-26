@@ -2,8 +2,6 @@ import { StackActions, useNavigation } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-
-
 import { memo, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import PagerView, {
@@ -36,10 +34,7 @@ import {
   StudentSessionDetailScreen,
 } from '../features/student';
 
-import {
-  BarcodeScanScreen,
-  StudentCheckInScreen,
-} from '../features/checkin';
+import { BarcodeScanScreen, StudentCheckInScreen } from '../features/checkin';
 
 import {
   AssistantLabFormScreen,
@@ -52,11 +47,18 @@ import {
   StudentLeaveListScreen,
   StudentLeaveRequestFormScreen,
 } from '../features/leave';
+import {
+  StudentFineDetailScreen,
+  StudentFineListScreen,
+  StudentPaymentHistoryScreen,
+} from '../features/fines';
 
 import { LabMapsScreen } from '../features/maps';
 
+import { isAssistantRole } from '../domain/asprakScope';
 import { db } from '../services/firebase';
 
+import { DockTabActiveProvider } from '../shared/navigation/useTransientFeedback';
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
 
 import {
@@ -150,12 +152,19 @@ const DOCK_PAGE_ROUTES = Object.fromEntries(
 type DockPageProps = {
   tab: DockTabKey;
   role: ActorRole;
-  navigation: NativeStackScreenProps<RootStackParamList, 'DockTabs'>['navigation'];
+  navigation: NativeStackScreenProps<
+    RootStackParamList,
+    'DockTabs'
+  >['navigation'];
 };
 
 // Memoized so a tab change (a `setParams` on DockTabs) does not re-render
 // every mounted page.
-const DockPage = memo(function DockPage({ tab, role, navigation }: DockPageProps) {
+const DockPage = memo(function DockPage({
+  tab,
+  role,
+  navigation,
+}: DockPageProps) {
   const nav = navigation as any;
   const route = DOCK_PAGE_ROUTES[tab] as any;
   if (tab === 'Home') return <HomeScreen navigation={nav} route={route} />;
@@ -224,7 +233,9 @@ function DockTabsScreen({
       {DOCK_ORDER.map((key) => (
         <View key={key} style={styles.page} collapsable={false}>
           {mounted.has(key) ? (
-            <DockPage tab={key} role={actorRole} navigation={navigation} />
+            <DockTabActiveProvider active={key === activeTab}>
+              <DockPage tab={key} role={actorRole} navigation={navigation} />
+            </DockTabActiveProvider>
           ) : null}
         </View>
       ))}
@@ -270,7 +281,7 @@ export function AppNavigator() {
   const actorRole = useActorRole();
 
   const navigation = useNavigation() as unknown as {
-    navigate: (name: string | keyof RootStackParamList) => void;
+    navigate: (name: string | keyof RootStackParamList, params?: any) => void;
     dispatch: (action: ReturnType<typeof StackActions.popTo>) => void;
     addListener: (event: 'state', cb: (e: any) => void) => () => void;
     getState: () => { index?: number; routes: { name: string }[] } | undefined;
@@ -284,12 +295,15 @@ export function AppNavigator() {
       const name = route?.name ?? 'DockTabs';
       if (name === 'DockTabs') {
         const tab = route?.params?.tab;
-        if (tab === 'Schedule' || tab === 'Attendance' || tab === 'Profile') return setActiveKey(tab);
+        if (tab === 'Schedule' || tab === 'Attendance' || tab === 'Profile')
+          return setActiveKey(tab);
         return setActiveKey('Home');
       }
       if (name === 'Home' || name === 'Profile') return setActiveKey(name);
-      if (name === DOCK_ROUTE_FOR_POV[actorRole].Schedule) return setActiveKey('Schedule');
-      if (name === DOCK_ROUTE_FOR_POV[actorRole].Attendance) return setActiveKey('Attendance');
+      if (name === DOCK_ROUTE_FOR_POV[actorRole].Schedule)
+        return setActiveKey('Schedule');
+      if (name === DOCK_ROUTE_FOR_POV[actorRole].Attendance)
+        return setActiveKey('Attendance');
       // Non-dock route: keep origin tab active until user picks another dock tab.
     };
     sync(navigation.getState?.());
@@ -301,7 +315,11 @@ export function AppNavigator() {
   // every tab page on each tap.
   const onTabPress = (key: string) => {
     navigation.dispatch(
-      StackActions.popTo('DockTabs', { tab: key as DockTabKey }, { merge: true }),
+      StackActions.popTo(
+        'DockTabs',
+        { tab: key as DockTabKey },
+        { merge: true },
+      ),
     );
   };
 
@@ -334,251 +352,273 @@ export function AppNavigator() {
   }
 
   return (
-    <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
+    <AssistantSessionsProvider enabled={isAssistantRole(user?.role)}>
       <StudentAttendanceProvider enabled={user?.role === 'student'}>
         <LeaveProvider db={db} user={user}>
           <NotificationInboxProvider>
-          <View style={styles.root}>
-            <Stack.Navigator
-              initialRouteName="DockTabs"
+            <View style={styles.root}>
+              <View style={styles.content}>
+                <Stack.Navigator
+                  initialRouteName="DockTabs"
 
-              screenOptions={STACK_SCREEN_OPTIONS}
-            >
-              <Stack.Screen
-                name="DockTabs"
-                component={DockTabsScreen}
-                options={{ headerShown: false }}
+                  screenOptions={STACK_SCREEN_OPTIONS}
+                >
+                  <Stack.Screen
+                    name="DockTabs"
+                    component={DockTabsScreen}
+                    options={{ headerShown: false }}
+                  />
+
+                  <Stack.Screen
+                    name="Home"
+
+                    component={HomeScreen}
+
+                    options={{
+                      title: 'Beranda',
+
+                      headerRight: () => null,
+
+                      headerBackTitle: '',
+
+                      headerShown: false,
+                    }}
+                  />
+
+                  <Stack.Group screenOptions={{ title: 'Praktikan' }}>
+                    <Stack.Screen
+                      name="StudentSchedule"
+
+                      component={StudentScheduleScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentSessionDetail"
+
+                      component={StudentSessionDetailScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentCheckIn"
+
+                      component={StudentCheckInScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentAttendanceHistory"
+
+                      component={StudentAttendanceHistoryScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentAllSessions"
+
+                      component={StudentAllSessionsScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentAllAttendance"
+
+                      component={StudentAllAttendanceScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentLeaveRequestForm"
+
+                      component={StudentLeaveRequestFormScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentLeaveList"
+
+                      component={StudentLeaveListScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentFineList"
+                      component={StudentFineListScreen}
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentFineDetail"
+                      component={StudentFineDetailScreen}
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentPaymentHistory"
+                      component={StudentPaymentHistoryScreen}
+                      options={{ headerShown: false }}
+                    />
+                  </Stack.Group>
+
+                  <Stack.Group screenOptions={{ headerShown: false }}>
+                    <Stack.Screen
+                      name="AssistantSchedule"
+
+                      component={AssistantScheduleScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantSessionDetail"
+
+                      component={AssistantSessionDetailScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantSessionQr"
+                      component={AssistantSessionQrScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantAttendanceRoster"
+
+                      component={AssistantAttendanceRosterScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantAllSessions"
+
+                      component={AssistantAllSessionsScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantAllAttendance"
+
+                      component={AssistantAllAttendanceScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantClassList"
+
+                      component={AssistantClassListScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantClassForm"
+
+                      component={AssistantClassFormScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantSessionForm"
+
+                      component={AssistantSessionFormScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantLeaveReviewList"
+
+                      component={AssistantLeaveReviewListScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantLabList"
+                      component={AssistantLabListScreen}
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantLabForm"
+                      component={AssistantLabFormScreen}
+                      options={{ headerShown: false }}
+                    />
+                  </Stack.Group>
+
+                  <Stack.Screen
+                    name="Calendar"
+
+                    component={CalendarScreen}
+
+                    options={{ headerShown: false }}
+                  />
+
+                  <Stack.Screen
+                    name="Profile"
+
+                    component={ProfileScreen}
+
+                    options={{ headerShown: false }}
+                  />
+
+                  <Stack.Screen
+                    name="ProfileEdit"
+
+                    component={ProfileEditScreen}
+
+                    options={{ headerShown: false }}
+                  />
+
+                  <Stack.Screen
+                    name="Notifications"
+
+                    component={NotificationsScreen}
+
+                    options={{ headerShown: false }}
+                  />
+
+                  <Stack.Screen
+                    name="LabMaps"
+
+                    component={LabMapsScreen}
+
+                    options={{ headerShown: false }}
+                  />
+
+                  <Stack.Screen
+                    name="BarcodeScan"
+                    component={BarcodeScanScreen}
+                    options={{ headerShown: false }}
+                  />
+                </Stack.Navigator>
+              </View>
+
+              <BottomDock
+                tabs={DOCK_TABS}
+
+                activeKey={activeKey}
+
+                onTabPress={onTabPress}
+
+                fab={
+                  // Asisten menampilkan kode presensi, tidak ikut presensi.
+                  actorRole === 'praktikan'
+                    ? {
+                        glyph: 'camera',
+                        label: 'Scan presensi',
+                        onPress: () => {
+                          navigation.navigate('BarcodeScan', {
+                            fromDock: true,
+                          });
+                        },
+                      }
+                    : undefined
+                }
               />
-
-              <Stack.Screen
-                name="Home"
-
-                component={HomeScreen}
-
-                options={{
-                  title: 'Beranda',
-
-                  headerRight: () => null,
-
-                  headerBackTitle: '',
-
-                  headerShown: false,
-                }}
-              />
-
-              <Stack.Group screenOptions={{ title: 'Praktikan' }}>
-                <Stack.Screen
-                  name="StudentSchedule"
-
-                  component={StudentScheduleScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="StudentSessionDetail"
-
-                  component={StudentSessionDetailScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="StudentCheckIn"
-
-                  component={StudentCheckInScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="StudentAttendanceHistory"
-
-                  component={StudentAttendanceHistoryScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="StudentAllSessions"
-
-                  component={StudentAllSessionsScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="StudentAllAttendance"
-
-                  component={StudentAllAttendanceScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="StudentLeaveRequestForm"
-
-                  component={StudentLeaveRequestFormScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="StudentLeaveList"
-
-                  component={StudentLeaveListScreen}
-
-                  options={{ headerShown: false }}
-                />
-              </Stack.Group>
-
-              <Stack.Group screenOptions={{ headerShown: false }}>
-                <Stack.Screen
-                  name="AssistantSchedule"
-
-                  component={AssistantScheduleScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="AssistantSessionDetail"
-
-                  component={AssistantSessionDetailScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantSessionQr"
-                  component={AssistantSessionQrScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantAttendanceRoster"
-
-                  component={AssistantAttendanceRosterScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="AssistantAllSessions"
-
-                  component={AssistantAllSessionsScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantAllAttendance"
-
-                  component={AssistantAllAttendanceScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantClassList"
-
-                  component={AssistantClassListScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantClassForm"
-
-                  component={AssistantClassFormScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantSessionForm"
-
-                  component={AssistantSessionFormScreen}
-                />
-
-                <Stack.Screen
-                  name="AssistantLeaveReviewList"
-
-                  component={AssistantLeaveReviewListScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="AssistantLabList"
-                  component={AssistantLabListScreen}
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="AssistantLabForm"
-                  component={AssistantLabFormScreen}
-                  options={{ headerShown: false }}
-                />
-              </Stack.Group>
-
-              <Stack.Screen
-                name="Calendar"
-
-                component={CalendarScreen}
-
-                options={{ headerShown: false }}
-              />
-
-              <Stack.Screen
-                name="Profile"
-
-                component={ProfileScreen}
-
-                options={{ headerShown: false }}
-              />
-
-              <Stack.Screen
-                name="ProfileEdit"
-
-                component={ProfileEditScreen}
-
-                options={{ headerShown: false }}
-              />
-
-              <Stack.Screen
-                name="Notifications"
-
-                component={NotificationsScreen}
-
-                options={{ headerShown: false }}
-              />
-
-              <Stack.Screen
-                name="LabMaps"
-
-                component={LabMapsScreen}
-
-                options={{ headerShown: false }}
-              />
-
-              <Stack.Screen
-                name="BarcodeScan"
-                component={BarcodeScanScreen}
-                options={{ headerShown: false }}
-              />
-            </Stack.Navigator>
-
-            <BottomDock
-              tabs={DOCK_TABS}
-
-              activeKey={activeKey}
-
-              onTabPress={onTabPress}
-
-              fab={
-                // Asisten menampilkan kode presensi, tidak ikut presensi.
-                actorRole === 'praktikan'
-                  ? {
-                      glyph: 'camera',
-                      label: 'Scan presensi',
-                      onPress: () => {
-                        navigation.navigate('BarcodeScan');
-                      },
-                    }
-                  : undefined
-              }
-            />
-          </View>
+            </View>
           </NotificationInboxProvider>
         </LeaveProvider>
       </StudentAttendanceProvider>
@@ -588,6 +628,7 @@ export function AppNavigator() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
+  content: { flex: 1 },
 
   pager: { flex: 1 },
 

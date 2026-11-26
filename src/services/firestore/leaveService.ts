@@ -2,15 +2,16 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   setDoc,
+  updateDoc,
   where,
   type Firestore,
 } from 'firebase/firestore';
+import { canSubmitLeave } from '../../domain/leaveRules';
 import type {
   ActionFailureReason,
   LeaveRequest,
@@ -19,6 +20,7 @@ import type {
 } from '../../domain/types';
 import { classifyLeaveReason } from '../../../ai/leaveClassifier';
 import { chunkIds } from './batching';
+import { waiveFineIfPresent } from './fineService';
 
 export class LeaveError extends Error {
   constructor(
@@ -170,32 +172,34 @@ export function createLeaveService(db: Firestore) {
       requireRole(user, 'student');
       const reason = validateReason(input);
       const session = await this.getSession(sessionId);
+      if (!canSubmitLeave(session)) {
+        throw new LeaveError(
+          'invalid_status',
+          'Izin hanya bisa diajukan untuk sesi yang belum selesai.',
+        );
+      }
       if (!session.classId || !session.participantIds?.includes(user.uid))
         throw new LeaveError(
           'forbidden',
           'Anda tidak terdaftar pada sesi ini.',
         );
-      const checkDuplicate = async () => {
-        const existing = await getDocs(
-          query(leaves, where('studentId', '==', user.uid)),
-        );
-        if (
-          existing.docs.some(
-            (item) =>
-              item.data().sessionId === sessionId &&
-              ['pending', 'approved'].includes(item.data().status),
-          )
-        )
+      // ID deterministik: satu izin per praktikan per sesi, diverifikasi rules.
+      const ref = doc(leaves, `${sessionId}_${user.uid}`);
+      const existing = await getDoc(ref);
+      if (existing.exists()) {
+        const status = existing.data().status;
+        if (status === 'pending' || status === 'approved')
           throw new LeaveError(
             'duplicate_leave_request',
             'Sudah ada izin menunggu atau diterima untuk sesi ini.',
           );
-      };
-      await checkDuplicate();
+        if (status !== 'rejected')
+          throw new LeaveError(
+            'invalid_status',
+            'Pengajuan izin tidak dapat dilanjutkan.',
+          );
+      }
       const aiPrediction = await classifyLeaveReason(reason);
-      await checkDuplicate();
-      // Auto ID follows the shared contract. Cross-device uniqueness needs a server contract from Dev 2/PM.
-      const ref = doc(leaves);
       const request: LeaveRequest = {
         id: ref.id,
         sessionId,
@@ -205,6 +209,7 @@ export function createLeaveService(db: Firestore) {
         sessionStartsAt: session.startsAt,
         studentId: user.uid,
         studentName: user.displayName,
+        ...(user.nim ? { studentNim: user.nim } : {}),
         reason,
         aiPrediction,
         status: 'pending',
@@ -213,7 +218,21 @@ export function createLeaveService(db: Firestore) {
         reviewedAt: null,
         createdAt: new Date().toISOString(),
       };
-      await setDoc(ref, request);
+      if (existing.exists()) {
+        // Izin ditolak boleh diajukan ulang: update status, bukan dokumen baru.
+        await updateDoc(ref, {
+          reason,
+          aiPrediction,
+          status: 'pending',
+          decisionNote: null,
+          reviewedBy: null,
+          reviewedAt: null,
+          createdAt: request.createdAt,
+          ...(user.nim ? { studentNim: user.nim } : {}),
+        });
+      } else {
+        await setDoc(ref, request);
+      }
       return request;
     },
     async review(
@@ -223,12 +242,14 @@ export function createLeaveService(db: Firestore) {
       decisionNote?: string,
     ) {
       requireRole(user, 'assistant');
+      let targetLeave: LeaveRequest | undefined;
       await runTransaction(db, async (transaction) => {
         const ref = doc(leaves, id);
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists())
           throw new LeaveError('leave_not_found', 'Pengajuan tidak ditemukan.');
         const leave = snapshot.data() as LeaveRequest;
+        targetLeave = leave;
         const session = await transaction.get(
           doc(db, 'sessions', leave.sessionId),
         );
@@ -252,6 +273,19 @@ export function createLeaveService(db: Firestore) {
           reviewedAt: new Date().toISOString(),
         });
       });
+
+      // Pembebasan tagihan denda keterlambatan jika izin disetujui (SRS-4.11 & Kontrak K6)
+      if (status === 'approved' && targetLeave) {
+        void waiveFineIfPresent(
+          db,
+          targetLeave.sessionId,
+          targetLeave.studentId,
+          {
+            ...targetLeave,
+            status: 'approved',
+          },
+        );
+      }
     },
   };
 }

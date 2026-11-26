@@ -78,6 +78,21 @@ await adminAuth.createUser({
   email: 'budi@rules.test',
   password: PASSWORD,
 });
+await adminAuth.createUser({
+  uid: 'invited',
+  email: 'invited@rules.test',
+  password: PASSWORD,
+});
+await adminAuth.createUser({
+  uid: 'asistenB',
+  email: 'asistenB@rules.test',
+  password: PASSWORD,
+});
+await adminAuth.createUser({
+  uid: 'stranger',
+  email: 'stranger@rules.test',
+  password: PASSWORD,
+});
 await adminDb.doc('users/asisten').set({
   uid: 'asisten',
   role: 'assistant',
@@ -92,9 +107,36 @@ await adminDb.doc('users/budi').set({
   email: 'budi@rules.test',
   createdAt: lab.createdAt,
 });
+await adminDb.doc('users/asistenB').set({
+  uid: 'asistenB',
+  role: 'assistant',
+  displayName: 'Asisten B',
+  email: 'asistenB@rules.test',
+  createdAt: lab.createdAt,
+});
+await adminDb.doc('assistant_invites/invited@rules.test').set({
+  createdAt: lab.createdAt,
+});
 const { id: labId, ...labDoc } = lab;
 await adminDb.doc(`labs/${labId}`).set(labDoc);
-await adminDb.doc('sessions/s1').set({
+const classDoc = () => ({
+  courseName: 'Praktikum',
+  groupName: 'A',
+  participantIds: ['budi'],
+  assistantIds: ['asisten'],
+  createdBy: 'asisten',
+  createdAt: lab.createdAt,
+  updatedAt: lab.updatedAt,
+});
+await adminDb.doc('classes/c1').set(classDoc());
+await adminDb.doc('classes/c2').set(classDoc());
+await adminDb
+  .doc('classes/cB')
+  .set({ ...classDoc(), assistantIds: ['asistenB'] });
+
+const minuteMs = 60_000;
+const nowMs = Date.now();
+const sessionDoc = (startMs: number, endMs: number, status: string) => ({
   classId: 'c1',
   courseName: 'Praktikum',
   groupName: 'A',
@@ -102,12 +144,47 @@ await adminDb.doc('sessions/s1').set({
   labId,
   participantIds: ['budi'],
   assistantIds: ['asisten'],
-  startsAt: '2026-01-01T01:00:00.000Z',
-  endsAt: '2026-01-01T03:00:00.000Z',
-  status: 'open',
-  openedAt: '2026-01-01T01:00:00.000Z',
-  closedAt: null,
+  startsAt: new Date(startMs).toISOString(),
+  endsAt: new Date(endMs).toISOString(),
+  startsAtMs: startMs,
+  endsAtMs: endMs,
+  status,
+  openedAt: status === 'scheduled' ? null : new Date(startMs).toISOString(),
+  closedAt:
+    status === 'closed' ? new Date(startMs + minuteMs).toISOString() : null,
   createdBy: 'asisten',
+});
+await adminDb
+  .doc('sessions/s1')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'open'));
+await adminDb
+  .doc('sessions/s2-early')
+  .set(sessionDoc(nowMs + 60 * minuteMs, nowMs + 120 * minuteMs, 'open'));
+await adminDb
+  .doc('sessions/s3-late')
+  .set(sessionDoc(nowMs - 180 * minuteMs, nowMs - 120 * minuteMs, 'open'));
+await adminDb
+  .doc('sessions/s4-future')
+  .set(sessionDoc(nowMs + 60 * minuteMs, nowMs + 120 * minuteMs, 'scheduled'));
+await adminDb
+  .doc('sessions/s5-now')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'scheduled'));
+await adminDb
+  .doc('sessions/s6-closed')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'closed'));
+await adminDb
+  .doc('sessions/s7-leave-closed')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'closed'));
+await adminDb
+  .doc('sessions/s8-edit')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'scheduled'));
+await adminDb
+  .doc('sessions/s9-cancel')
+  .set(sessionDoc(nowMs + 60 * minuteMs, nowMs + 120 * minuteMs, 'scheduled'));
+await adminDb.doc('sessions/sB').set({
+  ...sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'scheduled'),
+  assistantIds: ['asistenB'],
+  classId: 'cB',
 });
 
 const app = initializeApp({ projectId, apiKey: 'emulator' });
@@ -124,7 +201,9 @@ const north = (meters: number) => lab.location.latitude - meters / 111320;
 type Case = {
   label: string;
   fix: DeviceFix;
+  sessionId?: string;
   sentDistance?: number;
+  studentNim?: string;
   expected: 'allowed' | 'denied';
 };
 
@@ -184,50 +263,101 @@ const cases: Case[] = [
     },
     expected: 'denied',
   },
+  {
+    label: 'NIM praktikan valid',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    studentNim: 'A123456',
+    expected: 'allowed',
+  },
+  {
+    label: 'UID dipakai sebagai NIM',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    studentNim: '3fQx9aK2',
+    expected: 'denied',
+  },
+  {
+    label: 'jauh sebelum jadwal',
+    sessionId: 's2-early',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    expected: 'denied',
+  },
+  {
+    label: 'setelah sesi selesai',
+    sessionId: 's3-late',
+    fix: {
+      latitude: north(15),
+      longitude: lab.location.longitude,
+      accuracyMeters: 15,
+    },
+    expected: 'denied',
+  },
 ];
 
 let failures = 0;
 for (const testCase of cases) {
-  await adminDb.doc('attendance/s1_budi').delete();
+  const sid = testCase.sessionId ?? 's1';
+  const attendanceId = `${sid}_budi`;
+  await adminDb.doc(`attendance/${attendanceId}`).delete();
 
-  await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
   const geofence = evaluateGeofence(testCase.fix, lab);
-  let result: 'allowed' | 'denied' = 'allowed';
+  const payload = {
+    id: attendanceId,
+    sessionId: sid,
+    classId: 'c1',
+    studentId: 'budi',
+    studentName: 'Budi',
+    ...(testCase.studentNim ? { studentNim: testCase.studentNim } : {}),
+    checkedInAt: new Date().toISOString(),
+    deviceLocation: {
+      latitude: testCase.fix.latitude,
+      longitude: testCase.fix.longitude,
+      accuracyMeters: testCase.fix.accuracyMeters ?? null,
+    },
+    distanceMeters: testCase.sentDistance ?? geofence.distanceMeters,
+  };
+
+  // Presensi kini hanya lewat callable; tulisan langsung klien selalu ditolak.
+  await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+  let clientWrite: 'allowed' | 'denied' = 'allowed';
   try {
-    await setDoc(doc(db, 'attendance', 's1_budi'), {
-      id: 's1_budi',
-      sessionId: 's1',
-      classId: 'c1',
-      studentId: 'budi',
-      studentName: 'Budi',
-      checkedInAt: new Date().toISOString(),
-      deviceLocation: {
-        latitude: testCase.fix.latitude,
-        longitude: testCase.fix.longitude,
-        accuracyMeters: testCase.fix.accuracyMeters ?? null,
-      },
-      distanceMeters: testCase.sentDistance ?? geofence.distanceMeters,
-    });
+    await setDoc(doc(db, 'attendance', attendanceId), payload);
   } catch {
-    result = 'denied';
+    clientWrite = 'denied';
   }
   await signOut(auth);
+
+  // Admin SDK mensimulasikan hasil callable yang valid.
+  if (testCase.expected === 'allowed') {
+    await adminDb.doc(`attendance/${attendanceId}`).set(payload);
+  }
 
   await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
   const roster = await getDocs(
     query(
       collection(db, 'attendance'),
-      where('sessionId', '==', 's1'),
+      where('sessionId', '==', sid),
       orderBy('checkedInAt', 'asc'),
     ),
   );
   await signOut(auth);
 
   const expectedRoster = testCase.expected === 'allowed' ? 1 : 0;
-  const pass = result === testCase.expected && roster.size === expectedRoster;
+  const pass = clientWrite === 'denied' && roster.size === expectedRoster;
   if (!pass) failures += 1;
   console.log(
-    `${pass ? '✅' : '❌'} ${testCase.label}: server ${result} (harap ${testCase.expected}), rekap asisten ${roster.size}`,
+    `${pass ? '✅' : '❌'} ${testCase.label}: tulis klien ${clientWrite} (harap denied), rekap asisten ${roster.size}`,
   );
 }
 
@@ -251,6 +381,348 @@ const attempt = async (action: () => Promise<unknown>) => {
     return 'denied' as const;
   }
 };
+
+const check = (
+  label: string,
+  result: string,
+  expected: 'allowed' | 'denied',
+) => {
+  const pass = result === expected;
+  if (!pass) failures += 1;
+  console.log(
+    `${pass ? '✅' : '❌'} role: ${label}: server ${result} (harap ${expected})`,
+  );
+};
+
+// --- Buka sesi hanya lewat callable; klien tidak boleh menulis status open ---
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+const openCases: [string, string, 'allowed' | 'denied'][] = [
+  ['buka sesi jauh dari jadwal', 's4-future', 'denied'],
+  ['buka sesi dalam jendela dari klien', 's5-now', 'denied'],
+  ['buka ulang sesi tertutup dari klien', 's6-closed', 'denied'],
+];
+for (const [label, sessionId, expected] of openCases) {
+  check(
+    label,
+    await attempt(() =>
+      updateDoc(doc(db, 'sessions', sessionId), {
+        status: 'open',
+        openedAt: new Date().toISOString(),
+      }),
+    ),
+    expected,
+  );
+}
+check(
+  'buka sesi lewat server (Admin SDK)',
+  await attempt(() =>
+    adminDb.doc('sessions/s5-now').update({
+      status: 'open',
+      openedAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
+await signOut(auth);
+
+// --- Edit & batal sesi: hanya scheduled, patch sesuai status ---
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+const startedMs = nowMs - 10 * minuteMs;
+const endedMs = nowMs + 50 * minuteMs;
+check(
+  'edit sesi scheduled',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's8-edit'), {
+      title: 'Pertemuan 1',
+      startsAt: new Date(startedMs).toISOString(),
+      endsAt: new Date(endedMs).toISOString(),
+      startsAtMs: startedMs,
+      endsAtMs: endedMs,
+      updatedAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
+check(
+  'pindah kelas saat edit menyalin data kelas',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's8-edit'), {
+      classId: 'c2',
+      courseName: 'Praktikum',
+      groupName: 'A',
+      participantIds: ['budi'],
+      assistantIds: ['asisten'],
+      updatedAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
+check(
+  'lab tidak bisa diubah saat sesi open',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's1'), {
+      labId,
+      lab: lab.name,
+    }),
+  ),
+  'denied',
+);
+check(
+  'batalkan sesi scheduled',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's9-cancel'), {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
+check(
+  'sesi batal tidak bisa dibuka lagi',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's9-cancel'), {
+      status: 'open',
+      openedAt: new Date().toISOString(),
+    }),
+  ),
+  'denied',
+);
+check(
+  'sesi open tidak bisa dibatalkan',
+  await attempt(() =>
+    updateDoc(doc(db, 'sessions', 's1'), {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+    }),
+  ),
+  'denied',
+);
+check(
+  'sesi tidak bisa dihapus',
+  await attempt(() => deleteDoc(doc(db, 'sessions', 's1'))),
+  'denied',
+);
+await signOut(auth);
+
+// --- Izin: jendela sesi, ID deterministik, dan konflik dengan presensi ---
+const leaveDoc = (sessionId: string, status: string) => ({
+  sessionId,
+  classId: 'c1',
+  courseName: 'Praktikum',
+  groupName: 'A',
+  sessionStartsAt: new Date(nowMs - 10 * minuteMs).toISOString(),
+  studentId: 'budi',
+  studentName: 'Budi',
+  studentNim: '12345678',
+  reason: 'Sakit demam',
+  aiPrediction: { category: 'sakit', confidence: 0.9 },
+  status,
+  decisionNote: null,
+  reviewedBy: null,
+  reviewedAt: null,
+  createdAt: new Date().toISOString(),
+});
+const attendanceStub = {
+  sessionId: 's1',
+  studentId: 'budi',
+  studentNim: '12345678',
+  studentName: 'Budi',
+  checkedInAt: new Date().toISOString(),
+};
+const resetLeaveFixtures = async () => {
+  const leaves = await adminDb.collection('leave_requests').get();
+  await Promise.all(leaves.docs.map((item) => item.ref.delete()));
+  await adminDb.doc('attendance/s1_budi').delete();
+};
+
+await resetLeaveFixtures();
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'izin sesi masih berjalan',
+  await attempt(() =>
+    setDoc(doc(db, 'leave_requests', 's1_budi'), leaveDoc('s1', 'pending')),
+  ),
+  'allowed',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'izin sesi yang sudah ditutup',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'leave_requests', 's7-leave-closed_budi'),
+      leaveDoc('s7-leave-closed', 'pending'),
+    ),
+  ),
+  'denied',
+);
+check(
+  'izin sesi yang sudah lewat jadwal',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'leave_requests', 's3-late_budi'),
+      leaveDoc('s3-late', 'pending'),
+    ),
+  ),
+  'denied',
+);
+check(
+  'izin dengan ID acak',
+  await attempt(() =>
+    setDoc(doc(db, 'leave_requests', 'acak-1'), leaveDoc('s1', 'pending')),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('attendance/s1_budi').set(attendanceStub);
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'izin setelah praktikan presensi',
+  await attempt(() =>
+    setDoc(doc(db, 'leave_requests', 's1_budi'), leaveDoc('s1', 'pending')),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'rejected'));
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'pengajuan ulang izin yang ditolak',
+  await attempt(() =>
+    updateDoc(doc(db, 'leave_requests', 's1_budi'), {
+      reason: 'Izin baru',
+      aiPrediction: { category: 'sakit', confidence: 0.9 },
+      status: 'pending',
+      decisionNote: null,
+      reviewedBy: null,
+      reviewedAt: null,
+      createdAt: new Date().toISOString(),
+      studentNim: '12345678',
+    }),
+  ),
+  'allowed',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'pending'));
+await adminDb.doc('attendance/s1_budi').set(attendanceStub);
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'izin tidak disetujui bila presensi ada',
+  await attempt(() =>
+    updateDoc(doc(db, 'leave_requests', 's1_budi'), {
+      status: 'approved',
+      reviewedBy: 'asisten',
+      reviewedAt: new Date().toISOString(),
+      decisionNote: 'Hadir',
+    }),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'pending'));
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'izin disetujui tanpa presensi',
+  await attempt(() =>
+    updateDoc(doc(db, 'leave_requests', 's1_budi'), {
+      status: 'approved',
+      reviewedBy: 'asisten',
+      reviewedAt: new Date().toISOString(),
+      decisionNote: 'Disetujui',
+    }),
+  ),
+  'allowed',
+);
+await signOut(auth);
+
+// --- Scope asisten: hanya sesi yang dikelola yang boleh dibaca ---
+await resetLeaveFixtures();
+await adminDb.doc('attendance/s1_budi').set(attendanceStub);
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'pending'));
+
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'asisten A baca presensi sesinya',
+  await attempt(() => getDoc(doc(db, 'attendance', 's1_budi'))),
+  'allowed',
+);
+check(
+  'asisten A list presensi sesinya',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'attendance'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'allowed',
+);
+check(
+  'asisten A baca izin sesinya',
+  await attempt(() => getDoc(doc(db, 'leave_requests', 's1_budi'))),
+  'allowed',
+);
+check(
+  'asisten A list izin sesinya',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'leave_requests'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'allowed',
+);
+check(
+  'asisten tidak boleh query seluruh users',
+  await attempt(() =>
+    getDocs(query(collection(db, 'users'), where('role', '==', 'student'))),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'asistenB@rules.test', PASSWORD);
+check(
+  'asisten B tidak baca presensi sesi A',
+  await attempt(() => getDoc(doc(db, 'attendance', 's1_budi'))),
+  'denied',
+);
+check(
+  'asisten B tidak list presensi sesi A',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'attendance'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'denied',
+);
+check(
+  'asisten B tidak baca izin sesi A',
+  await attempt(() => getDoc(doc(db, 'leave_requests', 's1_budi'))),
+  'denied',
+);
+check(
+  'asisten B tidak list izin sesi A',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'leave_requests'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'denied',
+);
+check(
+  'asisten B tetap bisa baca profil praktikan',
+  await attempt(() => getDoc(doc(db, 'users', 'budi'))),
+  'allowed',
+);
+await signOut(auth);
 
 await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
 const inboxCases: [string, () => Promise<unknown>, 'allowed' | 'denied'][] = [
@@ -305,6 +777,71 @@ for (const [label, action, expected] of inboxCases) {
     `${pass ? '✅' : '❌'} inbox: ${label}: server ${result} (harap ${expected})`,
   );
 }
+await signOut(auth);
+
+// --- Role asisten hanya bisa diberikan lewat undangan admin ---
+const profile = (uid: string, email: string, role: string) => ({
+  uid,
+  email,
+  role,
+  displayName: uid,
+  createdAt: lab.createdAt,
+});
+
+await signInWithEmailAndPassword(auth, 'stranger@rules.test', PASSWORD);
+check(
+  'user tanpa undangan daftar sebagai praktikan',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'users', 'stranger'),
+      profile('stranger', 'stranger@rules.test', 'student'),
+    ),
+  ),
+  'allowed',
+);
+check(
+  'user tanpa undangan mengangkat diri jadi asisten',
+  await attempt(() =>
+    updateDoc(doc(db, 'users', 'stranger'), { role: 'assistant' }),
+  ),
+  'denied',
+);
+check(
+  'baca undangan orang lain',
+  await attempt(() =>
+    getDoc(doc(db, 'assistant_invites', 'invited@rules.test')),
+  ),
+  'denied',
+);
+check(
+  'menulis undangan sendiri',
+  await attempt(() =>
+    setDoc(doc(db, 'assistant_invites', 'stranger@rules.test'), {
+      createdAt: lab.createdAt,
+    }),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'invited@rules.test', PASSWORD);
+check(
+  'baca undangan sendiri',
+  await attempt(() =>
+    getDoc(doc(db, 'assistant_invites', 'invited@rules.test')),
+  ),
+  'allowed',
+);
+check(
+  'user dengan undangan daftar sebagai asisten',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'users', 'invited'),
+      profile('invited', 'invited@rules.test', 'assistant'),
+    ),
+  ),
+  'allowed',
+);
 await signOut(auth);
 
 console.log(

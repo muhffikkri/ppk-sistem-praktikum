@@ -34,8 +34,8 @@ const TYPO_KEYS = new Set([
   'fontWeight',
   'fontStyle',
 ]);
-const BANNED =
-  /\b(QR|Beacon|Geofence|Shift|SIAKAD|SSO|Bench|Meja)\b|\bdummy\b/i;
+// QR and geofence are in-scope Sprint 4 features; only out-of-scope copy is banned.
+const BANNED = /\b(Beacon|Shift|SIAKAD|SSO|Bench|Meja)\b|\bdummy\b/i;
 
 const toPosix = (file: string) =>
   path.relative(root, file).split(path.sep).join('/');

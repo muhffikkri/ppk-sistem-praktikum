@@ -8,20 +8,14 @@ import {
   Button,
   ConfirmSheet,
   EmptyState,
-  Header,
   InfoRow,
   Screen,
   spacing,
   StatCard,
   StatRow,
-  StatusBadge,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
-import {
-  sessionStatusLabel,
-  sessionStatusTone,
-} from './components/AssistantSessionCard';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 import { useAssistantSessionDetail } from './useAssistantSessionDetail';
 
@@ -34,22 +28,25 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
   const {
     session,
-    attendees,
+    recap,
     canOpen,
     canClose,
+    canEdit,
+    canCancel,
     statusHint,
     feedback,
     openSession,
     closeSession,
+    cancelSession,
     dismissFeedback,
   } = useAssistantSessionDetail(sessionId);
-  const [sheet, setSheet] = useState<'open' | 'close' | null>(null);
+  const [sheet, setSheet] = useState<'open' | 'close' | 'cancel' | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           icon="alert-circle-outline"
           title="Sesi tidak ditemukan"
@@ -59,19 +56,16 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
     );
   }
 
-  const totalParticipants = Math.max(
-    session.participantIds?.length ?? 0,
-    attendees.length,
-  );
-
   const confirmAction = async () => {
     if (!sheet) return;
     setSubmitting(true);
     try {
       if (sheet === 'open') {
         await openSession();
-      } else {
+      } else if (sheet === 'close') {
         await closeSession();
+      } else if (sheet === 'cancel') {
+        await cancelSession();
       }
     } finally {
       setSubmitting(false);
@@ -81,16 +75,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar
-        onBack={() => navigation.goBack()}
-        trailing={
-          <StatusBadge
-            label={sessionStatusLabel[session.status]}
-            tone={sessionStatusTone[session.status]}
-          />
-        }
-      />
-      <Header title={session.courseName} description={session.groupName} />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {feedback ? (
         <Banner
@@ -102,8 +87,21 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
       ) : null}
 
       <StatRow>
-        <StatCard variant="panel" value={attendees.length} label="Hadir" />
-        <StatCard variant="panel" value={totalParticipants} label="Peserta" />
+        <StatCard
+          variant="panel"
+          value={recap.summary.presentCount}
+          label="Hadir"
+        />
+        <StatCard
+          variant="panel"
+          value={recap.summary.excusedCount}
+          label="Izin"
+        />
+        <StatCard
+          variant="panel"
+          value={recap.summary.absentCount}
+          label="Belum hadir"
+        />
       </StatRow>
 
       <View style={styles.info}>
@@ -112,11 +110,21 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
           label="Waktu"
           value={formatTimeRange(session.startsAt, session.endsAt)}
         />
+        <InfoRow
+          label="Toleransi"
+          value={`${session.toleranceMinutes ?? 15} menit`}
+        />
         {session.openedAt ? (
           <InfoRow label="Dibuka" value={formatClock(session.openedAt)} />
         ) : null}
         {session.closedAt ? (
           <InfoRow label="Ditutup" value={formatClock(session.closedAt)} />
+        ) : null}
+        {session.cancelledAt ? (
+          <InfoRow
+            label="Dibatalkan"
+            value={formatClock(session.cancelledAt)}
+          />
         ) : null}
       </View>
 
@@ -142,8 +150,24 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
             onPress={() => setSheet('close')}
           />
         ) : null}
+        {canEdit ? (
+          <Button
+            label="Edit sesi"
+            variant="soft"
+            onPress={() =>
+              navigation.navigate('AssistantSessionForm', { sessionId })
+            }
+          />
+        ) : null}
+        {canCancel ? (
+          <Button
+            label="Batalkan sesi"
+            variant="destructive"
+            onPress={() => setSheet('cancel')}
+          />
+        ) : null}
         <Button
-          label={`Lihat rekap kehadiran (${attendees.length})`}
+          label={`Lihat rekap kehadiran (${recap.summary.presentCount}/${recap.summary.total})`}
           variant="soft"
           onPress={() =>
             navigation.navigate('AssistantAttendanceRoster', { sessionId })
@@ -153,14 +177,28 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
 
       <ConfirmSheet
         visible={sheet !== null}
-        title={sheet === 'open' ? 'Buka sesi sekarang?' : 'Tutup sesi?'}
+        title={
+          sheet === 'open'
+            ? 'Buka sesi sekarang?'
+            : sheet === 'cancel'
+              ? 'Batalkan sesi?'
+              : 'Tutup sesi?'
+        }
         description={
           sheet === 'open'
             ? `${session.courseName} · ${session.groupName} · ${formatTimeRange(session.startsAt, session.endsAt)}. Praktikan dapat langsung melakukan presensi.`
-            : `Praktikan tidak bisa presensi lagi. Tercatat ${attendees.length} dari ${totalParticipants} peserta.`
+            : sheet === 'cancel'
+              ? 'Sesi tetap terlihat di jadwal praktikan dengan status dibatalkan dan tidak bisa dibuka.'
+              : `Praktikan tidak bisa presensi lagi. Tercatat ${recap.summary.presentCount} dari ${recap.summary.total} peserta.`
         }
-        tone={sheet === 'close' ? 'danger' : 'default'}
-        confirmLabel={sheet === 'open' ? 'Buka sesi' : 'Tutup sesi'}
+        tone={sheet === 'close' || sheet === 'cancel' ? 'danger' : 'default'}
+        confirmLabel={
+          sheet === 'open'
+            ? 'Buka sesi'
+            : sheet === 'cancel'
+              ? 'Batalkan sesi'
+              : 'Tutup sesi'
+        }
         loading={submitting}
         onConfirm={() => {
           void confirmAction();

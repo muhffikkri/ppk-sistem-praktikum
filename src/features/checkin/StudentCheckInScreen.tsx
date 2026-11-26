@@ -11,13 +11,12 @@ import {
   CardContent,
   ConfirmSheet,
   EmptyState,
-  Header,
   LoadingState,
   Screen,
   SectionHeader,
   spacing,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { GeofenceStatusCard } from './GeofenceStatusCard';
 import { useStudentCheckIn } from './useStudentCheckIn';
@@ -25,7 +24,7 @@ import { useStudentCheckIn } from './useStudentCheckIn';
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentCheckIn'>;
 
 export function StudentCheckInScreen({ route, navigation }: Props) {
-  const { sessionId } = route.params;
+  const { sessionId, qrToken } = route.params;
   const {
     session,
     lab,
@@ -37,10 +36,11 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
     error,
     isAlreadyCheckedIn,
     isOpen,
+    leaveApproved,
     refreshLocation,
     performCheckIn,
     clearError,
-  } = useStudentCheckIn(sessionId);
+  } = useStudentCheckIn(sessionId, qrToken);
 
   const [confirmModal, setConfirmModal] = useState(false);
   const [successBanner, setSuccessBanner] = useState(false);
@@ -48,7 +48,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   if (loading && !session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <LoadingState label="Memuat sesi praktikum…" />
       </Screen>
     );
@@ -57,10 +57,29 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           title="Sesi tidak ditemukan"
           description="Sesi praktikum tidak tersedia atau telah dihapus."
+        />
+      </Screen>
+    );
+  }
+
+  if (!qrToken) {
+    return (
+      <Screen withDock={false}>
+        <BackButton onPress={() => navigation.goBack()} />
+        <EmptyState
+          icon="qr-code-outline"
+          title="Scan QR dulu"
+          description="Presensi hanya tercatat setelah memindai kode berputar yang ditampilkan asisten."
+          action={
+            <Button
+              label="Scan QR Presensi"
+              onPress={() => navigation.replace('BarcodeScan')}
+            />
+          }
         />
       </Screen>
     );
@@ -74,15 +93,17 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
     }
   };
 
-  const canCheckIn = isOpen && !isAlreadyCheckedIn && geofence?.status === 'inside';
+  const checkedIn = isAlreadyCheckedIn || successBanner;
+  const canCheckIn =
+    isOpen &&
+    !checkedIn &&
+    !leaveApproved &&
+    !loading &&
+    geofence?.status === 'inside';
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Presensi Lokasi"
-        description={`${session.courseName} — ${session.groupName}`}
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {error ? (
         <Banner
@@ -93,7 +114,23 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         />
       ) : null}
 
-      {successBanner || isAlreadyCheckedIn ? (
+      {error ? (
+        <Button
+          label="Scan ulang QR"
+          variant="outline"
+          onPress={() => navigation.replace('BarcodeScan')}
+        />
+      ) : null}
+
+      {leaveApproved && !checkedIn ? (
+        <Banner
+          tone="warning"
+          title="Izin sudah disetujui"
+          message="Presensi untuk sesi ini tidak diperlukan. Hubungi asisten bila ada perubahan status izin."
+        />
+      ) : null}
+
+      {checkedIn ? (
         <Banner
           tone="success"
           title="Presensi Berhasil"
@@ -112,28 +149,41 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           <CardContent>
             <View style={styles.detailGrid}>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Mata Kuliah</Text>
+                <Text variant="caption" tone="muted">
+                  Mata Kuliah
+                </Text>
                 <Text variant="captionStrong">{session.courseName}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Kelas & Jadwal</Text>
+                <Text variant="caption" tone="muted">
+                  Kelas & Jadwal
+                </Text>
                 <Text variant="captionStrong">
-                  {session.groupName} • {session.startsAt.slice(11, 16)}–{session.endsAt.slice(11, 16)}
+                  {session.groupName} • {session.startsAt.slice(11, 16)}–
+                  {session.endsAt.slice(11, 16)}
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Laboratorium</Text>
+                <Text variant="caption" tone="muted">
+                  Laboratorium
+                </Text>
                 <Text variant="captionStrong">
-                  {lab ? `${lab.name} (${lab.building})` : (session.lab ?? 'Tidak ditentukan')}
+                  {lab
+                    ? `${lab.name} (${lab.building})`
+                    : (session.lab ?? 'Tidak ditentukan')}
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Status Sesi</Text>
+                <Text variant="caption" tone="muted">
+                  Status Sesi
+                </Text>
                 <Text
                   variant="captionStrong"
                   tone={isOpen ? 'violet' : 'muted'}
                 >
-                  {isOpen ? 'Dibuka (Presensi Aktif)' : `Ditutup (${session.status})`}
+                  {isOpen
+                    ? 'Dibuka (Presensi Aktif)'
+                    : `Ditutup (${session.status})`}
                 </Text>
               </View>
             </View>
@@ -156,7 +206,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
 
       {/* Aksi Presensi */}
       <View style={styles.actionSection}>
-        {isAlreadyCheckedIn ? (
+        {checkedIn ? (
           <Button
             label="✓ Anda Sudah Hadir"
             variant="outline"
@@ -165,7 +215,13 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           />
         ) : (
           <Button
-            label={submitting ? 'Memproses Presensi…' : 'Presensi Sekarang'}
+            label={
+              submitting
+                ? 'Memproses Presensi…'
+                : leaveApproved
+                  ? 'Izin Disetujui'
+                  : 'Presensi Sekarang'
+            }
             variant="primary"
             loading={submitting}
             disabled={!canCheckIn || submitting}
@@ -173,15 +229,17 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           />
         )}
 
-        {!isAlreadyCheckedIn && !isOpen && (
+        {!checkedIn && !isOpen && (
           <Text variant="caption" tone="muted" style={styles.helperText}>
-            Presensi hanya dapat dilakukan saat sesi praktikum dalam status dibuka.
+            Presensi hanya dapat dilakukan saat sesi praktikum dalam status
+            dibuka.
           </Text>
         )}
 
-        {!isAlreadyCheckedIn && isOpen && geofence?.status !== 'inside' && (
+        {!checkedIn && isOpen && geofence?.status !== 'inside' && (
           <Text variant="caption" tone="danger" style={styles.helperText}>
-            Dekati lokasi laboratorium hingga berada dalam batas radius untuk mengaktifkan tombol presensi.
+            Dekati lokasi laboratorium hingga berada dalam batas radius untuk
+            mengaktifkan tombol presensi.
           </Text>
         )}
       </View>

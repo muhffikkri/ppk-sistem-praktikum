@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { canRequestLeave } from '../../domain/leaveRules';
 import type { Session } from '../../domain/types';
 import { formatDateTime } from '../../shared/format/date';
-import { Banner, SelectField, spacing } from '../../shared/ui';
+import { Banner, SelectField, Stack } from '../../shared/ui';
 import {
   leaveFailure,
   requireRole,
 } from '../../services/firestore/leaveService';
+import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
 import { useLeaveDependencies } from './LeaveProvider';
 import { ListFeedback } from './components';
+import { useStudentLeaveViewModel } from './useStudentLeaveViewModel';
 
 // Picker sesi untuk form izin; sumber data sesi sama dengan jadwal praktikan (Firestore).
 export function StudentLeaveSessionPicker({
@@ -17,6 +19,8 @@ export function StudentLeaveSessionPicker({
   onSelect: (id: string) => void;
 }) {
   const { user, service } = useLeaveDependencies();
+  const { getAttendanceForSession } = useStudentAttendanceViewModel();
+  const { getLeaveForSession } = useStudentLeaveViewModel();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +55,18 @@ export function StudentLeaveSessionPicker({
       stop?.();
     };
   }, [user, service, revision]);
+
+  // Sesi yang sudah selesai, sudah hadir, atau sudah punya izin aktif tidak
+  // bisa diajukan izin lagi.
+  const eligible = sessions.filter((session) =>
+    canRequestLeave(
+      session,
+      getAttendanceForSession(session.id),
+      getLeaveForSession(session.id),
+    ),
+  );
   return (
-    <View style={{ gap: spacing.md }}>
+    <Stack gap="md">
       <ListFeedback
         loading={loading}
         error={error}
@@ -63,19 +77,19 @@ export function StudentLeaveSessionPicker({
           setRevision((value) => value + 1);
         }}
       />
-      {!loading && !error && sessions.length === 0 ? (
+      {!loading && !error && eligible.length === 0 ? (
         <Banner
           tone="warning"
-          title="Belum ada sesi terdaftar"
-          message="Sesi muncul setelah asisten mendaftarkanmu sebagai peserta."
+          title="Belum ada sesi yang bisa diajukan izin"
+          message="Izin hanya tersedia untuk sesi yang belum selesai, belum hadir, dan belum memiliki pengajuan aktif."
         />
       ) : null}
-      {sessions.length > 0 ? (
+      {eligible.length > 0 ? (
         <SelectField<string>
           label="Sesi"
           placeholder="Pilih sesi untuk mengajukan izin"
           value={null}
-          options={sessions.map((session) => ({
+          options={eligible.map((session) => ({
             value: session.id,
             label: `${session.courseName} · ${session.groupName}`,
             description: formatDateTime(new Date(session.startsAt)),
@@ -83,6 +97,6 @@ export function StudentLeaveSessionPicker({
           onChange={onSelect}
         />
       ) : null}
-    </View>
+    </Stack>
   );
 }

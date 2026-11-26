@@ -1,10 +1,14 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import type { Session } from '../../domain/types';
+import { studentIdentityMeta } from '../../domain/sessionRecapRules';
+import { colors, radius, spacing } from '../../theme/tokens';
 import {
-  AppTopBar,
+  Avatar,
   Banner,
   Button,
   Card,
@@ -13,27 +17,118 @@ import {
   EmptyState,
   ErrorState,
   Header,
-  IconButton,
-  ListRow,
   LoadingState,
   Screen,
   SectionHeader,
-  spacing,
   StatCard,
   StatRow,
   StatusBadge,
   Text,
+  type BadgeTone,
+  type IconName,
 } from '../../shared/ui';
 import { formatWeekdayDayMonth } from '../../shared/format/date';
+import { useTransientFeedback } from '../../shared/navigation/useTransientFeedback';
 import { useAssistantSessionsViewModel, useAuth } from '../../state';
+import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
 import { useAssistantLeaveViewModel } from '../leave';
+import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatTimeRange } from '../student/formatters';
-import { NotificationBellButton } from '../notifications/NotificationBellButton';
+import {
+  sessionStatusLabel,
+  sessionStatusTone,
+} from './components/AssistantSessionCard';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
-type Feedback = { tone: 'success' | 'danger'; title: string; message: string };
+type QuickTone = 'violet' | 'blue' | 'lime' | 'pink' | 'neutral';
 
 const RECENT_LIMIT = 5;
+
+const QUICK_TONE: Record<QuickTone, { bg: string; fg: string }> = {
+  violet: { bg: colors.lavenderSubtle, fg: colors.violet },
+  blue: { bg: colors.blueSoft, fg: colors.blue },
+  lime: { bg: colors.lime, fg: colors.ink },
+  pink: { bg: colors.pink, fg: colors.pinkInk },
+  neutral: { bg: colors.surface, fg: colors.inkMuted },
+};
+
+function QuickAction({
+  icon,
+  label,
+  tone,
+  onPress,
+}: {
+  icon: IconName;
+  label: string;
+  tone: QuickTone;
+  onPress: () => void;
+}) {
+  const t = QUICK_TONE[tone];
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.quickItem,
+        pressed && styles.quickItemPressed,
+      ]}
+    >
+      <View style={[styles.quickIcon, { backgroundColor: t.bg }]}>
+        <Ionicons name={icon} size={20} color={t.fg} />
+      </View>
+      <Text variant="captionStrong" numberOfLines={1} style={styles.quickLabel}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function TodaySessionCard({
+  session,
+  onPress,
+}: {
+  session: Session;
+  onPress: () => void;
+}) {
+  const isActive = session.status === 'open';
+  const tone: BadgeTone = isActive
+    ? 'violet'
+    : sessionStatusTone[session.status];
+  return (
+    <Card
+      onPress={onPress}
+      accessibilityHint="Membuka detail sesi"
+      style={[styles.scheduleCard, isActive && styles.scheduleCardActive]}
+    >
+      {isActive ? (
+        <View
+          accessible={false}
+          style={styles.scheduleAccent}
+          importantForAccessibility="no"
+        />
+      ) : null}
+      <View style={styles.scheduleText}>
+        <Text variant="bodyStrong" numberOfLines={1}>
+          {`${formatTimeRange(session.startsAt, session.endsAt)} · ${session.courseName}`}
+        </Text>
+        <Text
+          variant="caption"
+          tone={isActive ? 'violet' : 'muted'}
+          numberOfLines={1}
+        >
+          {[session.groupName, session.title, session.lab]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      </View>
+      <StatusBadge
+        label={isActive ? 'Berlangsung' : sessionStatusLabel[session.status]}
+        tone={tone}
+      />
+    </Card>
+  );
+}
 
 export function AssistantHome({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
@@ -41,31 +136,9 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
   const leave = useAssistantLeaveViewModel();
   const [confirmClose, setConfirmClose] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const { feedback, showFeedback, clearFeedback } = useTransientFeedback();
 
-  const topBar = (
-    <AppTopBar
-      logoIcon="school-outline"
-      title="LabPresensi"
-      trailing={
-        <>
-          <IconButton
-            icon="map-outline"
-            accessibilityLabel="Peta Laboratorium"
-            onPress={() => navigation.navigate('LabMaps')}
-          />
-          <NotificationBellButton
-            onPress={() => navigation.navigate('Notifications')}
-          />
-          <IconButton
-            icon="person-outline"
-            accessibilityLabel="Profil"
-            onPress={() => navigation.navigate('Profile')}
-          />
-        </>
-      }
-    />
-  );
+  const topBar = <RootTopBar />;
 
   if (vm.loading) {
     return (
@@ -82,6 +155,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat sesi"
           message={vm.error}
+          hint="Periksa koneksi internet lalu coba lagi. Sesi yang tersimpan akan muncul kembali."
           onRetry={vm.retry}
         />
       </Screen>
@@ -135,7 +209,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
         : await vm.closeSession(active.id);
     setBusy(false);
     setConfirmClose(false);
-    setFeedback(
+    showFeedback(
       result.ok
         ? {
             tone: 'success',
@@ -146,176 +220,267 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
     );
   };
 
+  const quickActions = [
+    {
+      key: 'map',
+      icon: 'map-outline' as const,
+      label: 'Peta Lab',
+      tone: 'violet' as const,
+      onPress: () => navigation.navigate('LabMaps'),
+    },
+    {
+      key: 'class',
+      icon: 'people-outline' as const,
+      label: 'Kelola Kelas',
+      tone: 'blue' as const,
+      onPress: () => navigation.navigate('AssistantClassList'),
+    },
+    {
+      key: 'new',
+      icon: 'add-circle-outline' as const,
+      label: 'Buat Sesi',
+      tone: 'lime' as const,
+      onPress: () => navigation.navigate('AssistantSessionForm', {}),
+    },
+    {
+      key: 'leave',
+      icon: 'clipboard-outline' as const,
+      label: 'Periksa Izin',
+      tone: 'pink' as const,
+      onPress: () => navigation.navigate('AssistantLeaveReviewList'),
+    },
+    {
+      key: 'all',
+      icon: 'time-outline' as const,
+      label: 'Semua Sesi',
+      tone: 'neutral' as const,
+      onPress: () => navigation.navigate('AssistantAllSessions'),
+    },
+  ];
+
   return (
     <Screen>
       {topBar}
-      <Header
-        eyebrow={todayLabel}
-        title={user?.displayName?.trim() || 'Asisten'}
-      />
-
-      {feedback ? (
-        <Banner
-          tone={feedback.tone}
-          title={feedback.title}
-          message={feedback.message}
-          onDismiss={() => setFeedback(null)}
+      <View style={styles.feed}>
+        <Header
+          eyebrow={todayLabel}
+          title={user?.displayName?.trim() || 'Asisten'}
+          trailing={<StatusBadge label="Asisten Praktikum" tone="lavender" />}
         />
-      ) : null}
 
-      {active ? (
-        <Card variant="heroInk" interactive={false}>
-          <CardContent>
-            <StatusBadge
-              label={
-                active.status === 'open'
-                  ? 'Sesi berlangsung'
-                  : 'Sesi berikutnya'
-              }
-              tone="lavender"
-            />
-            <Text variant="subtitle" tone="onDark">
-              {active.courseName}
-            </Text>
-            <Text variant="caption" tone="onDarkMuted">
-              {`${active.groupName} · ${formatTimeRange(active.startsAt, active.endsAt)}${active.lab ? ` · ${active.lab}` : ''}`}
-            </Text>
-            <StatCard
-              variant="ink"
-              value={records.length}
-              suffix={`/ ${participants.length}`}
-              label="Praktikan hadir"
-            />
-            <StatRow>
-              <StatCard
-                variant="panel"
-                value={pendingHere}
-                label="Izin menunggu"
-              />
-              <StatCard variant="panel" value={absent} label="Belum hadir" />
-            </StatRow>
-            {active.status === 'scheduled' ? (
-              <Button
-                label="Buka sesi"
-                variant="primary"
-                loading={busy}
-                onPress={() => run('open')}
-              />
-            ) : (
-              <Button
-                label="Tutup sesi"
-                variant="outline"
-                onPress={() => setConfirmClose(true)}
-              />
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <EmptyState
-          icon="calendar-outline"
-          title="Belum ada sesi"
-          description="Buat sesi praktikum dari kelas yang kamu kelola."
-          action={
-            <Button
-              label="Buat sesi"
-              variant="primary"
-              onPress={() => navigation.navigate('AssistantSessionForm', {})}
-            />
-          }
-        />
-      )}
-
-      {active && todaySessions.length > 0 ? (
-        <View style={styles.section}>
-          <SectionHeader title="Jadwal hari ini" />
-          {todaySessions.map((s) => (
-            <ListRow
-              key={s.id}
-              title={`${formatTimeRange(s.startsAt, s.endsAt)} · ${s.courseName}`}
-              meta={s.groupName}
-              onPress={() =>
-                navigation.navigate('AssistantSessionDetail', {
-                  sessionId: s.id,
-                })
-              }
-              accessibilityHint="Membuka detail sesi"
-              trailing={
-                <StatusBadge
-                  label={s.status === 'open' ? 'Berlangsung' : 'Terjadwal'}
-                  tone={s.status === 'open' ? 'violet' : 'lavender'}
-                  dot={s.status === 'open'}
-                  live={s.status === 'open'}
-                />
-              }
-            />
-          ))}
-        </View>
-      ) : null}
-
-      {active && recent.length > 0 ? (
-        <View style={styles.section}>
-          <SectionHeader
-            title="Kehadiran terbaru"
-            actionLabel="Lihat semua"
-            onAction={() => navigation.navigate('AssistantAllAttendance')}
+        {feedback ? (
+          <Banner
+            tone={feedback.tone}
+            title={feedback.title}
+            message={feedback.message}
+            onDismiss={clearFeedback}
           />
-          {recent.map((r) => (
-            <ListRow
-              key={r.id}
-              title={r.studentName}
-              meta={`NIM ${r.studentId}`}
-              trailing={
-                <Text variant="bodyStrong">{formatClock(r.checkedInAt)}</Text>
-              }
-            />
-          ))}
-        </View>
-      ) : null}
+        ) : null}
 
-      <View style={styles.section}>
-        <SectionHeader title="Pintasan" />
-        <ListRow
-          title="Peta Laboratorium"
-          meta="Lihat persebaran lab & jadwal aktif"
-          onPress={() => navigation.navigate('LabMaps')}
-        />
-        <ListRow
-          title="Kelola kelas"
-          onPress={() => navigation.navigate('AssistantClassList')}
-        />
-        <ListRow
-          title="Buat sesi"
-          onPress={() => navigation.navigate('AssistantSessionForm', {})}
-        />
-        <ListRow
-          title="Semua sesi"
-          onPress={() => navigation.navigate('AssistantAllSessions')}
-        />
-        <ListRow
-          title="Pemeriksaan izin"
-          onPress={() => navigation.navigate('AssistantLeaveReviewList')}
-          trailing={
-            pending.length > 0 ? (
-              <StatusBadge label={`${pending.length} menunggu`} tone="pink" />
-            ) : undefined
-          }
+        {active ? (
+          <Card
+            variant="heroInk"
+            accessibilityLabel="Detail sesi aktif"
+            accessibilityHint="Membuka detail sesi"
+            onPress={() =>
+              navigation.navigate('AssistantSessionDetail', {
+                sessionId: active.id,
+              })
+            }
+          >
+            <CardContent>
+              <View style={styles.heroTopRow}>
+                <StatusBadge
+                  label={
+                    active.status === 'open'
+                      ? 'Sesi berlangsung'
+                      : 'Sesi berikutnya'
+                  }
+                  tone={active.status === 'open' ? 'violet' : 'lavender'}
+                />
+              </View>
+              <Text variant="subtitle" tone="onDark">
+                {active.courseName}
+              </Text>
+              <Text variant="caption" tone="onDarkMuted">
+                {`${active.groupName} · ${formatTimeRange(active.startsAt, active.endsAt)}${active.lab ? ` · ${active.lab}` : ''}`}
+              </Text>
+              <StatCard
+                variant="ink"
+                value={records.length}
+                suffix={`/ ${participants.length}`}
+                label="Praktikan hadir"
+              />
+              <StatRow>
+                <StatCard
+                  variant="panel"
+                  value={pendingHere}
+                  label="Izin menunggu"
+                />
+                <StatCard variant="panel" value={absent} label="Belum hadir" />
+              </StatRow>
+              <Button
+                label={
+                  active.status === 'scheduled' ? 'Buka sesi' : 'Tutup sesi'
+                }
+                variant="outline"
+                icon="chevron-forward-outline"
+                loading={busy}
+                onPress={() =>
+                  active.status === 'scheduled'
+                    ? run('open')
+                    : setConfirmClose(true)
+                }
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <EmptyState
+            icon="calendar-outline"
+            title="Belum ada sesi"
+            description="Buat sesi praktikum dari kelas yang kamu kelola."
+            action={
+              <Button
+                label="Buat sesi"
+                variant="primary"
+                onPress={() => navigation.navigate('AssistantSessionForm', {})}
+              />
+            }
+          />
+        )}
+
+        <View style={styles.section}>
+          <View style={styles.headerRow}>
+            <Text variant="bodyStrong">Pintasan Cepat</Text>
+            <Text variant="caption" tone="violet">
+              {`${quickActions.length} menu aktif`}
+            </Text>
+          </View>
+          <Card variant="panel" interactive={false} style={styles.quickGrid}>
+            {quickActions.map(({ key, ...action }) => (
+              <QuickAction key={key} {...action} />
+            ))}
+          </Card>
+        </View>
+
+        {todaySessions.length > 0 ? (
+          <View style={styles.section}>
+            <SectionHeader
+              title="Jadwal hari ini"
+              actionLabel="Lihat semua"
+              onAction={() => navigation.navigate('AssistantAllSessions')}
+            />
+            {todaySessions.map((session) => (
+              <TodaySessionCard
+                key={session.id}
+                session={session}
+                onPress={() =>
+                  navigation.navigate('AssistantSessionDetail', {
+                    sessionId: session.id,
+                  })
+                }
+              />
+            ))}
+          </View>
+        ) : null}
+
+        {recent.length > 0 ? (
+          <View style={styles.section}>
+            <SectionHeader
+              title="Kehadiran terbaru"
+              actionLabel="Lihat semua"
+              onAction={() => navigation.navigate('AssistantAllAttendance')}
+            />
+            {recent.map((record) => (
+              <AttendanceRecordCard
+                key={record.id}
+                leading={<Avatar name={record.studentName} tone="lime" />}
+                title={record.studentName}
+                meta={studentIdentityMeta(record) || 'Praktikan'}
+                status={{ label: 'Hadir', tone: 'success' }}
+                time={formatClock(record.checkedInAt)}
+                timeLabel="Hadir"
+              />
+            ))}
+          </View>
+        ) : null}
+
+        <ConfirmSheet
+          visible={confirmClose}
+          title="Tutup sesi?"
+          description="Praktikan tidak bisa presensi lagi setelah sesi ditutup."
+          confirmLabel="Tutup sesi"
+          tone="danger"
+          loading={busy}
+          onConfirm={() => run('close')}
+          onCancel={() => setConfirmClose(false)}
         />
       </View>
-
-      <ConfirmSheet
-        visible={confirmClose}
-        title="Tutup sesi?"
-        description="Praktikan tidak bisa presensi lagi setelah sesi ditutup."
-        confirmLabel="Tutup sesi"
-        tone="danger"
-        loading={busy}
-        onConfirm={() => run('close')}
-        onCancel={() => setConfirmClose(false)}
-      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  feed: { gap: spacing.xl },
   section: { gap: spacing.sm },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  quickItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.md,
+    paddingVertical: spacing.xs,
+  },
+  quickItemPressed: { opacity: 0.6 },
+  quickIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickLabel: { textAlign: 'center' },
+
+  scheduleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  scheduleCardActive: {
+    borderColor: colors.lavender,
+    borderWidth: 1,
+    paddingLeft: spacing.lg,
+  },
+  scheduleAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    // iOS cards no longer clip children (so the shadow can render); keep the
+    // accent visually inside the rounded corner explicitly.
+    borderTopLeftRadius: radius['3xl'],
+    borderBottomLeftRadius: radius['3xl'],
+    backgroundColor: colors.violet,
+  },
+  scheduleText: { flex: 1, gap: spacing.xs, minWidth: 0 },
 });

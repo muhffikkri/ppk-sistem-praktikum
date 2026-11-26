@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { evaluateGeofence } from '../../domain/geofenceRules';
+import { isLeaveBlockingCheckIn } from '../../domain/leaveRules';
+import { isWithinCheckInWindow } from '../../domain/sessionRules';
 import type {
   DeviceFix,
   GeofenceCheckResult,
@@ -11,11 +13,11 @@ import type {
   AttendanceRecord,
   Session,
 } from '../../domain/types';
-import { checkInWithGeofence } from '../../services/firestore/geoAttendanceService';
+import { checkInWithQr } from '../../services/firestore/attendanceQrService';
 import { getLabById } from '../../services/firestore/labService';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
-import { useAuth } from '../../state';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
+import { useStudentLeaveViewModel } from '../leave';
 
 export type StudentCheckInViewModel = {
   session: Session | undefined;
@@ -29,21 +31,27 @@ export type StudentCheckInViewModel = {
   error: string | null;
   isAlreadyCheckedIn: boolean;
   isOpen: boolean;
+  leaveApproved: boolean;
   refreshLocation: () => Promise<void>;
   performCheckIn: () => Promise<AsyncActionResult>;
   clearError: () => void;
 };
 
-export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
-  const { user } = useAuth();
+export function useStudentCheckIn(
+  sessionId: string,
+  qrToken?: string,
+): StudentCheckInViewModel {
   const {
     getSessionById,
     getAttendanceForSession,
+    reportError,
     loading: sessionsLoading,
   } = useStudentAttendanceViewModel();
+  const { getLeaveForSession } = useStudentLeaveViewModel();
 
   const session = getSessionById(sessionId);
   const attendance = getAttendanceForSession(sessionId);
+  const leaveApproved = isLeaveBlockingCheckIn(getLeaveForSession(sessionId));
 
   const [labResult, setLabResult] = useState<{
     key: string;
@@ -119,16 +127,27 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   const performCheckIn = useCallback(async (): Promise<AsyncActionResult> => {
     setError(null);
 
-    if (!user) {
-      const msg = 'Pengguna belum terautentikasi.';
+    if (!qrToken) {
+      const msg = 'Presensi wajib memindai QR yang ditampilkan asisten.';
       setError(msg);
-      return { ok: false, reason: 'unauthenticated', message: msg };
+      reportError(msg);
+      return { ok: false, reason: 'qr_required', message: msg };
     }
 
     if (!session) {
       const msg = 'Sesi praktikum tidak ditemukan.';
       setError(msg);
+      reportError(msg);
       return { ok: false, reason: 'session_not_found', message: msg };
+    }
+
+    // Guard lokal sebelum mengambil lokasi/memanggil server: izin approved
+    // memang sudah ditolak backend, tapi UI tidak boleh mengirimkan usaha sia-sia.
+    if (leaveApproved) {
+      const msg = 'Izin kamu sudah disetujui untuk sesi ini.';
+      setError(msg);
+      reportError(msg);
+      return { ok: false, reason: 'leave_approved', message: msg };
     }
 
     let currentFix = deviceFix;
@@ -150,27 +169,30 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
 
     setSubmitting(true);
     try {
-      const result = await checkInWithGeofence({
-        session,
-        student: user,
+      const result = await checkInWithQr({
+        sessionId,
+        token: qrToken,
         deviceFix: currentFix,
-        lab,
-        existingAttendance: attendance ? [attendance] : [],
       });
 
       if (!result.ok) {
         setError(result.message);
+        // Layar bisa sudah di-unmount; Home memakai error global ini.
+        reportError(result.message);
         return result;
       }
 
+      reportError(null);
       return { ok: true };
     } finally {
       setSubmitting(false);
     }
-  }, [attendance, deviceFix, lab, session, user]);
+  }, [deviceFix, leaveApproved, qrToken, reportError, session, sessionId]);
 
   const isAlreadyCheckedIn = attendance !== undefined;
-  const isOpen = session?.status === 'open';
+  const isOpen = Boolean(
+    session && session.status === 'open' && isWithinCheckInWindow(session),
+  );
 
   return {
     session,
@@ -184,6 +206,7 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
     error: error ?? labError,
     isAlreadyCheckedIn,
     isOpen,
+    leaveApproved,
     refreshLocation,
     performCheckIn,
     clearError: () => setError(null),

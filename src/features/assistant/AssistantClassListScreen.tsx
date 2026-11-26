@@ -6,12 +6,11 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  Header,
   ListRow,
   LoadingState,
   Screen,
   spacing,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 
@@ -26,7 +25,7 @@ export function AssistantClassListScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={goBack} />
+        <BackButton onPress={goBack} />
         <LoadingState label="Memuat kelas…" />
       </Screen>
     );
@@ -35,7 +34,7 @@ export function AssistantClassListScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={goBack} />
+        <BackButton onPress={goBack} />
         <ErrorState
           title="Gagal memuat kelas"
           message={error}
@@ -47,11 +46,7 @@ export function AssistantClassListScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={goBack} />
-      <Header
-        title="Kelas saya"
-        description={`${classes.length} kelas praktikum`}
-      />
+      <BackButton onPress={goBack} />
 
       {classes.length === 0 ? (
         <EmptyState

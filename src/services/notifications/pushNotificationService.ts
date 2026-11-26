@@ -2,8 +2,10 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { DevicePushToken } from 'expo-notifications';
 import { Platform } from 'react-native';
 
-const Notifications = (() => {
+// Runtime lookup keeps web/Expo Go bundles working without the native module.
+export const Notifications = (() => {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('expo-notifications');
   } catch {
     return null;
@@ -22,6 +24,10 @@ export type PushTarget = (
       sessionId: string;
     }
   | { type: 'leave_decided'; leaveId: string }
+  | {
+      type: 'fine_issued' | 'payment_success' | 'payment_failed';
+      fineId: string;
+    }
 ) & {
   /** ID dokumen inbox `users/{uid}/notifications/{id}`, bila ada. */
   notificationId?: string;
@@ -49,6 +55,12 @@ export function parsePushTarget(
     case 'leave_decided':
       return typeof data.leaveId === 'string' && data.leaveId
         ? { type: data.type, leaveId: data.leaveId, ...inboxIdOf(data) }
+        : null;
+    case 'fine_issued':
+    case 'payment_success':
+    case 'payment_failed':
+      return typeof data.fineId === 'string' && data.fineId
+        ? { type: data.type, fineId: data.fineId, ...inboxIdOf(data) }
         : null;
     default:
       return null;

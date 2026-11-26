@@ -6,24 +6,26 @@
 export const colors = {
   // Brand — "Sebenza" violet family
   violet: '#5B3BE8', // primary
-  violetDark: '#4427C6', // pressed / hover of violet
+  violetDark: '#482CD4', // pressed / hover of violet
   violetLight: '#7356F5',
   lime: '#D3F36B', // high-visibility accent
-  limeHover: '#C0E255',
-  lavender: '#E4DBFF', // soft tint
-  lavenderSubtle: '#F3EFFF',
+  limeHover: '#A3E635',
+  lavender: '#EDE7FF', // soft tint
+  lavenderSubtle: '#F3EEFF', // very soft tint (logo tile)
   pink: '#FFC2D9', // decorative accent (late / warning tint)
-  ink: '#17141F', // primary text, dark surface, bottom dock
-  inkMuted: '#5D586C', // secondary text
+  ink: '#161522', // primary text, dark surface, bottom dock
+  inkMuted: '#64748B', // secondary text
   inkSubtle: '#9A95A8', // placeholder / disabled text
   pinkInk: '#8A0F41', // text on pink chips
   onPrimary: '#FFFFFF', // text/icons on violet & ink blocks
   onInkMuted: 'rgba(255,255,255,0.7)', // secondary text on violet & ink
   onInkSubtle: 'rgba(255,255,255,0.08)', // tint panels on ink (white/5–10)
-  scrim: 'rgba(23,20,31,0.45)', // sheet / modal backdrop
-  surface: '#F4F2F9', // app canvas
+  onInkRaised: 'rgba(255,255,255,0.18)', // raised tint panel on violet/ink (white/18)
+  onLightSubtle: 'rgba(22,21,34,0.1)', // subtle ink tint on light/lime fills
+  scrim: 'rgba(22,21,34,0.45)', // sheet / modal backdrop
+  surface: '#F8F7FD', // app canvas (HTML reference: brand.surface)
   panel: '#FFFFFF', // cards, inputs, modals
-  border: '#E7E3F2',
+  border: '#E8E5F3',
   borderSubtle: '#F0EDF7',
 
   // Semantic
@@ -49,6 +51,15 @@ export const colors = {
 
   // Disabled control fill (Button disabled state).
   disabled: '#ECEAF2',
+
+  // Neutral fill for non-selected sentiment score bars.
+  scoreNeutral: '#e0e0e0',
+
+  // Google brand colors, dipakai hanya untuk logo pihak ketiga.
+  googleBlue: '#4285F4',
+  googleGreen: '#34A853',
+  googleYellow: '#FBBC05',
+  googleRed: '#EB4335',
 } as const;
 
 // Named tokens matching the sticker sheet's semantic roles.
@@ -164,6 +175,11 @@ export const typography = {
     lineHeight: 36,
     letterSpacing: -0.6, // hero time "08:00 — 10:30"
   },
+  // Ukuran hero editorial pada landing screen, dipakai sebagai override
+  // fontSize pada variant display/displayAccent.
+  displayLanding: {
+    fontSize: 50,
+  },
   title: {
     fontFamily: fontFamily.displaySemibold,
     fontSize: 24,
@@ -185,6 +201,13 @@ export const typography = {
     fontFamily: fontFamily.sansSemibold,
     fontSize: 14,
     lineHeight: 20,
+  },
+  // Product mark in the root top bar (HTML reference: text-lg font-bold).
+  brandTitle: {
+    fontFamily: fontFamily.sansBold,
+    fontSize: 18,
+    lineHeight: 22,
+    letterSpacing: -0.3,
   },
   label: {
     fontFamily: fontFamily.sansMedium,

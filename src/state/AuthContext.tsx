@@ -23,6 +23,8 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 
+import { isAssistantRole } from '../domain/asprakScope';
+import { normalizeNim, NIM_INVALID } from '../domain/nim';
 import type {
   ActionFailureReason,
   AsyncActionResult,
@@ -31,6 +33,7 @@ import type {
   UserProfile,
   UserRole,
 } from '../domain/types';
+import { hasAssistantInvite } from '../services/firestore/assistantInviteService';
 import { auth, db, isFirebaseConfigured } from '../services/firebase';
 import {
   disablePushBeforeLogout,
@@ -133,10 +136,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [needsRoleSelection, setNeedsRoleSelection] = useState(false);
   const registeringRef = useRef(false);
-  const googleResolveRef = useRef<((result: AsyncActionResult) => void) | null>(null);
+  const googleResolveRef = useRef<((result: AsyncActionResult) => void) | null>(
+    null,
+  );
 
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
-  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+  const googleAndroidClientId =
+    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
   const [, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
     webClientId: googleWebClientId || undefined,
@@ -157,15 +163,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (googleResponse.type !== 'success') {
       finish(
         googleResponse.type === 'cancel' || googleResponse.type === 'dismiss'
-          ? { ok: false, reason: 'unknown_error', message: 'Login Google dibatalkan.' }
-          : { ok: false, reason: 'unknown_error', message: 'Login Google gagal. Coba lagi.' },
+          ? {
+              ok: false,
+              reason: 'unknown_error',
+              message: 'Login Google dibatalkan.',
+            }
+          : {
+              ok: false,
+              reason: 'unknown_error',
+              message: 'Login Google gagal. Coba lagi.',
+            },
       );
       return;
     }
 
     const idToken = googleResponse.params?.id_token;
     if (!idToken) {
-      finish({ ok: false, reason: 'unknown_error', message: 'Token Google tidak diterima.' });
+      finish({
+        ok: false,
+        reason: 'unknown_error',
+        message: 'Token Google tidak diterima.',
+      });
       return;
     }
 
@@ -204,7 +222,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = snap.data() as Partial<UserProfile>;
             // Role disimpan di Firestore dan dipakai sebagai kebenaran tunggal.
             const role: UserRole =
-              data.role === 'assistant' ? 'assistant' : 'student';
+              data.role === 'lab_assistant' || data.role === 'assistant'
+                ? data.role
+                : 'student';
             setUser({
               uid: firebaseUser.uid,
               displayName:
@@ -338,7 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: string;
       email: string;
       password: string;
-      role: UserRole;
+      nim: string;
     }): Promise<AsyncActionResult> => {
       setError(null);
 
@@ -351,7 +371,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const trimmedName = input.displayName.trim();
       const normalizedEmail = input.email.trim().toLowerCase();
+      const nim = normalizeNim(input.nim);
 
+      if (!nim) {
+        const message = NIM_INVALID;
+        setError(message);
+        return { ok: false, reason: 'validation_error', message };
+      }
       if (trimmedName.length < 2) {
         const message = 'Nama lengkap minimal 2 karakter.';
         setError(message);
@@ -367,12 +393,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(message);
         return { ok: false, reason: 'validation_error', message };
       }
-      if (input.role !== 'student' && input.role !== 'assistant') {
-        const message = 'Peran akun tidak valid.';
-        setError(message);
-        return { ok: false, reason: 'validation_error', message };
-      }
-
       registeringRef.current = true;
       try {
         const credential = await createUserWithEmailAndPassword(
@@ -387,7 +407,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           uid: credential.user.uid,
           displayName: trimmedName,
           email: normalizedEmail,
-          role: input.role,
+          role: 'student',
+          nim,
           createdAt: new Date().toISOString(),
         };
 
@@ -428,6 +449,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const message = 'Peran tidak valid.';
         setError(message);
         return { ok: false, reason: 'validation_error', message };
+      }
+
+      if (
+        role === 'assistant' &&
+        !(await hasAssistantInvite(currentUser.email))
+      ) {
+        const message =
+          'Peran asisten memerlukan undangan dari pengelola praktikum.';
+        setError(message);
+        return { ok: false, reason: 'forbidden', message };
       }
 
       try {
@@ -484,8 +515,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const updateDisplayName = useCallback(
-    async (displayName: string): Promise<AsyncActionResult> => {
+  const updateUserProfile = useCallback(
+    async (input: {
+      displayName: string;
+      nim?: string;
+    }): Promise<AsyncActionResult> => {
       setError(null);
       if (!user) {
         const message = 'Anda harus masuk terlebih dahulu.';
@@ -493,15 +527,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, reason: 'unauthenticated', message };
       }
 
-      const trimmed = displayName.trim();
+      const trimmed = input.displayName.trim();
       if (trimmed.length < 2) {
         const message = 'Nama lengkap minimal 2 karakter.';
         setError(message);
         return { ok: false, reason: 'validation_error', message };
       }
+      const nim = input.nim?.trim() ? normalizeNim(input.nim) : undefined;
+      if (input.nim?.trim() && !nim) {
+        const message = NIM_INVALID;
+        setError(message);
+        return { ok: false, reason: 'validation_error', message };
+      }
 
       try {
-        await updateDoc(doc(db, 'users', user.uid), { displayName: trimmed });
+        const patch: Partial<UserProfile> = { displayName: trimmed };
+        if (nim) patch.nim = nim;
+        await updateDoc(doc(db, 'users', user.uid), patch);
         if (auth.currentUser) {
           await updateProfile(auth.currentUser, { displayName: trimmed });
         }
@@ -526,7 +568,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithGoogle,
       setUserRole,
       logout,
-      updateDisplayName,
+      updateUserProfile,
       clearError,
     }),
     [
@@ -539,7 +581,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithGoogle,
       setUserRole,
       logout,
-      updateDisplayName,
+      updateUserProfile,
       clearError,
     ],
   );
@@ -559,5 +601,5 @@ export type ActorRole = 'praktikan' | 'asisten';
 
 export function useActorRole(): ActorRole {
   const { user } = useAuth();
-  return user?.role === 'assistant' ? 'asisten' : 'praktikan';
+  return isAssistantRole(user?.role) ? 'asisten' : 'praktikan';
 }

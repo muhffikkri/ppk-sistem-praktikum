@@ -25,8 +25,9 @@ Dokumen di repo ini adalah source of truth untuk perencanaan Sprint 1 dan Sprint
 2. `sprint-2-prd.md` menetapkan perilaku dan batas ruang lingkup SRS; `sprint-2-firebase-and-ai.md` menetapkan skema Firestore, Security Rules, dan adapter AI; `sprint-2-shared-contract.md` menjadi acuan tunggal identifier implementasi Sprint 2.
 3. Jangan menambahkan fitur di luar kebutuhan SRS Sprint 2 (seperti QR scanner, upload file, push notification, atau keputusan izin otomatis oleh AI).
 4. Bila implementasi stack tersedia, ikuti pola serta dependensi yang sudah ada. Jangan menambahkan library tanpa kebutuhan yang jelas.
-5. Bila kebutuhan baru bertentangan dengan dokumen ini, perbarui dokumen terkait dan `CHANGELOG.md` dalam perubahan yang sama. Jangan diam-diam mengubah kontrak.
-6. Jangan mengedit file referensi tersinkron di `sources/`.
+5. Ikuti aturan gaya & inline style di [`../design.md`](../design.md) (`Stack`, token `theme/tokens.ts`, guard `npm run lint` + `npm run check:ui`).
+6. Bila kebutuhan baru bertentangan dengan dokumen ini, perbarui dokumen terkait dan `CHANGELOG.md` dalam perubahan yang sama. Jangan diam-diam mengubah kontrak.
+7. Jangan mengedit file referensi tersinkron di `sources/`.
 
 ## Struktur repo yang disarankan
 

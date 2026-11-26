@@ -13,6 +13,9 @@ const icons: Record<NotificationType, IconName> = {
   session_opened: 'location-outline',
   schedule_changed: 'swap-horizontal-outline',
   leave_decided: 'document-text-outline',
+  fine_issued: 'receipt-outline',
+  payment_success: 'checkmark-circle-outline',
+  payment_failed: 'alert-circle-outline',
 };
 
 type Props = {
@@ -54,7 +57,6 @@ export function NotificationItem({ notification, onPress }: Props) {
           <Text variant="bodyStrong" numberOfLines={1} style={styles.title}>
             {notification.title}
           </Text>
-          {unread ? <View style={styles.dot} /> : null}
         </View>
         {notification.body ? (
           <Text variant="caption" tone="muted" numberOfLines={2}>
@@ -96,10 +98,4 @@ const styles = StyleSheet.create({
   text: { flex: 1, gap: spacing.xs },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   title: { flexShrink: 1 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.violet,
-  },
 });

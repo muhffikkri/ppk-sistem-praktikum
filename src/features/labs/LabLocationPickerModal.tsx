@@ -4,13 +4,8 @@
  * atau tombol GPS lokasi saat ini beserta visualisasi radius presensi.
  */
 import { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  StyleSheet,
-  View,
-} from 'react-native';
-import MapView, { Circle, Marker, type Region } from 'react-native-maps';
+import { Modal, StyleSheet, View } from 'react-native';
+import MapView, { Circle, Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DEFAULT_CAMPUS_CENTER } from '../../domain/geoTypes';
@@ -181,12 +176,7 @@ export function LabLocationPickerModal({
         </View>
 
         {/* Floating GPS Button */}
-        <View
-          style={[
-            styles.gpsContainer,
-            { bottom: insets.bottom + 180 },
-          ]}
-        >
+        <View style={[styles.gpsContainer, { bottom: insets.bottom + 180 }]}>
           <IconButton
             icon={locating ? 'sync-outline' : 'locate-outline'}
             accessibilityLabel="Gunakan lokasi saya sekarang"

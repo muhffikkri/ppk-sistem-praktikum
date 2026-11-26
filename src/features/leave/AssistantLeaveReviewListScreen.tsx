@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
 import type { AiClassificationResult } from '../../domain/types';
+import { useTransientState } from '../../shared/navigation/useTransientFeedback';
 import {
   Banner,
   Button,
   ConfirmSheet,
-  Header,
   Screen,
   spacing,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { ListFeedback, RequestCard, aiCategoryLabels } from './components';
 import { useAssistantLeaveViewModel } from './useAssistantLeaveViewModel';
@@ -40,7 +40,13 @@ export function AssistantLeaveReviewListScreen({ navigation }: Props) {
     approve: boolean;
   } | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const clearFeedback = useCallback(() => setFeedback(null), []);
   const [sheetError, setSheetError] = useState<string | null>(null);
+  useTransientState({
+    pending: feedback !== null,
+    revision: feedback,
+    clear: clearFeedback,
+  });
 
   const activeItem = confirmation
     ? vm.leaveRequests.find((item) => item.id === confirmation.id)
@@ -68,17 +74,14 @@ export function AssistantLeaveReviewListScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Pemeriksaan izin"
-        description="Prediksi AI hanya pendukung; keputusan ada pada asisten."
-      />
+      <BackButton onPress={() => navigation.goBack()} />
+
       <ListFeedback {...vm} empty={vm.leaveRequests.length === 0} />
       {feedback ? (
         <Banner
           title="Keputusan tersimpan"
           message={feedback}
-          onDismiss={() => setFeedback(null)}
+          onDismiss={clearFeedback}
         />
       ) : null}
       {vm.leaveRequests.map((item) => (
@@ -91,7 +94,7 @@ export function AssistantLeaveReviewListScreen({ navigation }: Props) {
                   label="Terima"
                   disabled={!!vm.reviewingId}
                   onPress={() => {
-                    setFeedback(null);
+                    clearFeedback();
                     setConfirmation({ id: item.id, approve: true });
                   }}
                 />
@@ -102,7 +105,7 @@ export function AssistantLeaveReviewListScreen({ navigation }: Props) {
                   variant="destructive"
                   disabled={!!vm.reviewingId}
                   onPress={() => {
-                    setFeedback(null);
+                    clearFeedback();
                     setConfirmation({ id: item.id, approve: false });
                   }}
                 />

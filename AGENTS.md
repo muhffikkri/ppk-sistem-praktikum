@@ -34,6 +34,18 @@ Run lint and typecheck before declaring any task done.
 Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
 Docs: https://docs.expo.dev/eas/index.md
 
+## Design rules
+
+- Read `design.md` before any UI change. It is the agent-facing source of
+  truth for tokens, chrome, and navigation, with the current dashboard HTML
+  as the root top-bar reference.
+- Root/navbar pages use `RootTopBar` (`AppTopBar`). Detail, login, form, and
+  every pushed page use `BackButton` only — no top bar, no `Header`, no
+  native header. The navbar scanner (`BarcodeScan` with `fromDock: true`)
+  is a root page and keeps the top bar.
+- Login inputs must keep credential autofill hints (`username` +
+  `current-password`) and must not set `textContentType`.
+
 ## Rules
 
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.

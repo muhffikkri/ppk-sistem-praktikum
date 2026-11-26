@@ -10,16 +10,17 @@ import {
   onSnapshot,
   writeBatch,
   updateDoc,
-  deleteDoc,
+  deleteField,
 } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { auth, db, functions } from '../firebase';
 import { groupBySession } from './batching';
+import { callableFailureReason } from './callableFailure';
 import { normalizeAttendanceRecord } from './normalize';
-import { closeSessionRule, openSessionRule } from '../../domain/sessionRules';
+import { cancelSessionRule, closeSessionRule } from '../../domain/sessionRules';
 import {
   PracticalClass,
   Session,
-  UserProfile,
   AttendanceRecord,
   ClassInput,
   SessionInput,
@@ -33,7 +34,6 @@ import {
 const classesCol = collection(db, 'classes');
 const sessionsCol = collection(db, 'sessions');
 const attendanceCol = collection(db, 'attendance');
-const usersCol = collection(db, 'users');
 
 type AsyncFailure = { ok: false; reason: string; message: string };
 
@@ -175,44 +175,20 @@ export async function addParticipantByEmail(
 
     const classData = classSnap.data() as PracticalClass;
 
-    const trimmedEmail = email.trim();
-    const normalizedEmail = trimmedEmail.toLowerCase();
-
-    // Cari user berdasarkan email (normalized lowercase, fallback raw trim)
-    let usersSnap = await getDocs(
-      query(usersCol, where('email', '==', normalizedEmail)),
-    );
-    if (usersSnap.empty && trimmedEmail !== normalizedEmail) {
-      usersSnap = await getDocs(
-        query(usersCol, where('email', '==', trimmedEmail)),
-      );
+    // Resolusi email dilakukan server: klien asisten tidak boleh query users.
+    let studentUid: string | undefined;
+    try {
+      const resolve = httpsCallable(functions, 'resolveStudentByEmail');
+      const response = await resolve({ email: email.trim() });
+      studentUid = (response.data as { uid?: string } | null)?.uid;
+    } catch {
+      studentUid = undefined;
     }
-
-    if (usersSnap.empty) {
+    if (!studentUid) {
       return {
         ok: false,
         reason: 'user_not_found',
         message: 'User dengan email tersebut tidak terdaftar',
-      };
-    }
-
-    const userDoc = usersSnap.docs[0];
-    const userData = userDoc.data() as UserProfile;
-
-    if (userData.role !== 'student') {
-      return {
-        ok: false,
-        reason: 'validation_error',
-        message: 'Email tersebut bukan akun praktikan',
-      };
-    }
-
-    const studentUid = userData.uid || userDoc.id;
-    if (!studentUid) {
-      return {
-        ok: false,
-        reason: 'validation_error',
-        message: 'UID praktikan tidak ditemukan',
       };
     }
 
@@ -346,8 +322,10 @@ export async function createSession(
       participantIds: classData.participantIds ?? [],
       assistantIds:
         classAssistantIds.length > 0 ? classAssistantIds : [actorUid],
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
+      startsAt: starts.toISOString(),
+      endsAt: ends.toISOString(),
+      startsAtMs: starts.getTime(),
+      endsAtMs: ends.getTime(),
       status: 'scheduled',
       openedAt: null,
       closedAt: null,
@@ -404,15 +382,36 @@ export async function updateSession(
       };
     }
 
+    // Kelas bisa diganti saat edit: samakan nama, peserta, dan asisten.
+    const classDoc = doc(db, 'classes', input.classId);
+    const classSnap = await getDoc(classDoc);
+    if (!classSnap.exists()) {
+      return {
+        ok: false,
+        reason: 'class_not_found',
+        message: 'Kelas tujuan tidak ditemukan',
+      };
+    }
+    const classData = classSnap.data() as Partial<PracticalClass>;
+    const sameClass = snap.data()?.classId === input.classId;
+
     const payload: Record<string, unknown> = {
       classId: input.classId,
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
+      startsAt: starts.toISOString(),
+      endsAt: ends.toISOString(),
+      startsAtMs: starts.getTime(),
+      endsAtMs: ends.getTime(),
       updatedAt: new Date().toISOString(),
+      title: input.title || deleteField(),
+      lab: input.lab || deleteField(),
+      labId: input.labId || deleteField(),
     };
-    if (input.title) payload.title = input.title;
-    if (input.lab) payload.lab = input.lab;
-    if (input.labId) payload.labId = input.labId;
+    if (!sameClass) {
+      payload.courseName = classData.courseName ?? '';
+      payload.groupName = classData.groupName ?? '';
+      payload.participantIds = classData.participantIds ?? [];
+      payload.assistantIds = classData.assistantIds ?? [];
+    }
 
     await updateDoc(sessionDoc, payload);
     return { ok: true };
@@ -421,11 +420,30 @@ export async function updateSession(
   }
 }
 
-export async function deleteSession(
+export async function cancelSession(
   sessionId: string,
 ): Promise<AsyncActionResult> {
   try {
-    await deleteDoc(doc(db, 'sessions', sessionId));
+    const sessionDoc = doc(db, 'sessions', sessionId);
+    const snap = await getDoc(sessionDoc);
+    const session = snap.exists()
+      ? ({ id: snap.id, ...(snap.data() ?? {}) } as Session)
+      : undefined;
+    const result = cancelSessionRule(session);
+    if (!result.ok) {
+      return {
+        ok: false,
+        reason: result.reason,
+        message:
+          result.reason === 'invalid_status'
+            ? 'Hanya sesi terjadwal yang bisa dibatalkan.'
+            : 'Sesi tidak ditemukan.',
+      };
+    }
+    await updateDoc(sessionDoc, {
+      status: result.updatedSession.status,
+      cancelledAt: result.updatedSession.cancelledAt,
+    });
     return { ok: true };
   } catch (e) {
     return toFailure(e);
@@ -438,36 +456,22 @@ export async function openSession(
   sessionId: string,
 ): Promise<AsyncActionResult> {
   try {
-    const sessionDoc = doc(db, 'sessions', sessionId);
-    const snap = await getDoc(sessionDoc);
-    if (!snap.exists()) {
-      return {
-        ok: false,
-        reason: 'session_not_found',
-        message: 'Sesi tidak ditemukan',
-      };
-    }
-
-    const session = { id: snap.id, ...(snap.data() ?? {}) } as Session;
-    const result = openSessionRule(session);
-
-    if (!result.ok) {
-      return {
-        ok: false,
-        reason: result.reason,
-        message:
-          result.reason === 'invalid_status'
-            ? 'Hanya sesi berstatus terjadwal yang bisa dibuka.'
-            : 'Sesi tidak ditemukan.',
-      };
-    }
-
-    await updateDoc(sessionDoc, {
-      status: result.updatedSession.status,
-      openedAt: result.updatedSession.openedAt,
-    });
+    // Rules tidak bisa memeriksa sesi open lain, jadi pembukaan sesi
+    // divalidasi atomik oleh callable openSession di server.
+    await httpsCallable(functions, 'openSession')({ sessionId });
     return { ok: true };
   } catch (e) {
+    const reason = callableFailureReason(e);
+    if (reason) {
+      return {
+        ok: false,
+        reason,
+        message:
+          e instanceof Error && e.message
+            ? e.message
+            : 'Sesi tidak dapat dibuka.',
+      };
+    }
     return toFailure(e);
   }
 }
@@ -567,17 +571,17 @@ export function subscribeAttendanceForSession(
   onData: (records: AttendanceRecord[]) => void,
   onError: (msg: string) => void,
 ) {
-  const q = query(
-    attendanceCol,
-    where('sessionId', '==', sessionId),
-    orderBy('checkedInAt', 'asc'),
-  );
+  // Query single-field (sessionId) lalu urutkan di klien agar tidak gagal saat
+  // composite index (sessionId, checkedInAt) belum di-deploy di Firestore.
+  const q = query(attendanceCol, where('sessionId', '==', sessionId));
   return onSnapshot(
     q,
     (snap: any) => {
-      const records = snap.docs.map((d: any) =>
-        normalizeAttendanceRecord(d.id, d.data()),
-      );
+      const records = snap.docs
+        .map((d: any) => normalizeAttendanceRecord(d.id, d.data()))
+        .sort((a: AttendanceRecord, b: AttendanceRecord) =>
+          (a.checkedInAt ?? '').localeCompare(b.checkedInAt ?? ''),
+        );
       onData(records);
     },
     (err: any) => {

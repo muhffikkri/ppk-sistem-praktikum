@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { isAssistantRole } from '../../domain/asprakScope';
 import type { Lab, LabInput } from '../../domain/geoTypes';
 import type { AsyncActionResult } from '../../domain/types';
 import {
@@ -36,7 +37,7 @@ export function useLabManagement(): LabManagementViewModel {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  const canManage = user?.role === 'assistant';
+  const canManage = isAssistantRole(user?.role);
 
   const uid = user?.uid;
 

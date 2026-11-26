@@ -1,47 +1,98 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  studentIdentityMeta,
+  type SessionRosterEntry,
+  type StudentAttendanceStatus,
+} from '../../domain/sessionRecapRules';
+import {
   Avatar,
+  Banner,
+  AvatarTone,
   EmptyState,
-  Header,
-  ListRow,
   Screen,
   ScreenList,
   SectionHeader,
-  spacing,
-  StatusBadge,
-  Text,
-  TopBar,
+  SegmentedControl,
+  BackButton,
+  BadgeTone,
+  SegmentedOption,
 } from '../../shared/ui';
+import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
+import { AttendanceSummary } from '../attendance/AttendanceSummary';
 import { useAssistantSessionsViewModel } from '../../state';
-import {
-  sessionStatusLabel,
-  sessionStatusTone,
-} from './components/AssistantSessionCard';
-import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
+import { formatClock } from './formatters';
+import { useSessionRosterRecap } from './useAssistantSessionDetail';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
   'AssistantAttendanceRoster'
 >;
 
+type FilterType = 'all' | StudentAttendanceStatus;
+
+type StatusPresentation = {
+  badgeTone: BadgeTone;
+  badgeLabel: string;
+  avatarTone: AvatarTone;
+};
+
+const LEAVE_STATUS_LABEL: Record<
+  NonNullable<SessionRosterEntry['leaveStatus']>,
+  string
+> = {
+  pending: 'Izin menunggu',
+  approved: 'Izin disetujui',
+  rejected: 'Izin ditolak',
+};
+
+const STATUS_PRESENTATION: Record<StudentAttendanceStatus, StatusPresentation> =
+  {
+    present: { badgeTone: 'lime', badgeLabel: 'Hadir', avatarTone: 'lime' },
+    excused: { badgeTone: 'lavender', badgeLabel: 'Izin', avatarTone: 'pink' },
+    absent: {
+      badgeTone: 'neutral',
+      badgeLabel: 'Belum hadir',
+      avatarTone: 'lavender',
+    },
+  };
+
 export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession } =
-    useAssistantSessionsViewModel();
+  const { error } = useAssistantSessionsViewModel();
+  const { session, recap } = useSessionRosterRecap(sessionId);
 
-  const session = getSessionById(sessionId);
-  const attendees = [...getAttendanceForSession(sessionId)].sort(
-    (a, b) =>
-      new Date(a.checkedInAt).getTime() - new Date(b.checkedInAt).getTime(),
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [newestFirst, setNewestFirst] = useState(true);
+
+  const filterOptions = useMemo<SegmentedOption<FilterType>[]>(
+    () => [
+      { value: 'all', label: `Semua (${recap.summary.total})` },
+      { value: 'present', label: `Hadir (${recap.summary.presentCount})` },
+      { value: 'excused', label: `Izin (${recap.summary.excusedCount})` },
+      { value: 'absent', label: `Belum (${recap.summary.absentCount})` },
+    ],
+    [recap.summary],
   );
+
+  const displayedEntries = useMemo(() => {
+    const filtered =
+      filter === 'all'
+        ? recap.entries
+        : recap.entries.filter((entry) => entry.status === filter);
+    const timeOf = (entry: SessionRosterEntry) =>
+      entry.checkedInAt ? Date.parse(entry.checkedInAt) : 0;
+    return [...filtered].sort((a, b) =>
+      newestFirst ? timeOf(b) - timeOf(a) : timeOf(a) - timeOf(b),
+    );
+  }, [recap.entries, filter, newestFirst]);
 
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           icon="alert-circle-outline"
           title="Sesi tidak ditemukan"
@@ -51,49 +102,137 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
     );
   }
 
+  const {
+    total,
+    presentCount,
+    ontimeCount,
+    lateCount,
+    excusedCount,
+    absentCount,
+  } = recap.summary;
+  const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+
   return (
     <ScreenList
       withDock={false}
-      data={attendees}
-      keyExtractor={(record) => record.id}
+      data={displayedEntries}
+      keyExtractor={(record: SessionRosterEntry) => record.studentId}
       header={
         <>
-          <TopBar onBack={() => navigation.goBack()} />
-          <Header
-            title={session.courseName}
-            description={`${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
-          />
-          <View style={styles.summary}>
-            <StatusBadge
-              label={sessionStatusLabel[session.status]}
-              tone={sessionStatusTone[session.status]}
+          <BackButton onPress={() => navigation.goBack()} />
+
+          {error ? (
+            <Banner
+              tone="danger"
+              title="Gagal memuat rekap kehadiran"
+              message={error}
             />
-            <Text variant="bodyStrong">{attendees.length} praktikan hadir</Text>
-          </View>
+          ) : null}
+          <AttendanceSummary
+            metrics={[
+              {
+                key: 'total',
+                label: 'Total peserta',
+                value: total,
+                badge: `${presentCount} hadir`,
+                badgeTone: 'success',
+                caption: 'Peserta terdaftar pada sesi',
+              },
+              {
+                key: 'rate',
+                label: 'Kehadiran',
+                value: `${rate}%`,
+                caption: 'Hadir dari seluruh peserta',
+                captionTone: 'violet',
+              },
+            ]}
+            breakdown={[
+              {
+                key: 'ontime',
+                label: 'Tepat waktu',
+                value: ontimeCount,
+              },
+              {
+                key: 'late',
+                label: 'Terlambat',
+                value: lateCount,
+              },
+              {
+                key: 'present',
+                label: 'Hadir',
+                value: presentCount,
+              },
+              {
+                key: 'excused',
+                label: 'Izin',
+                value: excusedCount,
+              },
+              {
+                key: 'absent',
+                label: 'Belum hadir',
+                value: absentCount,
+              },
+            ]}
+          />
+          <SegmentedControl
+            options={filterOptions}
+            value={filter}
+            onChange={setFilter}
+            accessibilityLabel="Filter kehadiran"
+            scrollable
+          />
         </>
       }
-      sectionHeader={<SectionHeader title="Daftar hadir" />}
+      sectionHeader={
+        <SectionHeader
+          title="Daftar kehadiran"
+          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onAction={() => setNewestFirst((value) => !value)}
+        />
+      }
       empty={
         <EmptyState
           icon="people-outline"
-          title="Belum ada presensi"
-          description="Praktikan yang presensi akan muncul di sini."
+          title="Tidak ada data"
+          description="Tidak ada peserta pada kategori kehadiran ini."
         />
       }
-      renderItem={({ item: record }) => (
-        <ListRow
-          title={record.studentName}
-          meta={`NIM ${record.studentId}`}
-          leading={<Avatar name={record.studentName} tone="lime" />}
-          trailing={
-            <Text variant="bodyStrong">{formatClock(record.checkedInAt)}</Text>
-          }
-        />
-      )}
+      renderItem={({ item: record }: { item: SessionRosterEntry }) => {
+        const presentation = STATUS_PRESENTATION[record.status];
+        const isLate =
+          record.status === 'present' && record.punctuality === 'late';
+        const badgeTone: BadgeTone = isLate ? 'pink' : presentation.badgeTone;
+        const avatarTone: AvatarTone = isLate
+          ? 'pink'
+          : presentation.avatarTone;
+        const badgeLabel = isLate
+          ? record.minutesLate
+            ? `Terlambat (${record.minutesLate}m)`
+            : 'Terlambat'
+          : record.status === 'present' && record.punctuality === 'ontime'
+            ? 'Tepat waktu'
+            : presentation.badgeLabel;
+
+        const identity = studentIdentityMeta(record);
+        const leaveMeta = record.leaveStatus
+          ? [LEAVE_STATUS_LABEL[record.leaveStatus], record.leaveReason]
+              .filter(Boolean)
+              .join(' · ')
+          : '';
+        const meta = [identity, leaveMeta].filter(Boolean).join(' · ');
+
+        return (
+          <AttendanceRecordCard
+            leading={<Avatar name={record.studentName} tone={avatarTone} />}
+            title={record.studentName}
+            meta={meta || 'Tanpa keterangan identitas'}
+            status={{ label: badgeLabel, tone: badgeTone }}
+            time={record.checkedInAt ? formatClock(record.checkedInAt) : '–'}
+            timeLabel={record.checkedInAt ? 'Hadir' : 'Belum'}
+            timeTone={record.checkedInAt ? 'ink' : 'muted'}
+          />
+        );
+      }}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  summary: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-});

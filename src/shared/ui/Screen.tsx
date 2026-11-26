@@ -74,7 +74,9 @@ export function Screen({
           {content}
         </ScrollView>
       ) : (
-        <View style={[styles.flex, styles.scroll, { paddingBottom }]}>{content}</View>
+        <View style={[styles.flex, styles.scroll, { paddingBottom }]}>
+          {content}
+        </View>
       )}
     </SafeAreaView>
   );

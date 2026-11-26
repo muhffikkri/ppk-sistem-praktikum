@@ -16,41 +16,117 @@ service cloud.firestore {
     }
 
     function isAssistant() {
-      return hasRole('assistant');
+      return hasRole('assistant') || hasRole('lab_assistant');
     }
 
     function isStudent() {
       return hasRole('student');
     }
 
+    function validNim(data) {
+      return !('nim' in data) || (data.nim is string && data.nim.matches('^[A-Z0-9]{6,20}$'));
+    }
+
+    function validStudentNim(data) {
+      return !('studentNim' in data)
+        || (data.studentNim is string && data.studentNim.matches('^[A-Z0-9]{6,20}$'));
+    }
+
+    function hasAssistantInvite() {
+      return isSignedIn()
+        && request.auth.token.email is string
+        && exists(/databases/$(database)/documents/assistant_invites/$(request.auth.token.email.lower()));
+    }
+
     function sessionData(sessionId) {
       return get(/databases/$(database)/documents/sessions/$(sessionId)).data;
     }
 
-    function validTransition(from, to) {
-      return from == to
-        || (from == 'scheduled' && to == 'open')
-        || (from == 'open' && to == 'closed');
+    // Edit hanya untuk sesi scheduled: lab/class tidak boleh berubah saat open.
+    function validSessionEdit() {
+      return resource.data.status == 'scheduled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'classId', 'courseName', 'groupName', 'participantIds', 'assistantIds',
+          'title', 'lab', 'labId', 'startsAt', 'endsAt', 'startsAtMs', 'endsAtMs',
+          'updatedAt'
+        ])
+        && request.resource.data.startsAt is string
+        && request.resource.data.endsAt is string
+        && request.resource.data.startsAtMs is int
+        && request.resource.data.endsAtMs is int
+        && request.resource.data.endsAtMs > request.resource.data.startsAtMs
+        && exists(/databases/$(database)/documents/classes/$(request.resource.data.classId))
+        && request.auth.uid in get(/databases/$(database)/documents/classes/$(request.resource.data.classId)).data.assistantIds;
+    }
+
+    // Transisi status hanya boleh mengubah field yang relevan.
+    // Membuka sesi sengaja dilarang dari klien: rules tidak bisa melakukan
+    // query sesi open lain untuk asisten yang sama. Gunakan callable openSession
+    // yang berjalan di Admin SDK dan memvalidasi konflik di dalam transaction.
+    function validStatusPatch() {
+      return (
+        resource.data.status == 'open'
+        && request.resource.data.status == 'closed'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'closedAt'
+        ])
+      ) || (
+        resource.data.status == 'scheduled'
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status', 'cancelledAt'
+        ])
+      );
+    }
+
+    // Izin hanya sampai batas waktu sesi; sesi closed tidak menerima izin.
+    function withinLeaveWindow(data) {
+      return data.endsAtMs is int
+        && request.time.toMillis() <= data.endsAtMs;
     }
 
     // 1. Profil Pengguna
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAssistant());
+      // Asisten hanya boleh mengambil profil praktikan satu per satu (nama/NIM
+      // untuk rekap). Query seluruh users dilarang; pencarian email lewat
+      // Cloud Function resolveStudentByEmail.
+      allow get: if isSignedIn()
+        && (request.auth.uid == uid
+          || (isAssistant() && resource.data.role == 'student'));
+      allow list: if false;
 
       allow create: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == uid
-        && request.resource.data.role in ['student', 'assistant']
+        && (
+          request.resource.data.role == 'student'
+          || (request.resource.data.role == 'assistant' && hasAssistantInvite())
+        )
         && request.resource.data.displayName is string
-        && request.resource.data.displayName.size() > 0;
+        && request.resource.data.displayName.size() > 0
+        && validNim(request.resource.data);
 
       allow update: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.email == resource.data.email;
+        && request.resource.data.email == resource.data.email
+        && validNim(request.resource.data)
+        && (
+          request.resource.data.role == resource.data.role
+          || (resource.data.role == 'student'
+            && request.resource.data.role == 'assistant'
+            && hasAssistantInvite())
+        );
 
       allow delete: if false;
+    }
+
+    // Undangan asisten ditulis admin (Admin SDK); klien hanya cek statusnya.
+    match /assistant_invites/{email} {
+      allow read: if isSignedIn()
+        && request.auth.token.email is string
+        && request.auth.token.email.lower() == email;
+      allow write: if false;
     }
 
     match /users/{uid}/push_tokens/{installationId} {
@@ -110,14 +186,22 @@ service cloud.firestore {
         && request.resource.data.closedAt == null
         && request.resource.data.startsAt is string
         && request.resource.data.endsAt is string
+        && request.resource.data.startsAtMs is int
+        && request.resource.data.endsAtMs is int
+        && request.resource.data.endsAtMs > request.resource.data.startsAtMs
         && request.auth.uid in request.resource.data.assistantIds;
 
       allow update: if isAssistant()
         && request.auth.uid in resource.data.assistantIds
         && request.resource.data.createdBy == resource.data.createdBy
-        && validTransition(resource.data.status, request.resource.data.status);
+        && (
+          (resource.data.status == request.resource.data.status
+            && validSessionEdit())
+          || validStatusPatch()
+        );
 
-      allow delete: if isAssistant() && request.auth.uid in resource.data.assistantIds;
+      // Batalkan, jangan hapus: peserta sudah menerima notifikasi jadwal.
+      allow delete: if false;
     }
 
     // 3b. Master Laboratorium (Sprint 3) — acuan geofence presensi & peta
@@ -147,93 +231,119 @@ service cloud.firestore {
       allow delete: if isAssistant();
     }
 
-    // Geofence presensi: sesi wajib terhubung ke labs/{labId}, perangkat wajib
-    // mengirim koordinat + jarak, dan keduanya harus konsisten dengan radius lab.
-    // Rules tidak punya cos(): 1° lintang ≈ 111.320 m, 1° bujur ≥ 110.000 m untuk
-    // lintang wilayah Indonesia (|lat| ≤ ~11°), jadi kotak batas ini tidak menolak
-    // posisi yang sah di dalam radius.
-    // Pembagi wajib float (111320.0): int / int di rules adalah pembagian bulat,
-    // sehingga 50 / 111320 = 0 dan semua presensi tertolak. Toleransi +1 m
-    // menutup selisih pembulatan jarak di aplikasi (Math.round).
-    function withinLabGeofence(data, session) {
-      return session.labId is string
-        && exists(/databases/$(database)/documents/labs/$(session.labId))
-        && labWithinRadius(
-          data,
-          get(/databases/$(database)/documents/labs/$(session.labId)).data
-        );
-    }
-
-    function labWithinRadius(data, lab) {
-      return data.deviceLocation.keys().hasOnly(['latitude', 'longitude', 'accuracyMeters'])
-        && data.deviceLocation.latitude is number
-        && data.deviceLocation.longitude is number
-        && (data.deviceLocation.get('accuracyMeters', null) == null
-          || data.deviceLocation.accuracyMeters <= 100)
-        && data.distanceMeters is number
-        && data.distanceMeters >= 0
-        && data.distanceMeters <= lab.radiusMeters
-        && math.abs(data.deviceLocation.latitude - lab.location.latitude)
-          <= (lab.radiusMeters + 1) / 111320.0
-        && math.abs(data.deviceLocation.longitude - lab.location.longitude)
-          <= (lab.radiusMeters + 1) / 110000.0;
-    }
-
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})
+    // Tulisan presensi hanya lewat callable submitQrCheckIn (Admin SDK), yang
+    // memverifikasi token QR berputar dan geofence. Klien tidak boleh menulis.
     match /attendance/{attendanceId} {
       // get dokumen milik sendiri boleh walau belum ada (cek duplikasi setelah permission-denied)
-      allow get: if isAssistant()
+      allow get: if (isAssistant()
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
         || (isStudent() && attendanceId.matches('^.+_' + request.auth.uid + '$'));
 
-      allow list: if isAssistant()
+      allow list: if (isAssistant()
+        && exists(/databases/$(database)/documents/sessions/$(resource.data.sessionId))
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
-      allow create: if isStudent()
-        && request.resource.data.keys().hasOnly([
-          'id', 'sessionId', 'classId', 'studentId', 'studentName',
-          'checkedInAt', 'deviceLocation', 'distanceMeters'
-        ])
-        && request.resource.data.studentId == request.auth.uid
-        && attendanceId == (request.resource.data.sessionId + '_' + request.auth.uid)
-        && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
-        && sessionData(request.resource.data.sessionId).status == 'open'
-        && request.auth.uid in sessionData(request.resource.data.sessionId).participantIds
-        && request.resource.data.checkedInAt is string
-        && request.resource.data.studentName is string
-        && withinLabGeofence(
-          request.resource.data,
-          sessionData(request.resource.data.sessionId)
-        );
+      allow create: if false;
 
       allow update, delete: if false;
     }
 
     // 5. Pengajuan Izin & Pemeriksaan Asisten
     match /leave_requests/{leaveId} {
-      allow read: if isAssistant()
+      // Alasan izin bisa berisi data kesehatan: hanya asisten sesi terkait.
+      allow get: if (isAssistant()
+        && exists(/databases/$(database)/documents/sessions/$(resource.data.sessionId))
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
+      allow list: if (isAssistant()
+        && exists(/databases/$(database)/documents/sessions/$(resource.data.sessionId))
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+
+      // ID deterministik {sessionId}_{studentId} mencegah duplikat lintas perangkat.
       allow create: if isStudent()
+        && leaveId == request.resource.data.sessionId + '_' + request.auth.uid
         && request.resource.data.studentId == request.auth.uid
         && request.resource.data.status == 'pending'
         && request.resource.data.reviewedBy == null
         && request.resource.data.reviewedAt == null
         && request.resource.data.reason is string
         && request.resource.data.reason.size() > 0
+        && validStudentNim(request.resource.data)
         && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
-        && request.auth.uid in get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.participantIds;
+        && sessionData(request.resource.data.sessionId).status in ['scheduled', 'open']
+        && withinLeaveWindow(sessionData(request.resource.data.sessionId))
+        && request.auth.uid in sessionData(request.resource.data.sessionId).participantIds
+        && !exists(/databases/$(database)/documents/attendance/$(leaveId));
 
-      allow update: if isAssistant()
-        && resource.data.status == 'pending'
-        && request.resource.data.status in ['approved', 'rejected']
-        && request.resource.data.reviewedBy == request.auth.uid
-        && request.resource.data.studentId == resource.data.studentId
-        && request.resource.data.sessionId == resource.data.sessionId
-        && request.resource.data.reason == resource.data.reason
-        && request.resource.data.aiPrediction == resource.data.aiPrediction
-        && request.auth.uid in sessionData(resource.data.sessionId).assistantIds;
+      allow update: if isSignedIn() && (
+        // Pengajuan ulang setelah ditolak oleh praktikan yang bersangkutan.
+        (
+          isStudent()
+          && request.auth.uid == resource.data.studentId
+          && resource.data.status == 'rejected'
+          && request.resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'reason', 'aiPrediction', 'status', 'decisionNote', 'reviewedBy',
+            'reviewedAt', 'createdAt', 'studentNim'
+          ])
+          && request.resource.data.reason is string
+          && request.resource.data.reason.size() > 0
+          && request.resource.data.reviewedBy == null
+          && request.resource.data.reviewedAt == null
+          && validStudentNim(request.resource.data)
+          && sessionData(resource.data.sessionId).status in ['scheduled', 'open']
+          && withinLeaveWindow(sessionData(resource.data.sessionId))
+          && !exists(/databases/$(database)/documents/attendance/$(leaveId))
+        ) || (
+          // Keputusan asisten; izin tidak boleh disetujui bila presensi ada.
+          isAssistant()
+          && resource.data.status == 'pending'
+          && request.resource.data.status in ['approved', 'rejected']
+          && request.resource.data.reviewedBy == request.auth.uid
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.sessionId == resource.data.sessionId
+          && request.resource.data.reason == resource.data.reason
+          && request.resource.data.aiPrediction == resource.data.aiPrediction
+          && request.auth.uid in sessionData(resource.data.sessionId).assistantIds
+          && (request.resource.data.status != 'approved'
+            || !exists(/databases/$(database)/documents/attendance/$(leaveId)))
+        )
+      );
 
       allow delete: if false;
+    }
+
+    // 6. Tagihan Denda Keterlambatan (Sprint 4 - SRS-4.11)
+    // Diterbitkan klien saat presensi terlambat, dibebaskan asisten saat izin approved.
+    match /fines/{fineId} {
+      allow read: if isAssistant()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && (request.auth.uid == request.resource.data.studentId || isAssistant())
+        && request.resource.data.status in ['unpaid', 'waived']
+        && request.resource.data.amount is int
+        && request.resource.data.amount > 0;
+
+      allow update: if isAssistant()
+        && request.resource.data.status in ['unpaid', 'waived'];
+
+      allow delete: if false;
+    }
+
+    // 7. Transaksi Pembayaran (Sprint 4, P4/backend only)
+    match /payment_transactions/{orderId} {
+      allow read: if isAssistant()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+      allow create, update, delete: if false;
     }
   }
 }

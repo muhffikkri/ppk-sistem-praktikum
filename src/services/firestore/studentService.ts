@@ -8,7 +8,10 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
-import { checkInRule } from '../../domain/attendanceRules';
+import {
+  checkInFailureMessage,
+  checkInRule,
+} from '../../domain/attendanceRules';
 import {
   AsyncActionResult,
   AttendanceRecord,
@@ -17,11 +20,14 @@ import {
   UserProfile,
 } from '../../domain/types';
 import { db } from '../firebase';
+import { issueFineIfLate } from './fineService';
 import { normalizeAttendanceRecord } from './normalize';
 export type {
-  AsyncActionResult, AttendanceRecord, PracticalClass,
+  AsyncActionResult,
+  AttendanceRecord,
+  PracticalClass,
   Session,
-  UserProfile
+  UserProfile,
 };
 
 const classesCol = collection(db, 'classes');
@@ -79,18 +85,22 @@ export function subscribeStudentAttendance(
   onData: (records: AttendanceRecord[]) => void,
   onError: (msg: string) => void,
 ) {
-  const q = query(
-    attendanceCol,
-    where('studentId', '==', uid),
-    orderBy('checkedInAt', 'desc'),
-  );
+  // Query single-field (studentId) lalu urutkan di klien agar tidak gagal saat
+  // composite index (studentId, checkedInAt) belum di-deploy di Firestore.
+  const q = query(attendanceCol, where('studentId', '==', uid));
 
   return onSnapshot(
     q,
+    { includeMetadataChanges: true },
     (snap) => {
-      const records = snap.docs.map((d) =>
-        normalizeAttendanceRecord(d.id, d.data()),
-      );
+      // Latency compensation memasukkan write lokal sebelum server menerimanya.
+      // Jangan anggap itu presensi tersimpan sampai snapshot server tiba.
+      const records = snap.docs
+        .filter((d) => !d.metadata.hasPendingWrites)
+        .map((d) => normalizeAttendanceRecord(d.id, d.data()))
+        .sort((a, b) =>
+          (b.checkedInAt ?? '').localeCompare(a.checkedInAt ?? ''),
+        );
       onData(records);
     },
     (err) => {
@@ -119,13 +129,11 @@ export async function checkInStudent(input: {
   );
 
   if (!validation.ok) {
-    const message =
-      validation.reason === 'invalid_status'
-        ? 'Sesi belum dibuka atau sudah ditutup.'
-        : validation.reason === 'already_checked_in'
-          ? 'Kamu sudah presensi di sesi ini.'
-          : 'Sesi tidak ditemukan.';
-    return { ok: false, reason: validation.reason, message };
+    return {
+      ok: false,
+      reason: validation.reason,
+      message: checkInFailureMessage(validation.reason),
+    };
   }
 
   // ID deterministik = anti-duplikasi di sisi server: setDoc ke dokumen yang
@@ -134,14 +142,18 @@ export async function checkInStudent(input: {
   const attendanceRef = doc(db, 'attendance', attendanceId);
 
   try {
-    await setDoc(attendanceRef, {
+    const payload: AttendanceRecord = {
       id: attendanceId,
       sessionId: session.id,
       classId: session.classId ?? '',
       studentId: student.uid,
       studentName: student.displayName,
+      ...(student.nim ? { studentNim: student.nim } : {}),
       checkedInAt: new Date().toISOString(),
-    });
+    };
+    await setDoc(attendanceRef, payload);
+    // Terbitkan tagihan denda jika presensi terlambat (SRS-4.11)
+    void issueFineIfLate(db, { session, attendance: payload });
     return { ok: true };
   } catch (e) {
     if (errorCode(e) === 'permission-denied') {

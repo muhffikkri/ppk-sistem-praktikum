@@ -93,7 +93,7 @@ const checkInSuccess = checkInRule(
   openStudentSession,
   currentStudent,
   [],
-  '2026-10-21T08:05:00.000Z',
+  '2026-10-21T10:35:00.000Z',
 );
 assert(checkInSuccess.ok === true, 'First checkIn on open session succeeds');
 if (checkInSuccess.ok) {
@@ -106,14 +106,17 @@ if (checkInSuccess.ok) {
     'Record studentId matches',
   );
   assert(
-    checkInSuccess.record.checkedInAt === '2026-10-21T08:05:00.000Z',
+    checkInSuccess.record.checkedInAt === '2026-10-21T10:35:00.000Z',
     'Record timestamp matches',
   );
 
   // Check duplicate prevention
-  const duplicateCheck = checkInRule(openStudentSession, currentStudent, [
-    checkInSuccess.record,
-  ]);
+  const duplicateCheck = checkInRule(
+    openStudentSession,
+    currentStudent,
+    [checkInSuccess.record],
+    '2026-10-21T10:36:00.000Z',
+  );
   assert(
     duplicateCheck.ok === false &&
       duplicateCheck.reason === 'already_checked_in',

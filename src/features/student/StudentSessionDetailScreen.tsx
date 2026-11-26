@@ -3,20 +3,24 @@ import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  canRequestLeave,
+  isLeaveBlockingCheckIn,
+} from '../../domain/leaveRules';
+import {
   Banner,
   Button,
   Card,
   CardContent,
   EmptyState,
-  Header,
   LoadingState,
   Screen,
   SectionHeader,
   spacing,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
+import { useStudentLeaveViewModel } from '../leave';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentSessionDetail'>;
@@ -31,6 +35,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
   const { getSessionById, getAttendanceForSession, loading } =
     useStudentAttendanceViewModel();
+  const { getLeaveForSession } = useStudentLeaveViewModel();
 
   const session = getSessionById(sessionId);
   const attendance = getAttendanceForSession(sessionId);
@@ -38,7 +43,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   if (loading && !session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <LoadingState label="Memuat detail sesi…" />
       </Screen>
     );
@@ -47,7 +52,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           title="Sesi tidak ditemukan"
           description="Sesi praktikum tidak tersedia atau telah dihapus."
@@ -58,14 +63,13 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 
   const isAlreadyCheckedIn = attendance !== undefined;
   const isOpen = session.status === 'open';
+  const leave = getLeaveForSession(sessionId);
+  const leaveApproved = isLeaveBlockingCheckIn(leave);
+  const canLeave = canRequestLeave(session, attendance, leave);
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Detail Sesi"
-        description={`${session.courseName} — ${session.groupName}`}
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       <View style={styles.section}>
         <SectionHeader title="Informasi Sesi" />
@@ -73,26 +77,42 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
           <CardContent>
             <View style={styles.detailGrid}>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Mata Kuliah</Text>
+                <Text variant="caption" tone="muted">
+                  Mata Kuliah
+                </Text>
                 <Text variant="captionStrong">{session.courseName}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Kelas</Text>
+                <Text variant="caption" tone="muted">
+                  Kelas
+                </Text>
                 <Text variant="captionStrong">{session.groupName}</Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Waktu</Text>
+                <Text variant="caption" tone="muted">
+                  Waktu
+                </Text>
                 <Text variant="captionStrong">
-                  {formatSessionDate(session.startsAt)} · {formatTimeRange(session.startsAt, session.endsAt)}
+                  {formatSessionDate(session.startsAt)} ·{' '}
+                  {formatTimeRange(session.startsAt, session.endsAt)}
                 </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Laboratorium</Text>
-                <Text variant="captionStrong">{session.lab ?? 'Tidak ditentukan'}</Text>
+                <Text variant="caption" tone="muted">
+                  Laboratorium
+                </Text>
+                <Text variant="captionStrong">
+                  {session.lab ?? 'Tidak ditentukan'}
+                </Text>
               </View>
               <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">Status</Text>
-                <Text variant="captionStrong" tone={isOpen ? 'violet' : 'muted'}>
+                <Text variant="caption" tone="muted">
+                  Status
+                </Text>
+                <Text
+                  variant="captionStrong"
+                  tone={isOpen ? 'violet' : 'muted'}
+                >
                   {STATUS_LABEL[session.status] ?? session.status}
                 </Text>
               </View>
@@ -113,19 +133,42 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
         />
       ) : null}
 
+      {leaveApproved && !isAlreadyCheckedIn ? (
+        <Banner
+          tone="warning"
+          title="Izin sudah disetujui"
+          message="Presensi untuk sesi ini tidak diperlukan. Hubungi asisten bila ada perubahan status izin."
+        />
+      ) : null}
+
       <View style={styles.actions}>
         {!isAlreadyCheckedIn ? (
           <Button
-            label={isOpen ? 'Buka Presensi Lokasi' : `Sesi ${STATUS_LABEL[session.status] ?? session.status}`}
+            label={
+              leaveApproved
+                ? 'Izin Disetujui'
+                : isOpen
+                  ? 'Scan QR Presensi'
+                  : `Sesi ${STATUS_LABEL[session.status] ?? session.status}`
+            }
             variant="primary"
-            disabled={!isOpen}
-            onPress={() => navigation.navigate('StudentCheckIn', { sessionId })}
+            disabled={!isOpen || leaveApproved}
+            onPress={() => navigation.navigate('BarcodeScan')}
           />
         ) : null}
         <Button
-          label="Ajukan Izin Ketidakhadiran"
+          label={
+            isAlreadyCheckedIn
+              ? 'Sudah Hadir, Tidak Bisa Izin'
+              : leave && leave.status !== 'rejected'
+                ? 'Izin Sudah Diajukan'
+                : 'Ajukan Izin Ketidakhadiran'
+          }
           variant="outline"
-          onPress={() => navigation.navigate('StudentLeaveRequestForm', { sessionId })}
+          disabled={!canLeave}
+          onPress={() =>
+            navigation.navigate('StudentLeaveRequestForm', { sessionId })
+          }
         />
       </View>
     </Screen>

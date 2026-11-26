@@ -18,7 +18,7 @@ import {
   removeParticipant,
   createSession,
   updateSession,
-  deleteSession,
+  cancelSession,
   openSession,
   closeSession,
   subscribeClasses,
@@ -77,7 +77,7 @@ export type AssistantSessionsViewModel = {
     sessionId: string,
     input: SessionInput,
   ) => Promise<AsyncActionResult>;
-  deleteSession: (sessionId: string) => Promise<AsyncActionResult>;
+  cancelSession: (sessionId: string) => Promise<AsyncActionResult>;
   addParticipantByEmail: (
     classId: string,
     email: string,
@@ -312,6 +312,13 @@ export const AssistantSessionsProvider = ({
   // snapshot updates its sessions in a single dispatch.
   useEffect(() => {
     const listeners = attendanceUnsubsRef.current;
+
+    if (!enabled || !user?.uid) {
+      listeners.forEach((unsubscribe) => unsubscribe());
+      listeners.clear();
+      return;
+    }
+
     const chunks = chunkIds(sessionIds ? sessionIds.split(',') : []);
     const wanted = new Set(chunks.map((chunk) => chunk.join(',')));
 
@@ -330,11 +337,15 @@ export const AssistantSessionsProvider = ({
         subscribeAttendanceForSessionChunk(
           chunk,
           (bySession) => dispatch({ type: 'SET_ATTENDANCE_BULK', bySession }),
-          (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+          (msg: string) => {
+            // Lepas listener yang gagal agar retry() dapat menyambung ulang.
+            listeners.delete(key);
+            dispatch({ type: 'SET_ERROR', error: msg });
+          },
         ),
       );
     });
-  }, [sessionIds]);
+  }, [enabled, user?.uid, sessionIds, retryCounter]);
 
   // Close every attendance listener on unmount/logout.
   useEffect(() => {
@@ -388,9 +399,11 @@ export const AssistantSessionsProvider = ({
             ? createSession(uid, input)
             : Promise.resolve(unauthenticated()),
       updateSession: (sessionId: string, input: SessionInput) =>
-        enabled ? updateSession(sessionId, input) : Promise.resolve(forbidden()),
-      deleteSession: (sessionId: string) =>
-        enabled ? deleteSession(sessionId) : Promise.resolve(forbidden()),
+        enabled
+          ? updateSession(sessionId, input)
+          : Promise.resolve(forbidden()),
+      cancelSession: (sessionId: string) =>
+        enabled ? cancelSession(sessionId) : Promise.resolve(forbidden()),
       addParticipantByEmail: (classId: string, email: string) =>
         enabled
           ? addParticipantByEmail(classId, email)

@@ -5,17 +5,18 @@ import { StyleSheet, View } from 'react-native';
 import type { AuthStackParamList } from '../../app/navigation';
 import { isFirebaseConfigured } from '../../services/firebase';
 import {
+  BackButton,
   Banner,
   Button,
-  Header,
   IconButton,
   Screen,
   spacing,
+  Text,
   TextField,
-  TopBar,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { AuthSwitchLink } from './AuthSwitchLink';
+import { GoogleLogo } from './GoogleLogo';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -30,6 +31,7 @@ export function LoginScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
 
   const activeError = localError ?? error;
   // Validation messages render under their own field; everything else is a banner.
@@ -64,9 +66,15 @@ export function LoginScreen({ navigation }: Props) {
   };
 
   const handleGoogleLogin = async () => {
+    if (googlePending || submitting) return;
     setLocalError(null);
     clearError();
-    await loginWithGoogle();
+    setGooglePending(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGooglePending(false);
+    }
   };
 
   const handleBack = () => {
@@ -74,14 +82,19 @@ export function LoginScreen({ navigation }: Props) {
     navigation.goBack();
   };
 
+  // `username` + `current-password` is the credential pair RN TextInput maps
+  // to iOS Keychain / Android Autofill; `textContentType` is intentionally
+  // omitted because it takes precedence over cross-platform `autoComplete`.
   return (
     <Screen withDock={false}>
-      <TopBar title="Masuk" onBack={handleBack} />
+      <BackButton onPress={handleBack} />
 
-      <Header
-        title="Masuk ke akun"
-        description="Gunakan email dan password akun praktikan atau asisten."
-      />
+      <View style={styles.titleBlock}>
+        <Text variant="display">Masuk</Text>
+        <Text variant="body" tone="muted">
+          Gunakan email dan password akun praktikan atau asisten.
+        </Text>
+      </View>
 
       {!isFirebaseConfigured ? (
         <Banner
@@ -103,9 +116,9 @@ export function LoginScreen({ navigation }: Props) {
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
-          autoComplete="email"
-          textContentType="emailAddress"
+          autoComplete="username"
           importantForAutofill="yes"
+          returnKeyType="next"
           editable={!submitting}
           error={emailError}
         />
@@ -122,8 +135,8 @@ export function LoginScreen({ navigation }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="current-password"
-          textContentType="password"
           importantForAutofill="yes"
+          returnKeyType="done"
           editable={!submitting}
           error={passwordError}
           rightAccessory={
@@ -157,12 +170,14 @@ export function LoginScreen({ navigation }: Props) {
           variant="primary"
           icon="log-in-outline"
           loading={submitting}
+          disabled={googlePending}
           onPress={handleLogin}
         />
         <Button
           label="Masuk dengan Google"
           variant="outline"
-          icon="logo-google"
+          iconElement={<GoogleLogo size={18} />}
+          loading={googlePending}
           disabled={submitting}
           onPress={handleGoogleLogin}
         />
@@ -184,6 +199,7 @@ export function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  titleBlock: { gap: spacing.xs },
   fields: { gap: spacing.md },
   actions: { gap: spacing.sm },
 });

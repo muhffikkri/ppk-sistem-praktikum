@@ -1,3 +1,4 @@
+import { isWithinCheckInWindow } from './sessionRules';
 import {
   AttendanceRecord,
   DemoStudent,
@@ -29,6 +30,10 @@ export function checkInRule(
     return { ok: false, reason: 'invalid_status' };
   }
 
+  if (!isWithinCheckInWindow(session, Date.parse(nowIso))) {
+    return { ok: false, reason: 'outside_window' };
+  }
+
   const alreadyCheckedIn = existingRecords.some(
     (record) =>
       record.sessionId === session.id && record.studentId === student.id,
@@ -47,4 +52,17 @@ export function checkInRule(
   };
 
   return { ok: true, record: newRecord };
+}
+
+export function checkInFailureMessage(reason: SessionActionFailure): string {
+  switch (reason) {
+    case 'invalid_status':
+      return 'Sesi belum dibuka atau sudah ditutup.';
+    case 'already_checked_in':
+      return 'Kamu sudah presensi di sesi ini.';
+    case 'outside_window':
+      return 'Presensi hanya tersedia mulai 15 menit sebelum jadwal sampai 10 menit setelah sesi selesai.';
+    default:
+      return 'Sesi tidak ditemukan.';
+  }
 }

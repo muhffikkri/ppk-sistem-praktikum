@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-import type {
-  AttendanceRecord,
-  Session,
-  SessionActionFailure,
-} from '../../domain/types';
+import { useTransientState } from '../../shared/navigation/useTransientFeedback';
+import {
+  buildSessionRosterRecap,
+  type SessionRecapResult,
+} from '../../domain/sessionRecapRules';
+import type { AttendanceRecord, Session } from '../../domain/types';
 import { useAssistantSessionsViewModel } from '../../state';
+import { useAssistantLeaveViewModel } from '../leave';
 import { formatClock } from './formatters';
 
 export type AssistantFeedback =
@@ -14,23 +16,33 @@ export type AssistantFeedback =
 type LastAction =
   | { type: 'opened' }
   | { type: 'closed' }
-  | { type: 'failed'; reason: SessionActionFailure };
+  | { type: 'cancelled' }
+  | { type: 'failed'; reason: string };
 
 export type AssistantSessionDetailViewModel = {
   session: Session | undefined;
   attendees: AttendanceRecord[];
+  recap: SessionRecapResult;
   canOpen: boolean;
   canClose: boolean;
+  canEdit: boolean;
+  canCancel: boolean;
   statusHint: string;
   feedback: AssistantFeedback | null;
   openSession: () => Promise<void>;
   closeSession: () => Promise<void>;
+  cancelSession: () => Promise<void>;
   dismissFeedback: () => void;
 };
 
-const failureMessages: Record<SessionActionFailure, string> = {
-  session_not_found: 'Sesi tidak ditemukan pada data demo.',
+const failureMessages: Record<string, string> = {
+  session_not_found: 'Sesi tidak ditemukan.',
   invalid_status: 'Aksi tidak sesuai dengan status sesi saat ini.',
+  outside_window:
+    'Sesi hanya bisa dibuka mulai 15 menit sebelum jadwal sampai waktu selesai.',
+  active_session_conflict:
+    'Asprak sudah memiliki sesi terbuka. Tutup sesi tersebut sebelum membuka sesi ini.',
+  forbidden: 'Kamu bukan asisten pada sesi ini.',
   already_checked_in: 'Aksi tidak tersedia untuk sesi ini.',
 };
 
@@ -41,7 +53,9 @@ function statusHintFor(session: Session | undefined): string {
     case 'open':
       return 'Sesi sedang terbuka. Tutup sesi bila praktikum telah selesai.';
     case 'closed':
-      return 'Sesi sudah ditutup dan tidak dapat dibuka kembali. Rekap tetap dapat dilihat.';
+      return 'Sesi sudah ditutup. Buka kembali dalam jendela jadwal bila perlu.';
+    case 'cancelled':
+      return 'Sesi dibatalkan. Jadwal tetap terlihat oleh praktikan sebagai dibatalkan.';
     default:
       return '';
   }
@@ -67,7 +81,48 @@ function toFeedback(
     return { kind: 'success', message: `Sesi ditutup${time}.` };
   }
 
-  return { kind: 'error', message: failureMessages[action.reason] };
+  if (action.type === 'cancelled') {
+    return { kind: 'success', message: 'Sesi dibatalkan.' };
+  }
+
+  return {
+    kind: 'error',
+    message: failureMessages[action.reason] ?? 'Aksi tidak dapat diselesaikan.',
+  };
+}
+
+/**
+ * Satu sumber rekap sesi untuk detail sesi maupun daftar kehadiran asisten:
+ * filter izin per sesi dan pembangunan rekap dilakukan di sini saja.
+ */
+export function useSessionRosterRecap(sessionId: string) {
+  const { getSessionById, getAttendanceForSession } =
+    useAssistantSessionsViewModel();
+  const { leaveRequests } = useAssistantLeaveViewModel();
+
+  const session = getSessionById(sessionId);
+  const attendees = getAttendanceForSession(sessionId);
+
+  const recap = useMemo(
+    () =>
+      buildSessionRosterRecap({
+        participantIds: session?.participantIds ?? [],
+        attendees,
+        leaves: leaveRequests.filter((l) => l.sessionId === sessionId),
+        sessionStartsAt: session?.startsAt,
+        toleranceMinutes: session?.toleranceMinutes,
+      }),
+    [
+      session?.participantIds,
+      session?.startsAt,
+      session?.toleranceMinutes,
+      attendees,
+      leaveRequests,
+      sessionId,
+    ],
+  );
+
+  return { session, attendees, recap };
 }
 
 /**
@@ -79,17 +134,15 @@ export function useAssistantSessionDetail(
   sessionId: string,
 ): AssistantSessionDetailViewModel {
   const viewModel = useAssistantSessionsViewModel();
+  const { session, attendees, recap } = useSessionRosterRecap(sessionId);
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
-
-  const session = viewModel.getSessionById(sessionId);
-  const attendees = viewModel.getAttendanceForSession(sessionId);
 
   const openSession = async () => {
     const result = await viewModel.openSession(sessionId);
     setLastAction(
       result.ok
         ? { type: 'opened' }
-        : { type: 'failed', reason: 'invalid_status' },
+        : { type: 'failed', reason: result.reason },
     );
   };
 
@@ -98,19 +151,42 @@ export function useAssistantSessionDetail(
     setLastAction(
       result.ok
         ? { type: 'closed' }
-        : { type: 'failed', reason: 'invalid_status' },
+        : { type: 'failed', reason: result.reason },
     );
   };
+
+  const cancelSession = async () => {
+    const result = await viewModel.cancelSession(sessionId);
+    setLastAction(
+      result.ok
+        ? { type: 'cancelled' }
+        : { type: 'failed', reason: result.reason },
+    );
+  };
+
+  const isScheduled = session?.status === 'scheduled';
+  const feedback = toFeedback(lastAction, session);
+  const dismissFeedback = useCallback(() => setLastAction(null), []);
+
+  useTransientState({
+    pending: feedback !== null,
+    revision: feedback,
+    clear: dismissFeedback,
+  });
 
   return {
     session,
     attendees,
-    canOpen: session?.status === 'scheduled',
+    recap,
+    canOpen: isScheduled || session?.status === 'closed',
     canClose: session?.status === 'open',
+    canEdit: isScheduled,
+    canCancel: isScheduled,
     statusHint: statusHintFor(session),
-    feedback: toFeedback(lastAction, session),
+    feedback,
     openSession,
     closeSession,
-    dismissFeedback: () => setLastAction(null),
+    cancelSession,
+    dismissFeedback,
   };
 }

@@ -7,12 +7,11 @@ import {
   Banner,
   Button,
   DateTimeField,
-  Header,
   Screen,
   SelectField,
   spacing,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import { useLabManagement } from '../labs';
@@ -71,6 +70,7 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
   const [endError, setEndError] = useState<string>();
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const editable = isEditing ? existing?.status === 'scheduled' : true;
 
   const onStartChange = (value: Date) => {
     setStart(value);
@@ -79,6 +79,7 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (!editable) return;
     const startsAt = combine(day, start);
     const endsAt = combine(day, end);
     setFormError(null);
@@ -116,10 +117,16 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header title={isEditing ? 'Edit sesi' : 'Buat sesi'} />
+      <BackButton onPress={() => navigation.goBack()} />
 
       <View style={styles.form}>
+        {isEditing && !editable ? (
+          <Banner
+            tone="warning"
+            title="Sesi tidak bisa diedit"
+            message="Hanya sesi berstatus terjadwal yang bisa diubah."
+          />
+        ) : null}
         {classes.length === 0 ? (
           <>
             <Banner
@@ -221,7 +228,7 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
         <Button
           label={isEditing ? 'Simpan perubahan' : 'Buat sesi'}
           loading={submitting}
-          disabled={submitting}
+          disabled={submitting || !editable}
           onPress={handleSubmit}
         />
       </View>

@@ -8,6 +8,7 @@ export function NotificationBellButton({ onPress }: { onPress: () => void }) {
   return (
     <IconButton
       icon={unreadCount > 0 ? 'notifications' : 'notifications-outline'}
+      variant="circle"
       accessibilityLabel="Notifikasi"
       badge={unreadBadgeLabel(unreadCount)}
       onPress={onPress}

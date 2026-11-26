@@ -4,6 +4,9 @@ package-lock.json
 dist
 assets
 
+# Generated model artifact: keep its minified form
+ai/model-edom.json
+
 # Synced project docs: do not reformat
 AGENTS.md
 README.md

@@ -19,10 +19,19 @@ import {
   spacing,
   Text,
 } from '../shared/ui';
+import { canManageLabMaster, isAssistantRole } from '../domain/asprakScope';
+import type { UserRole } from '../domain/types';
 import { useAuth } from '../state';
+import { RootTopBar } from '../features/shell/RootTopBar';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  student: 'Praktikan',
+  assistant: 'Asprak',
+  lab_assistant: 'Aslab',
+};
 
 type ProfileMenuItem = {
   label: string;
@@ -38,8 +47,8 @@ export function ProfileScreen({ navigation }: Props) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const isAssistant = user?.role === 'assistant';
-  const roleLabel = isAssistant ? 'Asisten' : 'Praktikan';
+  const isAssistant = isAssistantRole(user?.role);
+  const roleLabel = ROLE_LABEL[user?.role ?? 'student'];
   const displayName = user?.displayName ?? 'Pengguna';
   const email = user?.email ?? '-';
   const activeError = localError ?? error;
@@ -58,12 +67,16 @@ export function ProfileScreen({ navigation }: Props) {
           icon: 'people-outline',
           onPress: () => navigation.navigate('AssistantClassList'),
         },
-        {
-          label: 'Lokasi Laboratorium',
-          sub: 'Atur koordinat & radius presensi',
-          icon: 'location-outline',
-          onPress: () => navigation.navigate('AssistantLabList'),
-        },
+        ...(canManageLabMaster(user?.role)
+          ? [
+              {
+                label: 'Lokasi Laboratorium',
+                sub: 'Atur koordinat & radius presensi',
+                icon: 'location-outline' as const,
+                onPress: () => navigation.navigate('AssistantLabList'),
+              },
+            ]
+          : []),
         {
           label: 'Pemeriksaan Izin',
           sub: 'Tinjau pengajuan izin & prediksi AI',
@@ -115,6 +128,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   return (
     <Screen>
+      <RootTopBar />
       <Header title="Profil" />
 
       {activeError ? (

@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { isAssistantRole } from '../domain/asprakScope';
 import { AssistantHome } from '../features/assistant/AssistantHome';
 import { StudentHome } from '../features/student/StudentHome';
 import { useAuth } from '../state';
@@ -9,7 +10,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export function HomeScreen({ navigation }: Props) {
   const { user } = useAuth();
-  return user?.role === 'assistant' ? (
+  return isAssistantRole(user?.role) ? (
     <AssistantHome navigation={navigation} />
   ) : (
     <StudentHome navigation={navigation} />

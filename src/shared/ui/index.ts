@@ -1,3 +1,4 @@
+export { BackButton, type BackButtonProps } from './BackButton';
 export {
   Avatar,
   initialsOf,
@@ -36,11 +37,11 @@ export {
   type SegmentedOption,
 } from './SegmentedControl';
 export { SectionHeader, type SectionHeaderProps } from './SectionHeader';
+export { Stack, type StackGap, type StackProps } from './Stack';
 export { StatCard, StatRow, type StatCardProps } from './StatCard';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';
 export { Text, type TextProps, type TextTone, type TextVariant } from './Text';
 export { TextField, type TextFieldProps } from './TextField';
-export { TopBar, type TopBarProps } from './TopBar';
 export {
   colors,
   token,

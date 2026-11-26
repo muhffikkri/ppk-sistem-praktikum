@@ -124,7 +124,7 @@ Update hanya diterima build yang `runtimeVersion` dan channel-nya cocok. Perubah
 
 ## Firebase: rules, functions, dan Maps (Sprint 3)
 
-Presensi divalidasi oleh Firestore rules: sesi wajib terhubung ke dokumen `labs/{labId}`, dan presensi harus mengirim koordinat perangkat serta jarak yang berada di dalam radius lab. Rules dan Cloud Functions baru berlaku setelah di-deploy:
+Presensi wajib memindai QR berputar (token HMAC `{sessionId}.{slot 30 detik}.{signature}`) yang dibuat asisten lewat callable `issueAttendanceQr`. `submitQrCheckIn` memverifikasi token, jendela sesi, kepesertaan, izin, dan geofence di server; klien tidak bisa menulis dokumen `attendance` langsung. Rules dan Cloud Functions baru berlaku setelah di-deploy:
 
 ```bash
 firebase deploy --only firestore:rules --project project-praktikum-sprint
@@ -133,7 +133,7 @@ firebase deploy --only functions --project project-praktikum-sprint
 
 Sebelum deploy rules, jalankan `npm run test:rules` (butuh Java). Tes ini menyalakan Firestore + Auth emulator lalu mencoba presensi dari dalam radius, di luar radius, dan dengan jarak dipalsukan.
 
-Push notification membutuhkan secret `EXPO_PUSH_ACCESS_TOKEN` (`firebase functions:secrets:set EXPO_PUSH_ACCESS_TOKEN`).
+Push notification membutuhkan secret `EXPO_PUSH_ACCESS_TOKEN` (`firebase functions:secrets:set EXPO_PUSH_ACCESS_TOKEN`). QR presensi membutuhkan secret `ATTENDANCE_QR_SECRET`; generate nilai acak dan simpan dengan `firebase functions:secrets:set ATTENDANCE_QR_SECRET` sebelum deploy functions. Nilai secret tidak boleh disimpan di repo.
 
 ### Inbox notifikasi
 

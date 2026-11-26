@@ -8,6 +8,7 @@ const STATUS_LABEL: Record<Session['status'], string> = {
   open: 'Terbuka',
   scheduled: 'Terjadwal',
   closed: 'Tertutup',
+  cancelled: 'Dibatalkan',
 };
 
 type Props = {
@@ -18,6 +19,8 @@ type Props = {
   onDetail: (session: Session) => void;
   onOpenSession: (session: Session) => void;
   onCloseSession: (session: Session) => void;
+  onQr: (session: Session) => void;
+  onRecap: (session: Session) => void;
 };
 
 /** Pratinjau sesi: info ringkas + aksi sesuai peran. */
@@ -29,6 +32,8 @@ export function SessionPreviewSheet({
   onDetail,
   onOpenSession,
   onCloseSession,
+  onQr,
+  onRecap,
 }: Props) {
   return (
     <ConfirmSheet
@@ -62,6 +67,24 @@ export function SessionPreviewSheet({
               label="Tutup sesi"
               variant="destructive"
               onPress={() => onCloseSession(session)}
+            />
+          ) : null}
+          {isAssistant &&
+          (session.status === 'open' || session.status === 'scheduled') ? (
+            <Button
+              label="Lihat QR"
+              variant="outline"
+              icon="qr-code-outline"
+              onPress={() => onQr(session)}
+            />
+          ) : null}
+          {isAssistant &&
+          (session.status === 'open' || session.status === 'closed') ? (
+            <Button
+              label="Lihat rekap"
+              variant="soft"
+              icon="list-outline"
+              onPress={() => onRecap(session)}
             />
           ) : null}
         </View>

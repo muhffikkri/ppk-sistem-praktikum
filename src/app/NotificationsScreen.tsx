@@ -11,10 +11,9 @@ import {
   usePermissionContext,
 } from '../features/permissions';
 import {
-  AppTopBar,
+  BackButton,
   EmptyState,
   ErrorState,
-  IconButton,
   LoadingState,
   Screen,
   SectionHeader,
@@ -41,26 +40,18 @@ export function NotificationsScreen({ navigation }: Props) {
     void markRead(notification.id);
     const route = notificationRoute(notification);
     if (!route) return;
-    if (route.screen === 'StudentLeaveList') {
-      navigation.navigate('StudentLeaveList');
-    } else {
+    if ('fineId' in route) {
+      navigation.navigate('StudentFineDetail', { fineId: route.fineId });
+    } else if ('sessionId' in route) {
       navigation.navigate(route.screen, { sessionId: route.sessionId });
+    } else {
+      navigation.navigate(route.screen);
     }
   };
 
   return (
     <Screen withDock>
-      <AppTopBar
-        logoIcon="notifications-outline"
-        title="Notifikasi"
-        trailing={
-          <IconButton
-            icon="close"
-            accessibilityLabel="Tutup"
-            onPress={() => navigation.goBack()}
-          />
-        }
-      />
+      <BackButton label="Tutup" onPress={() => navigation.goBack()} />
 
       {/* Status izin hanya muncul bila perangkat belum siap menerima push. */}
       {permission.registration !== 'registered' ? (
@@ -76,7 +67,7 @@ export function NotificationsScreen({ navigation }: Props) {
           <EmptyState
             icon="notifications-off-outline"
             title="Belum ada notifikasi"
-            description="Jadwal baru, sesi yang dibuka, perubahan jadwal, dan keputusan izin akan muncul di sini."
+            description="Jadwal, keputusan izin, dan tagihan denda akan muncul di sini."
           />
         )
       ) : (

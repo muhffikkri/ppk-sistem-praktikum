@@ -3,18 +3,20 @@
  * Peta laboratorium interaktif menampilkan marker laboratorium, marker posisi pengguna real-time,
  * radius batas presensi, serta detail praktikum aktif & mendatang.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
+import { BackButton } from '../../shared/ui/BackButton';
 import { Banner } from '../../shared/ui/Banner';
 import { Button } from '../../shared/ui/Button';
 import { IconButton } from '../../shared/ui/IconButton';
 import { Text } from '../../shared/ui/Text';
 import { LoadingState } from '../../shared/ui/LoadingState';
 import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
+import { isAssistantRole } from '../../domain/asprakScope';
 import { useAuth } from '../../state';
 import type { RootStackParamList } from '../../app/navigation';
 import { useLabMapsViewModel } from './useLabMapsViewModel';
@@ -47,6 +49,11 @@ export function LabMapsScreen({ navigation }: Props) {
     refreshLocation,
     retry,
   } = useLabMapsViewModel();
+
+  const fabColumnStyle = useMemo(
+    () => ({ bottom: selectedLab ? 320 : insets.bottom + spacing.lg }),
+    [insets.bottom, selectedLab],
+  );
 
   // Pusatkan peta ke lokasi pengguna ketika pertama kali didapatkan, sekali
   // saja: setiap update GPS sebelumnya menarik peta kembali ke pengguna dan
@@ -98,17 +105,24 @@ export function LabMapsScreen({ navigation }: Props) {
   };
 
   const handleSelectSession = (sessionId: string) => {
-    if (user?.role === 'assistant') {
+    if (isAssistantRole(user?.role)) {
       navigation.navigate('AssistantSessionDetail', { sessionId });
     } else {
       navigation.navigate('StudentSessionDetail', { sessionId });
     }
   };
 
+  const topBar = (
+    <BackButton label="Tutup peta" onPress={() => navigation.goBack()} />
+  );
+
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <LoadingState label="Memuat peta laboratorium…" />
+      <View style={styles.container}>
+        {topBar}
+        <View style={styles.centerContainer}>
+          <LoadingState label="Memuat peta laboratorium…" />
+        </View>
       </View>
     );
   }
@@ -180,28 +194,9 @@ export function LabMapsScreen({ navigation }: Props) {
         <View style={[StyleSheet.absoluteFill, styles.mapPlaceholder]} />
       )}
 
-      {/* Floating Header & Legend */}
-      <View
-        style={[styles.topOverlay, { paddingTop: insets.top + spacing.sm }]}
-      >
-        <View style={styles.topBar}>
-          <IconButton
-            icon="arrow-back-outline"
-            accessibilityLabel="Kembali"
-            onPress={() => navigation.goBack()}
-          />
-          <View style={styles.titleBox}>
-            <Text variant="title">Peta Laboratorium</Text>
-            <Text variant="caption" tone="muted">
-              Informatika · Real-time
-            </Text>
-          </View>
-          <IconButton
-            icon="refresh-outline"
-            accessibilityLabel="Perbarui posisi GPS"
-            onPress={refreshLocation}
-          />
-        </View>
+      {/* Header & Legend */}
+      <View style={[styles.topOverlay, { paddingTop: insets.top }]}>
+        {topBar}
 
         {/* Banner Keterangan Warna & Filter */}
         <MapLegendBanner
@@ -237,12 +232,7 @@ export function LabMapsScreen({ navigation }: Props) {
       </View>
 
       {/* Floating Action Buttons (Kanan Bawah) */}
-      <View
-        style={[
-          styles.fabColumn,
-          { bottom: selectedLab ? 320 : insets.bottom + spacing.lg },
-        ]}
-      >
+      <View style={[styles.fabColumn, fabColumnStyle]}>
         <View style={styles.mapFab}>
           <IconButton
             icon="locate-outline"
@@ -294,21 +284,6 @@ const styles = StyleSheet.create({
     left: spacing.lg,
     right: spacing.lg,
     gap: spacing.sm,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.panel,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadow.subtle,
-  },
-  titleBox: {
-    flex: 1,
-    paddingHorizontal: spacing.sm,
   },
   warningBanner: {
     backgroundColor: colors.dangerSoft,

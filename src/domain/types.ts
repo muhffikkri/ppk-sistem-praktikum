@@ -3,13 +3,14 @@
  * Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
  */
 
-export type UserRole = 'student' | 'assistant';
+export type UserRole = 'student' | 'assistant' | 'lab_assistant';
 
 export type UserProfile = {
   uid: string;
   displayName: string;
   email: string;
   role: UserRole;
+  nim?: string;
   createdAt: string; // ISO 8601 UTC
 };
 
@@ -29,7 +30,7 @@ export type PracticalClass = {
 
 export type DemoRole = UserRole;
 
-export type SessionStatus = 'scheduled' | 'open' | 'closed';
+export type SessionStatus = 'scheduled' | 'open' | 'closed' | 'cancelled';
 
 export type Session = {
   id: string;
@@ -45,11 +46,17 @@ export type Session = {
   assistantIds?: string[];
   startsAt: string; // ISO 8601 UTC
   endsAt: string; // ISO 8601 UTC
+  /** Epoch ms untuk perbandingan jendela di Firestore rules. */
+  startsAtMs?: number;
+  endsAtMs?: number;
   status: SessionStatus;
   openedAt: string | null; // ISO 8601 UTC
   closedAt: string | null; // ISO 8601 UTC
+  cancelledAt?: string | null; // ISO 8601 UTC
   createdBy?: string;
   createdAt?: string; // ISO 8601 UTC
+  /** Durasi toleransi keterlambatan dalam menit (SRS-4.10, default 15 menit). */
+  toleranceMinutes?: number;
 };
 
 export type DemoStudent = {
@@ -57,16 +64,48 @@ export type DemoStudent = {
   displayName: string;
 };
 
+export type PunctualityStatus = 'ontime' | 'late';
+
 export type AttendanceRecord = {
   id: string; // "{sessionId}_{studentId}" pada Sprint 2
   sessionId: string;
   classId?: string;
   studentId: string;
   studentName: string;
+  studentNim?: string;
   checkedInAt: string; // ISO 8601 UTC
+  /** Klasifikasi ketepatan waktu berdasarkan batas toleransi sesi (SRS-4.10). */
+  punctuality?: PunctualityStatus;
+  /** Jumlah menit keterlambatan (0 jika tepat waktu). */
+  minutesLate?: number;
 };
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
+
+export type FineStatus = 'unpaid' | 'paid' | 'waived';
+
+export type Fine = {
+  id: string; // deterministik: "fine_${sessionId}_${studentId}" (SRS-4.11)
+  studentId: string;
+  studentName: string;
+  sessionId: string;
+  attendanceId: string;
+  classId?: string;
+  courseName?: string;
+  groupName?: string;
+  labId?: string;
+  lab?: string;
+  amount: number; // integer rupiah, misal 10000
+  status: FineStatus;
+  /** Alias baru dari aturan denda; `issuedAt` dipakai layar lama. */
+  createdAt?: string; // ISO 8601 UTC
+  issuedAt?: string; // ISO 8601 UTC (alias createdAt)
+  paidAt?: string | null;
+  waivedAt?: string | null;
+  waiveReason?: string | null;
+  waivedReason?: string | null; // alias waiveReason untuk data lama
+  paymentOrderId?: string | null;
+};
 
 export type AiClassificationResult = {
   category: string | null;
@@ -84,6 +123,7 @@ export type LeaveRequest = {
   sessionStartsAt: string; // ISO 8601 UTC
   studentId: string;
   studentName: string;
+  studentNim?: string;
   reason: string;
   aiPrediction: AiClassificationResult;
   status: LeaveStatus;
@@ -121,12 +161,15 @@ export type AuthContextValue = {
     displayName: string;
     email: string;
     password: string;
-    role: UserRole;
+    nim: string;
   }) => Promise<AsyncActionResult>;
   loginWithGoogle: () => Promise<AsyncActionResult>;
   setUserRole: (role: UserRole) => Promise<AsyncActionResult>;
   logout: () => Promise<AsyncActionResult>;
-  updateDisplayName: (displayName: string) => Promise<AsyncActionResult>;
+  updateUserProfile: (input: {
+    displayName: string;
+    nim?: string;
+  }) => Promise<AsyncActionResult>;
   clearError: () => void;
 };
 
@@ -156,6 +199,7 @@ export type StudentAttendanceViewModel = {
   getSessionById: (sessionId: string) => Session | undefined;
   getAttendanceForSession: (sessionId: string) => AttendanceRecord | undefined;
   checkIn: (sessionId: string) => Promise<AsyncActionResult>;
+  reportError: (message: string | null) => void;
   retry: () => void;
 };
 
@@ -189,10 +233,32 @@ export type AssistantLeaveViewModel = {
   retry: () => void;
 };
 
+export type PaymentTransactionStatus = 'pending' | 'success' | 'failed';
+
+export type PaymentTransaction = {
+  id: string; // orderId Midtrans
+  fineId: string;
+  studentId: string;
+  sessionId?: string;
+  amount: number; // rupiah integer
+  status: PaymentTransactionStatus;
+  createdAt: string; // ISO 8601 UTC
+  updatedAt: string; // ISO 8601 UTC
+  paidAt?: string | null;
+  snapRedirectUrl?: string | null;
+  midtransTransactionId?: string | null;
+  paymentType?: string | null;
+  failureReason?: string | null;
+};
+
 // --- Tipe transisi Sprint 1 yang masih dipakai domain rules & fixtures ---
 
 export type SessionActionFailure =
-  'session_not_found' | 'invalid_status' | 'already_checked_in';
+  | 'session_not_found'
+  | 'invalid_status'
+  | 'outside_window'
+  | 'active_session_conflict'
+  | 'already_checked_in';
 
 export type SessionActionResult =
   { ok: true } | { ok: false; reason: SessionActionFailure };

@@ -4,6 +4,21 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 <title>LabPresensi — Design System &amp; Component Sticker Sheet</title>
+<!--
+  RAW REFERENCE — LabPresensi v1.2 ("Sebenza"). Not the current source of truth.
+  The current dashboard HTML (`data-purpose="brand-header"` / `MainHeader`)
+  supersedes this sheet for ROOT CHROME and the palette below. See ../design.md
+  for the agent-facing rules, and ../src/theme/tokens.ts for live values.
+
+  Superseded tokens (current value -> value used here):
+    surface #F8F7FD -> #F4F2F9 | border #E8E5F3 -> #E7E3F2
+    ink #161522 -> #17141F | ink-muted #64748B -> #5D586C
+    lavender #EDE7FF -> #E4DBFF | lavender-subtle #F3EEFF -> #F3EFFF
+    violet-dark #482CD4 -> #4427C6 | lime-hover #A3E635 -> #C0E255
+  Chrome rule: root/navbar pages use AppTopBar/RootTopBar; every pushed page
+  (login, detail, form) uses BackButton ONLY — no bar, no Header. The navbar
+  scanner (BarcodeScan with fromDock: true) is a root page and keeps the top bar.
+-->
 <!-- Tailwind CSS v3 CDN with Forms & Container Queries -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <!-- Google Fonts: Fraunces (Editorial Display Serif) & Plus Jakarta Sans (Clean Modern Sans) -->

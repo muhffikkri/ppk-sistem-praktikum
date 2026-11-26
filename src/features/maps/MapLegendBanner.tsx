@@ -27,21 +27,18 @@ export function MapLegendBanner({
       {/* Baris Keterangan Marker */}
       <View style={styles.legendRow}>
         <View style={styles.legendItem}>
-          <View style={[styles.dot, styles.dotSuccess]} />
           <Text variant="caption" tone="muted">
             Tersedia
           </Text>
         </View>
 
         <View style={styles.legendItem}>
-          <View style={[styles.dot, styles.dotOccupied]} />
           <Text variant="caption" tone="muted">
             Sedang Berlangsung
           </Text>
         </View>
 
         <View style={styles.legendItem}>
-          <View style={[styles.dot, styles.dotUser]} />
           <Text variant="caption" tone="muted">
             Posisi Anda
           </Text>
@@ -143,26 +140,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: radius.full,
-  },
-  dotSuccess: {
-    backgroundColor: colors.success,
-  },
-  dotOccupied: {
-    backgroundColor: colors.violet,
-  },
-  dotUser: {
-    backgroundColor: colors.blue,
-  },
   filterRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
   chip: {
     flex: 1,
+    minHeight: 44,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.full,

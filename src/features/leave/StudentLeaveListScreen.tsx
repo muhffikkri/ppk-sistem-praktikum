@@ -1,13 +1,11 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { View } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   EmptyState,
-  Header,
   Screen,
   SectionHeader,
-  spacing,
-  TopBar,
+  Stack,
+  BackButton,
 } from '../../shared/ui';
 import { ListFeedback, RequestCard } from './components';
 import { StudentLeaveSessionPicker } from './StudentLeaveSessionPicker';
@@ -19,17 +17,14 @@ export function StudentLeaveListScreen({
   const vm = useStudentLeaveViewModel();
   return (
     <Screen>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Izin saya"
-        description="Ajukan izin per sesi dan pantau statusnya."
-      />
+      <BackButton onPress={() => navigation.goBack()} />
+
       <StudentLeaveSessionPicker
         onSelect={(sessionId) =>
           navigation.navigate('StudentLeaveRequestForm', { sessionId })
         }
       />
-      <View style={{ gap: spacing.md }}>
+      <Stack gap="md">
         <SectionHeader title="Riwayat pengajuan" />
         <ListFeedback
           {...vm}
@@ -45,7 +40,7 @@ export function StudentLeaveListScreen({
         {vm.leaveRequests.map((item) => (
           <RequestCard key={item.id} item={item} />
         ))}
-      </View>
+      </Stack>
     </Screen>
   );
 }

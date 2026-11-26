@@ -11,7 +11,7 @@ type Props = {
   onNext: () => void;
 };
 
-/** Tujuh hari nyata dengan navigasi minggu. Titik = hari yang punya sesi. */
+/** Tujuh hari nyata dengan navigasi minggu. */
 export function WeekStrip({ days, onSelect, onPrev, onNext }: Props) {
   return (
     <View style={styles.row}>
@@ -41,14 +41,6 @@ export function WeekStrip({ days, onSelect, onPrev, onNext }: Props) {
             <Text variant="bodyStrong" tone={day.isSelected ? 'onDark' : 'ink'}>
               {String(day.date.getDate())}
             </Text>
-            <View
-              style={[
-                styles.dot,
-                day.hasSession && {
-                  backgroundColor: day.isSelected ? colors.lime : colors.violet,
-                },
-              ]}
-            />
           </Pressable>
         ))}
       </View>
@@ -76,5 +68,4 @@ const styles = StyleSheet.create({
   },
   today: { borderColor: colors.violet },
   selected: { backgroundColor: colors.ink, borderColor: colors.ink },
-  dot: { width: 6, height: 6, borderRadius: 3 },
 });

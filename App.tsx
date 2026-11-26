@@ -7,6 +7,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect } from 'react';
+import { NavigationBar } from 'expo-navigation-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppNavigator } from './src/app/AppNavigator';
@@ -39,10 +40,12 @@ function AppNavigation() {
         !navigation.getRootState()?.routeNames.includes(route.screen)
       )
         return false;
-      if (route.screen === 'StudentLeaveList') {
-        navigation.navigate('StudentLeaveList');
-      } else {
+      if ('fineId' in route) {
+        navigation.navigate('StudentFineDetail', { fineId: route.fineId });
+      } else if ('sessionId' in route) {
         navigation.navigate(route.screen, { sessionId: route.sessionId });
+      } else {
+        navigation.navigate(route.screen);
       }
       if (target.notificationId) {
         void markNotificationRead(readyUid, target.notificationId).catch(
@@ -62,6 +65,7 @@ function AppNavigation() {
       <NavigationContainer ref={navigation}>
         <AppNavigator />
         <StatusBar style="dark" />
+        <NavigationBar style="light" />
       </NavigationContainer>
     </DevicePermissionGate>
   );

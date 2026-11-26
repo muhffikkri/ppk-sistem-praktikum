@@ -6,7 +6,10 @@
  */
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 
-import { checkInRule } from '../../domain/attendanceRules';
+import {
+  checkInFailureMessage,
+  checkInRule,
+} from '../../domain/attendanceRules';
 import { evaluateGeofence } from '../../domain/geofenceRules';
 import type {
   DeviceFix,
@@ -20,6 +23,7 @@ import type {
   UserProfile,
 } from '../../domain/types';
 import { db } from '../firebase';
+import { issueFineIfLate } from './fineService';
 import { getLabById } from './labService';
 
 export type GeoCheckInInput = {
@@ -57,13 +61,11 @@ export async function checkInWithGeofence(
   );
 
   if (!validation.ok) {
-    const message =
-      validation.reason === 'invalid_status'
-        ? 'Sesi belum dibuka atau sudah ditutup.'
-        : validation.reason === 'already_checked_in'
-          ? 'Kamu sudah presensi di sesi ini.'
-          : 'Sesi tidak ditemukan.';
-    return { ok: false, reason: validation.reason, message };
+    return {
+      ok: false,
+      reason: validation.reason,
+      message: checkInFailureMessage(validation.reason),
+    };
   }
 
   // 2. Sesi wajib terhubung ke dokumen lab: rules memvalidasi radius dari labs/{labId}
@@ -120,6 +122,7 @@ export async function checkInWithGeofence(
     classId: session.classId ?? '',
     studentId: student.uid,
     studentName: student.displayName,
+    ...(student.nim ? { studentNim: student.nim } : {}),
     checkedInAt: new Date().toISOString(),
     deviceLocation: {
       latitude: deviceFix.latitude,
@@ -131,6 +134,8 @@ export async function checkInWithGeofence(
 
   try {
     await setDoc(attendanceRef, payload);
+    // Terbitkan tagihan denda jika presensi terlambat (SRS-4.11)
+    void issueFineIfLate(db, { session, attendance: payload });
     return {
       ok: true,
       data: {
