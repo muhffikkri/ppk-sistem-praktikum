@@ -58,6 +58,7 @@ import { LabMapsScreen } from '../features/maps';
 import { isAssistantRole } from '../domain/asprakScope';
 import { db } from '../services/firebase';
 
+import { DockTabActiveProvider } from '../shared/navigation/useTransientFeedback';
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
 
 import {
@@ -232,7 +233,9 @@ function DockTabsScreen({
       {DOCK_ORDER.map((key) => (
         <View key={key} style={styles.page} collapsable={false}>
           {mounted.has(key) ? (
-            <DockPage tab={key} role={actorRole} navigation={navigation} />
+            <DockTabActiveProvider active={key === activeTab}>
+              <DockPage tab={key} role={actorRole} navigation={navigation} />
+            </DockTabActiveProvider>
           ) : null}
         </View>
       ))}
