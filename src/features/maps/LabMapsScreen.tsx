@@ -3,7 +3,7 @@
  * Peta laboratorium interaktif menampilkan marker laboratorium, marker posisi pengguna real-time,
  * radius batas presensi, serta detail praktikum aktif & mendatang.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Circle, Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,6 +49,11 @@ export function LabMapsScreen({ navigation }: Props) {
     refreshLocation,
     retry,
   } = useLabMapsViewModel();
+
+  const fabColumnStyle = useMemo(
+    () => ({ bottom: selectedLab ? 320 : insets.bottom + spacing.lg }),
+    [insets.bottom, selectedLab],
+  );
 
   // Pusatkan peta ke lokasi pengguna ketika pertama kali didapatkan, sekali
   // saja: setiap update GPS sebelumnya menarik peta kembali ke pengguna dan
@@ -239,12 +244,7 @@ export function LabMapsScreen({ navigation }: Props) {
       </View>
 
       {/* Floating Action Buttons (Kanan Bawah) */}
-      <View
-        style={[
-          styles.fabColumn,
-          { bottom: selectedLab ? 320 : insets.bottom + spacing.lg },
-        ]}
-      >
+      <View style={[styles.fabColumn, fabColumnStyle]}>
         <View style={styles.mapFab}>
           <IconButton
             icon="locate-outline"

@@ -83,27 +83,17 @@ export function LandingScreen({ navigation }: Props) {
           {/* Indikator sesi lab */}
           <View style={styles.shiftBadge}>
             <View style={styles.avatarGroup}>
-              <View style={[styles.avatar, { backgroundColor: colors.lime }]}>
+              <View style={[styles.avatar, styles.avatarLime]}>
                 <Text variant="overline" tone="ink">
                   FP
                 </Text>
               </View>
-              <View
-                style={[
-                  styles.avatar,
-                  { backgroundColor: colors.pink, marginLeft: -6 },
-                ]}
-              >
+              <View style={[styles.avatar, styles.avatarPink]}>
                 <Text variant="overline" tone="ink">
                   AR
                 </Text>
               </View>
-              <View
-                style={[
-                  styles.avatar,
-                  { backgroundColor: colors.lavender, marginLeft: -6 },
-                ]}
-              >
+              <View style={[styles.avatar, styles.avatarLavender]}>
                 <Text variant="overline" tone="violet">
                   KT
                 </Text>
@@ -363,6 +353,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.violet,
+  },
+  avatarLime: {
+    backgroundColor: colors.lime,
+  },
+  avatarPink: {
+    backgroundColor: colors.pink,
+    marginLeft: -6,
+  },
+  avatarLavender: {
+    backgroundColor: colors.lavender,
+    marginLeft: -6,
   },
   featureGrid: {
     flexDirection: 'row',
