@@ -28,6 +28,7 @@ import {
   type IconName,
 } from '../../shared/ui';
 import { formatWeekdayDayMonth } from '../../shared/format/date';
+import { useTransientFeedback } from '../../shared/navigation/useTransientFeedback';
 import { useAssistantSessionsViewModel, useAuth } from '../../state';
 import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
 import { useAssistantLeaveViewModel } from '../leave';
@@ -39,7 +40,6 @@ import {
 } from './components/AssistantSessionCard';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
-type Feedback = { tone: 'success' | 'danger'; title: string; message: string };
 type QuickTone = 'violet' | 'blue' | 'lime' | 'pink' | 'neutral';
 
 const RECENT_LIMIT = 5;
@@ -136,7 +136,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
   const leave = useAssistantLeaveViewModel();
   const [confirmClose, setConfirmClose] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const { feedback, showFeedback, clearFeedback } = useTransientFeedback();
 
   const topBar = <RootTopBar />;
 
@@ -155,6 +155,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat sesi"
           message={vm.error}
+          hint="Periksa koneksi internet lalu coba lagi. Sesi yang tersimpan akan muncul kembali."
           onRetry={vm.retry}
         />
       </Screen>
@@ -208,7 +209,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
         : await vm.closeSession(active.id);
     setBusy(false);
     setConfirmClose(false);
-    setFeedback(
+    showFeedback(
       result.ok
         ? {
             tone: 'success',
@@ -272,7 +273,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
             tone={feedback.tone}
             title={feedback.title}
             message={feedback.message}
-            onDismiss={() => setFeedback(null)}
+            onDismiss={clearFeedback}
           />
         ) : null}
 

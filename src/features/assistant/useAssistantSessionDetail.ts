@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import { useTransientState } from '../../shared/navigation/useTransientFeedback';
 import {
   buildSessionRosterRecap,
   type SessionRecapResult,
@@ -155,6 +156,14 @@ export function useAssistantSessionDetail(
   };
 
   const isScheduled = session?.status === 'scheduled';
+  const feedback = toFeedback(lastAction, session);
+  const dismissFeedback = useCallback(() => setLastAction(null), []);
+
+  useTransientState({
+    pending: feedback !== null,
+    revision: feedback,
+    clear: dismissFeedback,
+  });
 
   return {
     session,
@@ -165,10 +174,10 @@ export function useAssistantSessionDetail(
     canEdit: isScheduled,
     canCancel: isScheduled,
     statusHint: statusHintFor(session),
-    feedback: toFeedback(lastAction, session),
+    feedback,
     openSession,
     closeSession,
     cancelSession,
-    dismissFeedback: () => setLastAction(null),
+    dismissFeedback,
   };
 }

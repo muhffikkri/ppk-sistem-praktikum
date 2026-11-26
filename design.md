@@ -326,9 +326,11 @@ judul `bodyStrong`, deskripsi `body` (max 240px).
 
 `LoadingState`: satu-satunya blok loading — spinner violet + label
 body muted (default "Memuat…"), di tengah.
-`ErrorState`: `Banner` danger (judul default "Gagal memuat data",
-pesan dari service) + `Button` outline `sm` "Coba lagi" bila
-`onRetry` diberikan.
+`ErrorState`: blok `surface` dashed-border dengan aksen danger (ikon 48,
+judul `bodyStrong`, pesan dari service, `hint` singkat, `Button` primer
+"Coba lagi", serta `secondaryAction` opsional). Bedakan jelas:
+`EmptyState` = data valid tapi kosong (harus punya next step/CTA sesuai
+role), `ErrorState` = gagal memuat/aksi (harus punya retry).
 
 ### Screen
 
@@ -396,6 +398,13 @@ src/
    `react-native`, agar font & ukuran selalu dari token.
 6. Feedback setelah tulis ke Firestore hanya ditampilkan setelah promise
    berhasil; gagal → banner danger dengan pesan dari service.
+7. Feedback sukses/gagal bersifat **transient**: pakai
+   `useTransientFeedback` / `useTransientState`
+   (`src/shared/navigation/useTransientFeedback.tsx`). Banner hilang
+   setelah ~6 detik dan saat screen blur atau tab dock berubah (halaman
+   dock tetap mounted di `PagerView`, jadi focus navigation saja tidak
+   cukup). Error blocking yang butuh tindakan user tetap memakai
+   `ErrorState`, bukan banner otomatis.
 
 ### Inline style
 

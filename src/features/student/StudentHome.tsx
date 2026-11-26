@@ -8,6 +8,7 @@ import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import {
   Avatar,
   Banner,
+  Button,
   Card,
   CardContent,
   EmptyState,
@@ -199,6 +200,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat jadwal"
           message={error}
+          hint="Periksa koneksi internet lalu coba lagi. Sesi yang tersimpan akan muncul kembali."
           onRetry={retry}
         />
       </Screen>
@@ -421,8 +423,16 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         ) : (
           <EmptyState
             icon="calendar-outline"
-            title="Tidak ada sesi mendatang"
-            description="Sesi baru akan muncul setelah asisten menjadwalkannya."
+            title="Belum ada sesi mendatang"
+            description="Sesi muncul setelah asisten menjadwalkannya. Cek jadwal untuk melihat semua sesi yang tersedia."
+            action={
+              <Button
+                label="Lihat jadwal"
+                variant="outline"
+                icon="calendar-outline"
+                onPress={() => navigation.navigate('StudentSchedule')}
+              />
+            }
           />
         )}
 
