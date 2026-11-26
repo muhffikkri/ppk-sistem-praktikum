@@ -153,17 +153,21 @@ test('buildSessionRosterRecap: menghasilkan ringkasan peserta lengkap dan agrega
     attendees,
     leaves,
     studentNamesById,
+    sessionStartsAt: session.startsAt,
   });
 
   // Ringkasan
   assert.equal(recap.summary.total, 4);
   assert.equal(recap.summary.presentCount, 1);
+  assert.equal(recap.summary.ontimeCount, 1);
+  assert.equal(recap.summary.lateCount, 0);
   assert.equal(recap.summary.excusedCount, 1);
   assert.equal(recap.summary.absentCount, 2);
 
   // Urutan entri: Hadir -> Izin -> Belum hadir
   assert.equal(recap.entries[0].studentId, 'mhs-01');
   assert.equal(recap.entries[0].status, 'present');
+  assert.equal(recap.entries[0].punctuality, 'ontime');
 
   assert.equal(recap.entries[1].studentId, 'mhs-02');
   assert.equal(recap.entries[1].status, 'excused');

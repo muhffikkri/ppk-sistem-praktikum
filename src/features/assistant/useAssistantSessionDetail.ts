@@ -109,8 +109,17 @@ export function useSessionRosterRecap(sessionId: string) {
         participantIds: session?.participantIds ?? [],
         attendees,
         leaves: leaveRequests.filter((l) => l.sessionId === sessionId),
+        sessionStartsAt: session?.startsAt,
+        toleranceMinutes: session?.toleranceMinutes,
       }),
-    [session?.participantIds, attendees, leaveRequests, sessionId],
+    [
+      session?.participantIds,
+      session?.startsAt,
+      session?.toleranceMinutes,
+      attendees,
+      leaveRequests,
+      sessionId,
+    ],
   );
 
   return { session, attendees, recap };

@@ -108,7 +108,14 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
     );
   }
 
-  const { total, presentCount, excusedCount, absentCount } = recap.summary;
+  const {
+    total,
+    presentCount,
+    ontimeCount,
+    lateCount,
+    excusedCount,
+    absentCount,
+  } = recap.summary;
   const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
 
   return (
@@ -158,6 +165,16 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
             ]}
             breakdown={[
               {
+                key: 'ontime',
+                label: 'Tepat waktu',
+                value: ontimeCount,
+              },
+              {
+                key: 'late',
+                label: 'Terlambat',
+                value: lateCount,
+              },
+              {
                 key: 'present',
                 label: 'Hadir',
                 value: presentCount,
@@ -198,8 +215,20 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         />
       }
       renderItem={({ item: record }: { item: SessionRosterEntry }) => {
-        const { badgeTone, badgeLabel, avatarTone } =
-          STATUS_PRESENTATION[record.status];
+        const presentation = STATUS_PRESENTATION[record.status];
+        const isLate =
+          record.status === 'present' && record.punctuality === 'late';
+        const badgeTone: BadgeTone = isLate ? 'pink' : presentation.badgeTone;
+        const avatarTone: AvatarTone = isLate
+          ? 'pink'
+          : presentation.avatarTone;
+        const badgeLabel = isLate
+          ? record.minutesLate
+            ? `Terlambat (${record.minutesLate}m)`
+            : 'Terlambat'
+          : record.status === 'present' && record.punctuality === 'ontime'
+            ? 'Tepat waktu'
+            : presentation.badgeLabel;
 
         const identity = studentIdentityMeta(record);
         const leaveMeta = record.leaveStatus
