@@ -24,6 +24,7 @@ const {
   pushMessage,
 } = require('./pushEvents.cjs');
 const { LATE_CHECK_IN_MS, closeExpiredSession } = require('./sessionClose.cjs');
+const { openSessionPatch } = require('./sessionOpen.cjs');
 const {
   issueQrToken,
   validateQrCheckIn,
@@ -514,6 +515,91 @@ exports.issueAttendanceQr = onCall(
     return issueQrToken(sessionId, attendanceQrSecret.value());
   },
 );
+
+// Buka sesi dipusatkan di callable agar konflik sesi open bisa divalidasi
+// secara atomik. Firestore rules tidak bisa melakukan query lintas dokumen.
+const openFailureMessages = {
+  session_not_found: 'Sesi tidak ditemukan.',
+  invalid_status:
+    'Hanya sesi terjadwal atau yang baru ditutup yang bisa dibuka.',
+  outside_window:
+    'Sesi hanya bisa dibuka mulai 15 menit sebelum jadwal sampai waktu selesai.',
+  active_session_conflict:
+    'Asprak sudah memiliki sesi terbuka. Tutup sesi tersebut sebelum membuka sesi ini.',
+  forbidden: 'Kamu bukan asisten pada sesi ini.',
+};
+
+function openFailure(reason) {
+  return new HttpsError(
+    'failed-precondition',
+    openFailureMessages[reason] ?? 'Sesi tidak dapat dibuka.',
+    { reason },
+  );
+}
+
+exports.openSession = onCall({ cors: true }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'Harus login.');
+
+  const caller = await db.collection('users').doc(uid).get();
+  const role = caller.exists ? caller.data().role : null;
+  if (role !== 'assistant' && role !== 'lab_assistant') {
+    throw new HttpsError(
+      'permission-denied',
+      'Hanya asisten sesi yang bisa membuka sesi.',
+    );
+  }
+
+  const sessionId =
+    typeof request.data?.sessionId === 'string'
+      ? request.data.sessionId.trim()
+      : '';
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(sessionId)) {
+    throw new HttpsError('invalid-argument', 'sessionId tidak valid.');
+  }
+
+  const sessionRef = db.collection('sessions').doc(sessionId);
+  const nowMs = Date.now();
+
+  const result = await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(sessionRef);
+    if (!snap.exists) return { error: 'session_not_found' };
+    const session = { id: snap.id, ...snap.data() };
+    if (
+      !Array.isArray(session.assistantIds) ||
+      !session.assistantIds.includes(uid)
+    ) {
+      return { error: 'forbidden' };
+    }
+
+    const openSnap = await transaction.get(
+      db.collection('sessions').where('status', '==', 'open'),
+    );
+    const openSessions = openSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const outcome = openSessionPatch(session, nowMs, openSessions, uid);
+    if (outcome.error) return outcome;
+    transaction.update(sessionRef, outcome.patch);
+    return outcome;
+  });
+
+  if (result.error === 'session_not_found') {
+    throw new HttpsError('not-found', openFailureMessages.session_not_found, {
+      reason: 'session_not_found',
+    });
+  }
+  if (result.error === 'forbidden') {
+    throw new HttpsError('permission-denied', openFailureMessages.forbidden, {
+      reason: 'forbidden',
+    });
+  }
+  if (result.error) throw openFailure(result.error);
+
+  return { ok: true, sessionId };
+});
 
 const qrFailureMessages = {
   invalid_qr: 'Kode QR tidak valid atau sudah kedaluwarsa. Silakan scan ulang.',
