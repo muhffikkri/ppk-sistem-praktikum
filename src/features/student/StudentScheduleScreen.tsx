@@ -150,8 +150,6 @@ function SessionCard({
         <StatusBadge
           label={STATUS_LABEL[session.status]}
           tone={STATUS_TONE[session.status]}
-          dot={session.status === 'open'}
-          live={session.status === 'open'}
         />
       </View>
     </Card>
@@ -211,9 +209,7 @@ export function StudentScheduleScreen({ navigation }: Props) {
         title="Jadwal"
         description={`${sorted.length} sesi praktikum terdaftar`}
         trailing={
-          openCount > 0 ? (
-            <StatusBadge label="Aktif" tone="violet" dot live />
-          ) : null
+          openCount > 0 ? <StatusBadge label="Aktif" tone="violet" /> : null
         }
       />
 

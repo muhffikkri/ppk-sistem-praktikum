@@ -87,7 +87,6 @@ export function AssistantLabListScreen({ navigation }: Props) {
                 <StatusBadge
                   label={lab.isActive ? 'Aktif' : 'Nonaktif'}
                   tone={lab.isActive ? 'success' : 'neutral'}
-                  dot
                 />
               }
               accessibilityHint={

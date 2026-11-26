@@ -57,7 +57,6 @@ export function AiResult({
         <StatusBadge
           label={aiCategoryLabels[prediction.category ?? ''] ?? 'Alasan Netral'}
           tone={aiCategoryTone[prediction.category ?? ''] ?? 'lavender'}
-          dot
         />
         {prediction.confidence !== null ? (
           <Text variant="caption" tone="muted">

@@ -345,7 +345,6 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                       : 'Sesi berikutnya'
                   }
                   tone="lime"
-                  live={hero.status === 'open'}
                 />
                 <Text
                   variant="captionStrong"
@@ -452,9 +451,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                 meta={`${formatTimeRange(s.startsAt, s.endsAt)}${s.lab ? ` · ${s.lab}` : ''}`}
                 onPress={() => openDetail(s.id)}
                 accessibilityHint="Membuka detail sesi untuk presensi"
-                trailing={
-                  <StatusBadge label="Presensi" tone="violet" dot live />
-                }
+                trailing={<StatusBadge label="Presensi" tone="violet" />}
               />
             ))}
           </View>

@@ -62,8 +62,6 @@ export function LabMarkerDetailSheet({
           <StatusBadge
             label={isOccupied ? 'Sedang Digunakan' : 'Tersedia'}
             tone={isOccupied ? 'violet' : 'success'}
-            dot={isOccupied}
-            live={isOccupied}
           />
           <IconButton
             icon="close-outline"
@@ -115,8 +113,6 @@ export function LabMarkerDetailSheet({
                   currentSession.status === 'open' ? 'Buka' : 'Berlangsung'
                 }
                 tone="violet"
-                dot
-                live
               />
             </View>
             <Text variant="caption" tone="muted">

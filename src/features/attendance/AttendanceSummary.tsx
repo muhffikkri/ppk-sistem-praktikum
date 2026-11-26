@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radius, spacing } from '../../theme/tokens';
+import { colors, spacing } from '../../theme/tokens';
 import {
   Card,
   StatusBadge,
@@ -18,14 +18,12 @@ export type AttendanceMetric = {
   badgeTone?: BadgeTone;
   caption: string;
   captionTone?: TextTone;
-  dotColor?: string;
 };
 
 export type AttendanceBreakdownItem = {
   key: string;
   label: string;
   value: number;
-  dotColor: string;
 };
 
 /** Ringkasan angka + strip rincian, dipakai bersama layar presensi. */
@@ -66,13 +64,6 @@ export function AttendanceSummary({
               {String(metric.value)}
             </Text>
             <View style={styles.captionRow}>
-              <View
-                accessible={false}
-                style={[
-                  styles.dot,
-                  { backgroundColor: metric.dotColor ?? colors.success },
-                ]}
-              />
               <Text
                 variant="caption"
                 tone={metric.captionTone ?? 'muted'}
@@ -95,10 +86,6 @@ export function AttendanceSummary({
                   <View accessible={false} style={styles.separator} />
                 ) : null}
                 <View style={styles.breakdownItem}>
-                  <View
-                    accessible={false}
-                    style={[styles.dot, { backgroundColor: item.dotColor }]}
-                  />
                   <Text variant="caption" tone="muted" numberOfLines={1}>
                     {`${item.label}: `}
                     <Text variant="captionStrong" tone="ink">
@@ -123,12 +110,6 @@ const styles = StyleSheet.create({
   metricLabel: { flexShrink: 1 },
   captionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   caption: { flexShrink: 1 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-    flexShrink: 0,
-  },
   breakdown: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   breakdownItem: {

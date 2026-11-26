@@ -116,8 +116,6 @@ function TimelineCard({
         <StatusBadge
           label={STATUS_LABEL[session.status]}
           tone={STATUS_TONE[session.status]}
-          dot={isOpen}
-          live={isOpen}
         />
       </View>
     </Card>
@@ -261,7 +259,7 @@ export function CalendarScreen({ navigation }: Props) {
             {`${visibleSessions.length} Sesi Praktikum ${viewLabel}`}
           </Text>
           {hasOpenSession ? (
-            <StatusBadge label="Ada sesi aktif" tone="violet" dot live />
+            <StatusBadge label="Ada sesi aktif" tone="violet" />
           ) : (
             <StatusBadge
               label={formatWeekdayDayMonth(cal.selected)}

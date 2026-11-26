@@ -125,8 +125,6 @@ function TodaySessionCard({
       <StatusBadge
         label={isActive ? 'Berlangsung' : sessionStatusLabel[session.status]}
         tone={tone}
-        dot={isActive}
-        live={isActive}
       />
     </Card>
   );
@@ -289,8 +287,6 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
                       : 'Sesi berikutnya'
                   }
                   tone={active.status === 'open' ? 'violet' : 'lavender'}
-                  dot={active.status === 'open'}
-                  live={active.status === 'open'}
                 />
                 <Pressable
                   accessibilityRole="button"

@@ -24,7 +24,6 @@ import {
 } from '../../shared/ui';
 import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
-import { colors } from '../../theme/tokens';
 import { useAssistantSessionsViewModel } from '../../state';
 import {
   sessionStatusLabel,
@@ -129,8 +128,6 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
               <StatusBadge
                 label={sessionStatusLabel[session.status]}
                 tone={sessionStatusTone[session.status]}
-                dot={session.status === 'open'}
-                live={session.status === 'open'}
               />
             }
           />
@@ -150,7 +147,6 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
                 badge: `${presentCount} hadir`,
                 badgeTone: 'success',
                 caption: 'Peserta terdaftar pada sesi',
-                dotColor: colors.lime,
               },
               {
                 key: 'rate',
@@ -158,7 +154,6 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
                 value: `${rate}%`,
                 caption: 'Hadir dari seluruh peserta',
                 captionTone: 'violet',
-                dotColor: colors.violet,
               },
             ]}
             breakdown={[
@@ -166,19 +161,16 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
                 key: 'present',
                 label: 'Hadir',
                 value: presentCount,
-                dotColor: colors.success,
               },
               {
                 key: 'excused',
                 label: 'Izin',
                 value: excusedCount,
-                dotColor: colors.pink,
               },
               {
                 key: 'absent',
                 label: 'Belum hadir',
                 value: absentCount,
-                dotColor: colors.inkSubtle,
               },
             ]}
           />

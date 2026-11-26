@@ -2,7 +2,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
-import { colors } from '../../theme/tokens';
 import {
   Button,
   EmptyState,
@@ -127,7 +126,6 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
                     ? 'Dari seluruh sesi terdaftar'
                     : 'Belum ada sesi tercatat',
                 captionTone: 'violet',
-                dotColor: colors.violet,
               },
             ]}
             breakdown={[
@@ -135,19 +133,16 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
                 key: 'onTime',
                 label: 'Tepat waktu',
                 value: counts.onTime,
-                dotColor: colors.success,
               },
               {
                 key: 'late',
                 label: 'Terlambat',
                 value: counts.late,
-                dotColor: colors.pink,
               },
               {
                 key: 'unknown',
                 label: 'Tanpa jadwal',
                 value: counts.unknown,
-                dotColor: colors.inkSubtle,
               },
             ]}
           />
