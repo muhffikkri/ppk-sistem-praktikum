@@ -394,12 +394,12 @@ const check = (
   );
 };
 
-// --- Jendela buka sesi: rules memakai epoch ms, bukan status manual saja ---
+// --- Buka sesi hanya lewat callable; klien tidak boleh menulis status open ---
 await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
 const openCases: [string, string, 'allowed' | 'denied'][] = [
   ['buka sesi jauh dari jadwal', 's4-future', 'denied'],
-  ['buka sesi dalam jendela', 's5-now', 'allowed'],
-  ['buka ulang sesi yang baru ditutup', 's6-closed', 'allowed'],
+  ['buka sesi dalam jendela dari klien', 's5-now', 'denied'],
+  ['buka ulang sesi tertutup dari klien', 's6-closed', 'denied'],
 ];
 for (const [label, sessionId, expected] of openCases) {
   check(
@@ -413,6 +413,16 @@ for (const [label, sessionId, expected] of openCases) {
     expected,
   );
 }
+check(
+  'buka sesi lewat server (Admin SDK)',
+  await attempt(() =>
+    adminDb.doc('sessions/s5-now').update({
+      status: 'open',
+      openedAt: new Date().toISOString(),
+    }),
+  ),
+  'allowed',
+);
 await signOut(auth);
 
 // --- Edit & batal sesi: hanya scheduled, patch sesuai status ---

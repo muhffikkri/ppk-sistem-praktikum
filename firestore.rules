@@ -42,14 +42,6 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/sessions/$(sessionId)).data;
     }
 
-    // Jendela aksi asisten: 15 menit sebelum mulai sampai waktu selesai.
-    function withinOpenWindow(data) {
-      return data.startsAtMs is int
-        && data.endsAtMs is int
-        && request.time.toMillis() >= data.startsAtMs - 15 * 60 * 1000
-        && request.time.toMillis() <= data.endsAtMs;
-    }
-
     // Edit hanya untuk sesi scheduled: lab/class tidak boleh berubah saat open.
     function validSessionEdit() {
       return resource.data.status == 'scheduled'
@@ -68,26 +60,15 @@ service cloud.firestore {
     }
 
     // Transisi status hanya boleh mengubah field yang relevan.
+    // Membuka sesi sengaja dilarang dari klien: rules tidak bisa melakukan
+    // query sesi open lain untuk asisten yang sama. Gunakan callable openSession
+    // yang berjalan di Admin SDK dan memvalidasi konflik di dalam transaction.
     function validStatusPatch() {
       return (
-        resource.data.status == 'scheduled'
-        && request.resource.data.status == 'open'
-        && withinOpenWindow(request.resource.data)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status', 'openedAt', 'closedAt'
-        ])
-      ) || (
         resource.data.status == 'open'
         && request.resource.data.status == 'closed'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status', 'closedAt'
-        ])
-      ) || (
-        resource.data.status == 'closed'
-        && request.resource.data.status == 'open'
-        && withinOpenWindow(request.resource.data)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'status', 'openedAt', 'closedAt'
         ])
       ) || (
         resource.data.status == 'scheduled'
