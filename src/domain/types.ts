@@ -82,6 +82,31 @@ export type AttendanceRecord = {
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 
+export type FineStatus = 'unpaid' | 'paid' | 'waived';
+
+export type Fine = {
+  id: string; // deterministik: "fine_${sessionId}_${studentId}" (SRS-4.11)
+  studentId: string;
+  studentName: string;
+  sessionId: string;
+  attendanceId: string;
+  classId?: string;
+  courseName?: string;
+  groupName?: string;
+  labId?: string;
+  lab?: string;
+  amount: number; // integer rupiah, misal 10000
+  status: FineStatus;
+  /** Alias baru dari aturan denda; `issuedAt` dipakai layar lama. */
+  createdAt?: string; // ISO 8601 UTC
+  issuedAt?: string; // ISO 8601 UTC (alias createdAt)
+  paidAt?: string | null;
+  waivedAt?: string | null;
+  waiveReason?: string | null;
+  waivedReason?: string | null; // alias waiveReason untuk data lama
+  paymentOrderId?: string | null;
+};
+
 export type AiClassificationResult = {
   category: string | null;
   confidence: number | null;
@@ -206,28 +231,6 @@ export type AssistantLeaveViewModel = {
     decisionNote?: string,
   ) => Promise<AsyncActionResult>;
   retry: () => void;
-};
-
-// --- Sprint 4: Denda & Pembayaran (P4 contract) ---
-
-export type FineStatus = 'unpaid' | 'paid' | 'waived';
-
-export type Fine = {
-  id: string; // deterministik per presensi terlambat
-  studentId: string;
-  sessionId: string;
-  attendanceId: string;
-  classId?: string;
-  courseName?: string;
-  groupName?: string;
-  labId?: string;
-  lab?: string;
-  amount: number; // rupiah integer
-  issuedAt: string; // ISO 8601 UTC
-  status: FineStatus;
-  paidAt?: string | null;
-  waivedAt?: string | null;
-  waivedReason?: string | null;
 };
 
 export type PaymentTransactionStatus = 'pending' | 'success' | 'failed';

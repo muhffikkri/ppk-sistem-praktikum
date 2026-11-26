@@ -20,6 +20,7 @@ import {
   UserProfile,
 } from '../../domain/types';
 import { db } from '../firebase';
+import { issueFineIfLate } from './fineService';
 import { normalizeAttendanceRecord } from './normalize';
 export type {
   AsyncActionResult,
@@ -141,7 +142,7 @@ export async function checkInStudent(input: {
   const attendanceRef = doc(db, 'attendance', attendanceId);
 
   try {
-    await setDoc(attendanceRef, {
+    const payload: AttendanceRecord = {
       id: attendanceId,
       sessionId: session.id,
       classId: session.classId ?? '',
@@ -149,7 +150,10 @@ export async function checkInStudent(input: {
       studentName: student.displayName,
       ...(student.nim ? { studentNim: student.nim } : {}),
       checkedInAt: new Date().toISOString(),
-    });
+    };
+    await setDoc(attendanceRef, payload);
+    // Terbitkan tagihan denda jika presensi terlambat (SRS-4.11)
+    void issueFineIfLate(db, { session, attendance: payload });
     return { ok: true };
   } catch (e) {
     if (errorCode(e) === 'permission-denied') {

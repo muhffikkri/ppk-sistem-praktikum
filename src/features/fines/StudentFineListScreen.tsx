@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
 import type { Fine } from '../../domain/types';
-import { subscribeStudentFines } from '../../services/firestore/fineService';
+import { subscribeStudentFines } from '../../services/firestore/fineSubscriptionService';
 import { useAuth } from '../../state';
 import {
   EmptyState,

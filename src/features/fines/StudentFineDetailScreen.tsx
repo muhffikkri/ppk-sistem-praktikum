@@ -4,7 +4,7 @@ import { Linking } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import type { Fine } from '../../domain/types';
-import { subscribeFine } from '../../services/firestore/fineService';
+import { subscribeFine } from '../../services/firestore/fineSubscriptionService';
 import { createFineCheckout } from '../../services/firestore/paymentService';
 import { useAuth } from '../../state';
 import {

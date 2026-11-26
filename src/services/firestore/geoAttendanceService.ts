@@ -23,6 +23,7 @@ import type {
   UserProfile,
 } from '../../domain/types';
 import { db } from '../firebase';
+import { issueFineIfLate } from './fineService';
 import { getLabById } from './labService';
 
 export type GeoCheckInInput = {
@@ -133,6 +134,8 @@ export async function checkInWithGeofence(
 
   try {
     await setDoc(attendanceRef, payload);
+    // Terbitkan tagihan denda jika presensi terlambat (SRS-4.11)
+    void issueFineIfLate(db, { session, attendance: payload });
     return {
       ok: true,
       data: {
