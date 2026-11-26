@@ -20,6 +20,8 @@ export const colors = {
   onPrimary: '#FFFFFF', // text/icons on violet & ink blocks
   onInkMuted: 'rgba(255,255,255,0.7)', // secondary text on violet & ink
   onInkSubtle: 'rgba(255,255,255,0.08)', // tint panels on ink (white/5–10)
+  onInkRaised: 'rgba(255,255,255,0.18)', // raised tint panel on violet/ink (white/18)
+  onLightSubtle: 'rgba(23,20,31,0.1)', // subtle ink tint on light/lime fills
   scrim: 'rgba(23,20,31,0.45)', // sheet / modal backdrop
   surface: '#F4F2F9', // app canvas
   panel: '#FFFFFF', // cards, inputs, modals
@@ -49,6 +51,9 @@ export const colors = {
 
   // Disabled control fill (Button disabled state).
   disabled: '#ECEAF2',
+
+  // Neutral fill for non-selected sentiment score bars.
+  scoreNeutral: '#e0e0e0',
 } as const;
 
 // Named tokens matching the sticker sheet's semantic roles.

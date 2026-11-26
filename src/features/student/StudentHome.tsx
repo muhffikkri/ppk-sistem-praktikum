@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { colors, fontFamily, radius, spacing } from '../../theme/tokens';
+import { colors, radius, spacing, typography } from '../../theme/tokens';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   AppTopBar,
@@ -42,14 +42,6 @@ const STATUS_TONE: Record<string, BadgeTone> = {
 
 const WEEK_ROWS = 4;
 
-const days = [
-  { label: 'SEN 18', date: new Date() },
-  { label: 'SEL 19', date: new Date() },
-  { label: 'RAB 20', date: new Date() },
-  { label: 'KAM 21', date: new Date() },
-  { label: 'JUM 22', date: new Date() },
-];
-
 function isSameDay(a: string, b: Date) {
   const d = new Date(a);
   return (
@@ -63,7 +55,6 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
   const { sessions, attendanceHistory, loading, error, retry } =
     useStudentAttendanceViewModel();
-  const [selectedDay, setSelectedDay] = useState(days[0]?.label ?? '');
 
   const topBar = (
     <AppTopBar
@@ -305,8 +296,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   dayBtnText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 12,
+    ...typography.captionStrong,
     color: colors.ink,
   },
   dayBtnSelectedText: {

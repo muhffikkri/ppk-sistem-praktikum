@@ -14,15 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AuthStackParamList } from '../../app/navigation';
 import { isFirebaseConfigured } from '../../services/firebase';
 import { Banner } from '../../shared/ui/Banner';
-import {
-  colors,
-  fontFamily,
-  radius,
-  shadow,
-  spacing,
-} from '../../theme/tokens';
-import { useAuth } from '../../state';
 import { Text } from '../../shared/ui/Text';
+import { colors, radius, shadow, spacing } from '../../theme/tokens';
+import { useAuth } from '../../state';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Landing'>;
 
@@ -71,21 +65,27 @@ export function LandingScreen({ navigation }: Props) {
         <View style={styles.centralHero}>
           {/* Main Title: LabPresensi */}
           <View style={styles.titleRow}>
-            <Text style={styles.titlePrimary}>Lab</Text>
-            <Text style={styles.titleItalic}>Presensi</Text>
+            <Text variant="display" tone="onDark" style={styles.titlePrimary}>
+              Lab
+            </Text>
+            <Text variant="displayAccent" style={styles.titleItalic}>
+              Presensi
+            </Text>
           </View>
 
           {/* Subtitle */}
-          <Text style={styles.subtitle}>
+          <Text variant="body" style={styles.subtitle}>
             Satu ritme praktikum terpadu di setiap sudut laboratorium komputasi
             & riset.
           </Text>
 
-          {/* Lab Shift Spark Indicators */}
+          {/* Indikator sesi lab */}
           <View style={styles.shiftBadge}>
             <View style={styles.avatarGroup}>
               <View style={[styles.avatar, { backgroundColor: colors.lime }]}>
-                <Text style={styles.avatarText}>FP</Text>
+                <Text variant="overline" tone="ink">
+                  FP
+                </Text>
               </View>
               <View
                 style={[
@@ -93,7 +93,9 @@ export function LandingScreen({ navigation }: Props) {
                   { backgroundColor: colors.pink, marginLeft: -6 },
                 ]}
               >
-                <Text style={styles.avatarText}>AR</Text>
+                <Text variant="overline" tone="ink">
+                  AR
+                </Text>
               </View>
               <View
                 style={[
@@ -101,41 +103,55 @@ export function LandingScreen({ navigation }: Props) {
                   { backgroundColor: colors.lavender, marginLeft: -6 },
                 ]}
               >
-                <Text style={[styles.avatarText, { color: colors.violet }]}>
+                <Text variant="overline" tone="violet">
                   KT
                 </Text>
               </View>
             </View>
-            <Text style={styles.shiftText}>18 Asisten Berjaga Hari Ini</Text>
+            <Text variant="label" tone="onDark">
+              18 Asisten Berjaga Hari Ini
+            </Text>
           </View>
         </View>
 
         {/* 3 Core Feature Cards Array */}
         <View style={styles.featureGrid}>
-          {/* Feature 1: Jadwal & Shift */}
+          {/* Feature 1: Jadwal & Sesi */}
           <View style={styles.featureCard}>
             <View style={[styles.iconCircle, { backgroundColor: colors.lime }]}>
               <Ionicons name="calendar" size={18} color={colors.ink} />
             </View>
-            <Text style={styles.featureTitle}>Jadwal & Shift</Text>
-            <Text style={styles.featureSub}>Roster jaga & tukar jadwal</Text>
+            <Text
+              variant="captionStrong"
+              tone="onDark"
+              style={styles.featureTitle}
+            >
+              Jadwal & Sesi
+            </Text>
+            <Text variant="caption" style={styles.featureSub}>
+              Roster jaga & tukar jadwal
+            </Text>
           </View>
 
-          {/* Feature 2: Presensi QR & Geofence */}
+          {/* Feature 2: Kode Presensi */}
           <View style={[styles.featureCard, styles.featureCardHighlighted]}>
             <View
               style={[styles.iconCircle, { backgroundColor: colors.onPrimary }]}
             >
-              <Ionicons name="qr-code" size={18} color={colors.violet} />
+              <Ionicons name="scan-outline" size={18} color={colors.violet} />
             </View>
-            <Text style={styles.featureTitle}>Presensi QR</Text>
             <Text
-              style={[
-                styles.featureSub,
-                { color: colors.lime, fontWeight: '600' },
-              ]}
+              variant="captionStrong"
+              tone="onDark"
+              style={styles.featureTitle}
             >
-              Radar beacon lab akurat
+              Kode Presensi
+            </Text>
+            <Text
+              variant="captionStrong"
+              style={[styles.featureSub, styles.featureSubStrong]}
+            >
+              Penanda lab yang akurat
             </Text>
           </View>
 
@@ -148,8 +164,16 @@ export function LandingScreen({ navigation }: Props) {
                 color={colors.pinkInk}
               />
             </View>
-            <Text style={styles.featureTitle}>Modul & BAP</Text>
-            <Text style={styles.featureSub}>Validasi berita acara dosen</Text>
+            <Text
+              variant="captionStrong"
+              tone="onDark"
+              style={styles.featureTitle}
+            >
+              Modul & BAP
+            </Text>
+            <Text variant="caption" style={styles.featureSub}>
+              Validasi berita acara dosen
+            </Text>
           </View>
         </View>
 
@@ -175,7 +199,7 @@ export function LandingScreen({ navigation }: Props) {
           </View>
         ) : null}
 
-        {/* Bottom Actions & SSO Verification Dock */}
+        {/* Bottom Actions & Verification Dock */}
         <View style={styles.bottomDock}>
           {/* Primary Action Button: Electric Lime */}
           <Pressable
@@ -189,7 +213,9 @@ export function LandingScreen({ navigation }: Props) {
           >
             <View style={styles.btnContent}>
               <Ionicons name="log-in-outline" size={20} color={colors.ink} />
-              <Text style={styles.primaryBtnText}>Masuk ke Lab Praktikum</Text>
+              <Text variant="bodyStrong" tone="ink">
+                Masuk ke Lab Praktikum
+              </Text>
             </View>
             <View style={styles.arrowCircle}>
               <Ionicons name="arrow-forward" size={16} color={colors.ink} />
@@ -200,7 +226,10 @@ export function LandingScreen({ navigation }: Props) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Masuk dengan Google"
-            accessibilityState={{ busy: googlePending, disabled: googlePending }}
+            accessibilityState={{
+              busy: googlePending,
+              disabled: googlePending,
+            }}
             disabled={googlePending}
             onPress={handleGoogleLogin}
             style={({ pressed }) => [
@@ -213,7 +242,7 @@ export function LandingScreen({ navigation }: Props) {
             ) : (
               <Ionicons name="logo-google" size={16} color={colors.lavender} />
             )}
-            <Text style={styles.secondaryBtnText}>
+            <Text variant="label" tone="violet">
               Masuk dengan Akun Google
             </Text>
           </Pressable>
@@ -225,18 +254,22 @@ export function LandingScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('Register')}
             style={styles.registerRow}
           >
-            <Text style={styles.registerPrompt}>Belum punya akun?</Text>
-            <Text style={styles.registerLink}>Daftar Baru</Text>
+            <Text variant="caption" style={styles.registerPrompt}>
+              Belum punya akun?
+            </Text>
+            <Text variant="captionStrong" style={styles.registerLink}>
+              Daftar Baru
+            </Text>
           </Pressable>
 
-          {/* SSO Footer Text */}
+          {/* Footer verifikasi resmi */}
           <View style={styles.ssoFooter}>
             <Ionicons
               name="shield-checkmark-outline"
               size={12}
               color={colors.lavender}
             />
-            <Text style={styles.ssoFooterText}>
+            <Text variant="caption" tone="onDarkMuted">
               Terhubung Resmi dengan SIAP UNDIP
             </Text>
           </View>
@@ -298,26 +331,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   titlePrimary: {
-    fontFamily: fontFamily.displayBold,
-    fontSize: 55,
-    lineHeight: 60,
-    color: colors.onPrimary,
-    letterSpacing: -0.6,
     includeFontPadding: false,
   },
   titleItalic: {
-    fontFamily: fontFamily.displayItalic,
-    fontSize: 55,
-    lineHeight: 60,
     color: colors.lime,
-    letterSpacing: -0.6,
     marginLeft: 2,
     includeFontPadding: false,
   },
   subtitle: {
-    fontFamily: fontFamily.sans,
-    fontSize: 13,
-    lineHeight: 19,
     color: colors.lavender,
     textAlign: 'center',
     maxWidth: 260,
@@ -328,7 +349,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: colors.onInkSubtle,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: radius.full,
@@ -345,18 +366,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.violet,
   },
-  avatarText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 8,
-    color: colors.ink,
-  },
-  shiftText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: 11,
-    color: colors.onPrimary,
-  },
-
-  // 3 Feature Cards
   featureGrid: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -365,13 +374,13 @@ const styles = StyleSheet.create({
   featureCard: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: colors.onInkSubtle,
     borderRadius: radius.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: 4,
   },
   featureCardHighlighted: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: colors.onInkRaised,
     position: 'relative',
   },
   cardCornerDot: {
@@ -392,18 +401,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   featureTitle: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 12,
-    color: colors.onPrimary,
     textAlign: 'center',
   },
   featureSub: {
-    fontFamily: fontFamily.sans,
-    fontSize: 9.5,
-    lineHeight: 13,
     color: colors.lavender,
     textAlign: 'center',
     marginTop: 2,
+  },
+  featureSubStrong: {
+    color: colors.lime,
   },
 
   bannerWrapper: {
@@ -434,16 +440,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  primaryBtnText: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 14,
-    color: colors.ink,
-  },
   arrowCircle: {
     width: 30,
     height: 30,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(23, 20, 31, 0.1)',
+    backgroundColor: colors.onLightSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -460,13 +461,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     ...shadow.subtle,
   },
-  secondaryBtnText: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: 12,
-    color: colors.violet,
-    // remove underline for cleaner look
-    // textDecorationLine: 'underline',
-  },
   registerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -475,13 +469,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   registerPrompt: {
-    fontFamily: fontFamily.sans,
-    fontSize: 12,
     color: colors.lavender,
   },
   registerLink: {
-    fontFamily: fontFamily.sansBold,
-    fontSize: 12,
     color: colors.lime,
   },
   ssoFooter: {
@@ -490,10 +480,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     paddingTop: 4,
-  },
-  ssoFooterText: {
-    fontFamily: fontFamily.sans,
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.65)',
   },
 });
