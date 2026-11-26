@@ -1,6 +1,7 @@
 import {
   AttendanceRecord,
   DemoStudent,
+  LeaveRequest,
   Session,
   SessionActionFailure,
 } from './types';
@@ -13,6 +14,7 @@ export type AttendanceCheckInResult =
  * Aturan domain untuk pencatatan presensi praktikan.
  * - Sesi harus ada dan berstatus 'open'.
  * - Mahasiswa belum boleh presensi di sesi yang sama (pencegahan duplikasi).
+ * - Mahasiswa dengan izin disetujui tidak dapat presensi (status telah disetujui izin).
  * - Menghasilkan AttendanceRecord baru dengan timestamp saat ini.
  */
 export function checkInRule(
@@ -20,12 +22,17 @@ export function checkInRule(
   student: DemoStudent,
   existingRecords: AttendanceRecord[],
   nowIso: string = new Date().toISOString(),
+  studentLeave?: LeaveRequest,
 ): AttendanceCheckInResult {
   if (!session) {
     return { ok: false, reason: 'session_not_found' };
   }
 
   if (session.status !== 'open') {
+    return { ok: false, reason: 'invalid_status' };
+  }
+
+  if (studentLeave?.status === 'approved') {
     return { ok: false, reason: 'invalid_status' };
   }
 
