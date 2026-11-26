@@ -87,8 +87,12 @@ export function subscribeStudentAttendance(
 
   return onSnapshot(
     q,
+    { includeMetadataChanges: true },
     (snap) => {
+      // Latency compensation memasukkan write lokal sebelum server menerimanya.
+      // Jangan anggap itu presensi tersimpan sampai snapshot server tiba.
       const records = snap.docs
+        .filter((d) => !d.metadata.hasPendingWrites)
         .map((d) => normalizeAttendanceRecord(d.id, d.data()))
         .sort((a, b) =>
           (b.checkedInAt ?? '').localeCompare(a.checkedInAt ?? ''),
