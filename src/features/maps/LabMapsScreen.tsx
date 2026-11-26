@@ -15,6 +15,7 @@ import { IconButton } from '../../shared/ui/IconButton';
 import { Text } from '../../shared/ui/Text';
 import { LoadingState } from '../../shared/ui/LoadingState';
 import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
+import { isAssistantRole } from '../../domain/asprakScope';
 import { useAuth } from '../../state';
 import type { RootStackParamList } from '../../app/navigation';
 import { useLabMapsViewModel } from './useLabMapsViewModel';
@@ -98,7 +99,7 @@ export function LabMapsScreen({ navigation }: Props) {
   };
 
   const handleSelectSession = (sessionId: string) => {
-    if (user?.role === 'assistant' || user?.role === 'lab_assistant') {
+    if (isAssistantRole(user?.role)) {
       navigation.navigate('AssistantSessionDetail', { sessionId });
     } else {
       navigation.navigate('StudentSessionDetail', { sessionId });

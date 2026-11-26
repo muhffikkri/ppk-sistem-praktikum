@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { isAssistantRole } from '../../domain/asprakScope';
 import type { Session } from '../../domain/types';
 import {
   Banner,
@@ -43,8 +44,7 @@ const STATUS_TONE: Record<Session['status'], BadgeTone> = {
 
 export function CalendarScreen({ navigation }: Props) {
   const { user } = useAuth();
-  const isAssistant =
-    user?.role === 'assistant' || user?.role === 'lab_assistant';
+  const isAssistant = isAssistantRole(user?.role);
   const assistant = useAssistantSessionsViewModel();
   const student = useStudentAttendanceViewModel();
   const source = isAssistant ? assistant : student;

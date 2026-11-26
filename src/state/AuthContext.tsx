@@ -23,6 +23,7 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 
+import { isAssistantRole } from '../domain/asprakScope';
 import type {
   ActionFailureReason,
   AsyncActionResult,
@@ -133,10 +134,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [needsRoleSelection, setNeedsRoleSelection] = useState(false);
   const registeringRef = useRef(false);
-  const googleResolveRef = useRef<((result: AsyncActionResult) => void) | null>(null);
+  const googleResolveRef = useRef<((result: AsyncActionResult) => void) | null>(
+    null,
+  );
 
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
-  const googleAndroidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+  const googleAndroidClientId =
+    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
   const [, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
     webClientId: googleWebClientId || undefined,
@@ -157,15 +161,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (googleResponse.type !== 'success') {
       finish(
         googleResponse.type === 'cancel' || googleResponse.type === 'dismiss'
-          ? { ok: false, reason: 'unknown_error', message: 'Login Google dibatalkan.' }
-          : { ok: false, reason: 'unknown_error', message: 'Login Google gagal. Coba lagi.' },
+          ? {
+              ok: false,
+              reason: 'unknown_error',
+              message: 'Login Google dibatalkan.',
+            }
+          : {
+              ok: false,
+              reason: 'unknown_error',
+              message: 'Login Google gagal. Coba lagi.',
+            },
       );
       return;
     }
 
     const idToken = googleResponse.params?.id_token;
     if (!idToken) {
-      finish({ ok: false, reason: 'unknown_error', message: 'Token Google tidak diterima.' });
+      finish({
+        ok: false,
+        reason: 'unknown_error',
+        message: 'Token Google tidak diterima.',
+      });
       return;
     }
 
@@ -204,11 +220,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = snap.data() as Partial<UserProfile>;
             // Role disimpan di Firestore dan dipakai sebagai kebenaran tunggal.
             const role: UserRole =
-              data.role === 'lab_assistant'
-                ? 'lab_assistant'
-                : data.role === 'assistant'
-                  ? 'assistant'
-                  : 'student';
+              data.role === 'lab_assistant' || data.role === 'assistant'
+                ? data.role
+                : 'student';
             setUser({
               uid: firebaseUser.uid,
               displayName:
@@ -563,7 +577,5 @@ export type ActorRole = 'praktikan' | 'asisten';
 
 export function useActorRole(): ActorRole {
   const { user } = useAuth();
-  return user?.role === 'assistant' || user?.role === 'lab_assistant'
-    ? 'asisten'
-    : 'praktikan';
+  return isAssistantRole(user?.role) ? 'asisten' : 'praktikan';
 }

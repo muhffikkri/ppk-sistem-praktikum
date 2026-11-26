@@ -8,6 +8,7 @@ import {
   type PropsWithChildren,
 } from 'react';
 import type { Firestore } from 'firebase/firestore';
+import { isAssistantRole } from '../../domain/asprakScope';
 import type { LeaveRequest, UserProfile } from '../../domain/types';
 import {
   createLeaveService,
@@ -67,8 +68,7 @@ function LeaveRequestsSubscription({
   // Assistants: reuse the session list AssistantSessionsContext already
   // listens to instead of opening a second sessions listener.
   const assistant = useAssistantSessionsViewModel();
-  const isAssistant =
-    user?.role === 'assistant' || user?.role === 'lab_assistant';
+  const isAssistant = isAssistantRole(user?.role);
   const assistantSessionKey = isAssistant
     ? assistant.sessions.map((s) => s.id).join(',')
     : '';
@@ -122,7 +122,9 @@ function LeaveRequestsSubscription({
   );
 
   return (
-    <RequestsContext.Provider value={state}>{children}</RequestsContext.Provider>
+    <RequestsContext.Provider value={state}>
+      {children}
+    </RequestsContext.Provider>
   );
 }
 

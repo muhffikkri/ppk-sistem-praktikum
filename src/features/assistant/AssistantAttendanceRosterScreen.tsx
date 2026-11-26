@@ -3,12 +3,10 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import {
-  buildSessionRosterRecap,
-  type SessionRosterEntry,
-  type StudentAttendanceStatus,
+import type {
+  SessionRosterEntry,
+  StudentAttendanceStatus,
 } from '../../domain/sessionRecapRules';
-import type { LeaveRequest } from '../../domain/types';
 import {
   Avatar,
   Banner,
@@ -28,12 +26,12 @@ import {
   TopBar,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
-import { useAssistantLeaveViewModel } from '../leave';
 import {
   sessionStatusLabel,
   sessionStatusTone,
 } from './components/AssistantSessionCard';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
+import { useSessionRosterRecap } from './useAssistantSessionDetail';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -42,31 +40,29 @@ type Props = NativeStackScreenProps<
 
 type FilterType = 'all' | StudentAttendanceStatus;
 
+type StatusPresentation = {
+  badgeTone: BadgeTone;
+  badgeLabel: string;
+  avatarTone: AvatarTone;
+};
+
+const STATUS_PRESENTATION: Record<StudentAttendanceStatus, StatusPresentation> =
+  {
+    present: { badgeTone: 'lime', badgeLabel: 'Hadir', avatarTone: 'lime' },
+    excused: { badgeTone: 'lavender', badgeLabel: 'Izin', avatarTone: 'pink' },
+    absent: {
+      badgeTone: 'neutral',
+      badgeLabel: 'Belum hadir',
+      avatarTone: 'lavender',
+    },
+  };
+
 export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession, error } =
-    useAssistantSessionsViewModel();
-  const { leaveRequests } = useAssistantLeaveViewModel();
+  const { error } = useAssistantSessionsViewModel();
+  const { session, recap } = useSessionRosterRecap(sessionId);
 
   const [filter, setFilter] = useState<FilterType>('all');
-
-  const session = getSessionById(sessionId);
-  const attendees = getAttendanceForSession(sessionId);
-
-  const sessionLeaves = useMemo(
-    () => leaveRequests.filter((l: LeaveRequest) => l.sessionId === sessionId),
-    [leaveRequests, sessionId],
-  );
-
-  const recap = useMemo(
-    () =>
-      buildSessionRosterRecap({
-        participantIds: session?.participantIds ?? [],
-        attendees,
-        leaves: sessionLeaves,
-      }),
-    [session?.participantIds, attendees, sessionLeaves],
-  );
 
   const filterOptions = useMemo<SegmentedOption<FilterType>[]>(
     () => [
@@ -121,7 +117,8 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
               tone={sessionStatusTone[session.status]}
             />
             <Text variant="bodyStrong">
-              {recap.summary.presentCount} hadir · {recap.summary.excusedCount} izin · {recap.summary.absentCount} belum hadir
+              {recap.summary.presentCount} hadir · {recap.summary.excusedCount}{' '}
+              izin · {recap.summary.absentCount} belum hadir
             </Text>
           </View>
           <View style={styles.filterBlock}>
@@ -143,30 +140,13 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         />
       }
       renderItem={({ item: record }: { item: SessionRosterEntry }) => {
-        const isPresent = record.status === 'present';
-        const isExcused = record.status === 'excused';
+        const { badgeTone, badgeLabel, avatarTone } =
+          STATUS_PRESENTATION[record.status];
 
-        const badgeTone: BadgeTone = isPresent
-          ? 'lime'
-          : isExcused
-            ? 'lavender'
-            : 'neutral';
-
-        const badgeLabel = isPresent
-          ? 'Hadir'
-          : isExcused
-            ? 'Izin'
-            : 'Belum hadir';
-
-        const avatarTone: AvatarTone = isPresent
-          ? 'lime'
-          : isExcused
-            ? 'pink'
-            : 'lavender';
-
-        const meta = isExcused
-          ? `NIM ${record.studentId} · ${record.leaveReason ?? 'Izin disetujui'}`
-          : `NIM ${record.studentId}`;
+        const meta =
+          record.status === 'excused'
+            ? `NIM ${record.studentId} · ${record.leaveReason ?? 'Izin disetujui'}`
+            : `NIM ${record.studentId}`;
 
         return (
           <ListRow
@@ -177,7 +157,9 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
               <View style={styles.trailing}>
                 <StatusBadge label={badgeLabel} tone={badgeTone} />
                 {record.checkedInAt ? (
-                  <Text variant="caption">{formatClock(record.checkedInAt)}</Text>
+                  <Text variant="caption">
+                    {formatClock(record.checkedInAt)}
+                  </Text>
                 ) : null}
               </View>
             }

@@ -4,7 +4,6 @@ import test from 'node:test';
 import type { AttendanceRecord, LeaveRequest, Session } from './types';
 import {
   buildSessionRosterRecap,
-  canCheckInToSession,
   determineParticipantStatus,
 } from './sessionRecapRules';
 
@@ -16,13 +15,18 @@ const mockSession = (status: Session['status']): Session => ({
   startsAt: '2026-11-25T08:00:00.000Z',
   endsAt: '2026-11-25T10:00:00.000Z',
   status,
-  openedAt: status === 'open' || status === 'closed' ? '2026-11-25T08:05:00.000Z' : null,
+  openedAt:
+    status === 'open' || status === 'closed'
+      ? '2026-11-25T08:05:00.000Z'
+      : null,
   closedAt: status === 'closed' ? '2026-11-25T10:00:00.000Z' : null,
   participantIds: ['mhs-01', 'mhs-02', 'mhs-03', 'mhs-04'],
   assistantIds: ['asprak-01'],
 });
 
-const mockLeave = (overrides: Partial<LeaveRequest> & { id: string; studentId: string }): LeaveRequest => ({
+const mockLeave = (
+  overrides: Partial<LeaveRequest> & { id: string; studentId: string },
+): LeaveRequest => ({
   sessionId: 'session-101',
   classId: 'class-01',
   courseName: 'Praktikum Jaringan Komputer',
@@ -41,25 +45,6 @@ const mockLeave = (overrides: Partial<LeaveRequest> & { id: string; studentId: s
   reviewedAt: null,
   createdAt: '2026-11-25T07:30:00.000Z',
   ...overrides,
-});
-
-test('canCheckInToSession: menolak presensi pada sesi yang belum dibuka atau sudah ditutup (SRS-4.08)', () => {
-  assert.deepEqual(canCheckInToSession(mockSession('open')), { allowed: true });
-
-  assert.deepEqual(canCheckInToSession(mockSession('scheduled')), {
-    allowed: false,
-    reason: 'session_not_open',
-  });
-
-  assert.deepEqual(canCheckInToSession(mockSession('closed')), {
-    allowed: false,
-    reason: 'session_closed',
-  });
-
-  assert.deepEqual(canCheckInToSession(undefined), {
-    allowed: false,
-    reason: 'session_not_found',
-  });
 });
 
 test('determineParticipantStatus: menentukan status hadir, izin disetujui, dan alpa (SRS-4.09 & K6)', () => {
@@ -185,8 +170,8 @@ test('buildSessionRosterRecap: menghasilkan ringkasan peserta lengkap dan agrega
 
   const absentEntries = recap.entries.filter((e) => e.status === 'absent');
   assert.equal(absentEntries.length, 2);
-  assert.deepEqual(
-    absentEntries.map((e) => e.studentId).sort(),
-    ['mhs-03', 'mhs-04'],
-  );
+  assert.deepEqual(absentEntries.map((e) => e.studentId).sort(), [
+    'mhs-03',
+    'mhs-04',
+  ]);
 });

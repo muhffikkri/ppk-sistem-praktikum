@@ -19,11 +19,18 @@ import {
   spacing,
   Text,
 } from '../shared/ui';
+import { canManageLabMaster, isAssistantRole } from '../domain/asprakScope';
+import type { UserRole } from '../domain/types';
 import { useAuth } from '../state';
-import { canManageLabMaster } from '../domain/asprakScope';
 import type { RootStackParamList } from './navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  student: 'Praktikan',
+  assistant: 'Asprak',
+  lab_assistant: 'Aslab',
+};
 
 type ProfileMenuItem = {
   label: string;
@@ -39,14 +46,8 @@ export function ProfileScreen({ navigation }: Props) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const isAssistant =
-    user?.role === 'assistant' || user?.role === 'lab_assistant';
-  const roleLabel =
-    user?.role === 'lab_assistant'
-      ? 'Aslab'
-      : user?.role === 'assistant'
-        ? 'Asprak'
-        : 'Praktikan';
+  const isAssistant = isAssistantRole(user?.role);
+  const roleLabel = ROLE_LABEL[user?.role ?? 'student'];
   const displayName = user?.displayName ?? 'Pengguna';
   const email = user?.email ?? '-';
   const activeError = localError ?? error;

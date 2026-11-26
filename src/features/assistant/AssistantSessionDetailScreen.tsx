@@ -34,7 +34,6 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
   const {
     session,
-    attendees,
     recap,
     canOpen,
     canClose,
@@ -59,11 +58,6 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
       </Screen>
     );
   }
-
-  const totalParticipants = Math.max(
-    session.participantIds?.length ?? 0,
-    attendees.length,
-  );
 
   const confirmAction = async () => {
     if (!sheet) return;
@@ -103,9 +97,21 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
       ) : null}
 
       <StatRow>
-        <StatCard variant="panel" value={recap.summary.presentCount} label="Hadir" />
-        <StatCard variant="panel" value={recap.summary.excusedCount} label="Izin" />
-        <StatCard variant="panel" value={recap.summary.absentCount} label="Belum hadir" />
+        <StatCard
+          variant="panel"
+          value={recap.summary.presentCount}
+          label="Hadir"
+        />
+        <StatCard
+          variant="panel"
+          value={recap.summary.excusedCount}
+          label="Izin"
+        />
+        <StatCard
+          variant="panel"
+          value={recap.summary.absentCount}
+          label="Belum hadir"
+        />
       </StatRow>
 
       <View style={styles.info}>
@@ -159,7 +165,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
         description={
           sheet === 'open'
             ? `${session.courseName} · ${session.groupName} · ${formatTimeRange(session.startsAt, session.endsAt)}. Praktikan dapat langsung melakukan presensi.`
-            : `Praktikan tidak bisa presensi lagi. Tercatat ${attendees.length} dari ${totalParticipants} peserta.`
+            : `Praktikan tidak bisa presensi lagi. Tercatat ${recap.summary.presentCount} dari ${recap.summary.total} peserta.`
         }
         tone={sheet === 'close' ? 'danger' : 'default'}
         confirmLabel={sheet === 'open' ? 'Buka sesi' : 'Tutup sesi'}

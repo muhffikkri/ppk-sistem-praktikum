@@ -1,8 +1,4 @@
-import type {
-  AttendanceRecord,
-  LeaveRequest,
-  Session,
-} from './types';
+import type { AttendanceRecord, LeaveRequest } from './types';
 
 export type StudentAttendanceStatus = 'present' | 'excused' | 'absent';
 
@@ -26,26 +22,6 @@ export type SessionRecapResult = {
   entries: SessionRosterEntry[];
   summary: SessionRosterSummary;
 };
-
-/**
- * Validasi apakah presensi diizinkan pada sesi tertentu (SRS-4.08).
- * Presensi hanya sah bila sesi berstatus 'open'.
- */
-export function canCheckInToSession(session: Session | undefined): {
-  allowed: boolean;
-  reason?: 'session_not_found' | 'session_not_open' | 'session_closed';
-} {
-  if (!session) {
-    return { allowed: false, reason: 'session_not_found' };
-  }
-  if (session.status === 'scheduled') {
-    return { allowed: false, reason: 'session_not_open' };
-  }
-  if (session.status === 'closed') {
-    return { allowed: false, reason: 'session_closed' };
-  }
-  return { allowed: true };
-}
 
 /**
  * Menentukan status kehadiran peserta perorangan (SRS-4.09 & Kontrak K6):

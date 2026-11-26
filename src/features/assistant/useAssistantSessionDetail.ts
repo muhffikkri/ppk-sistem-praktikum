@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   buildSessionRosterRecap,
@@ -6,7 +6,6 @@ import {
 } from '../../domain/sessionRecapRules';
 import type {
   AttendanceRecord,
-  LeaveRequest,
   Session,
   SessionActionFailure,
 } from '../../domain/types';
@@ -78,6 +77,31 @@ function toFeedback(
 }
 
 /**
+ * Satu sumber rekap sesi untuk detail sesi maupun daftar kehadiran asisten:
+ * filter izin per sesi dan pembangunan rekap dilakukan di sini saja.
+ */
+export function useSessionRosterRecap(sessionId: string) {
+  const { getSessionById, getAttendanceForSession } =
+    useAssistantSessionsViewModel();
+  const { leaveRequests } = useAssistantLeaveViewModel();
+
+  const session = getSessionById(sessionId);
+  const attendees = getAttendanceForSession(sessionId);
+
+  const recap = useMemo(
+    () =>
+      buildSessionRosterRecap({
+        participantIds: session?.participantIds ?? [],
+        attendees,
+        leaves: leaveRequests.filter((l) => l.sessionId === sessionId),
+      }),
+    [session?.participantIds, attendees, leaveRequests, sessionId],
+  );
+
+  return { session, attendees, recap };
+}
+
+/**
  * ViewModel layar detail sesi asisten.
  * Membungkus `useAssistantSessionsViewModel` (kontrak bersama) dan menambahkan
  * state presentasi: aksi yang tersedia, petunjuk status, serta feedback aksi.
@@ -86,19 +110,8 @@ export function useAssistantSessionDetail(
   sessionId: string,
 ): AssistantSessionDetailViewModel {
   const viewModel = useAssistantSessionsViewModel();
+  const { session, attendees, recap } = useSessionRosterRecap(sessionId);
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
-
-  const session = viewModel.getSessionById(sessionId);
-  const attendees = viewModel.getAttendanceForSession(sessionId);
-  const leaveState = useAssistantLeaveViewModel();
-  const sessionLeaves = leaveState.leaveRequests.filter(
-    (l: LeaveRequest) => l.sessionId === sessionId,
-  );
-  const recap = buildSessionRosterRecap({
-    participantIds: session?.participantIds ?? [],
-    attendees,
-    leaves: sessionLeaves,
-  });
 
   const openSession = async () => {
     const result = await viewModel.openSession(sessionId);
