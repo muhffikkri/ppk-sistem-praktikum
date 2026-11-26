@@ -23,6 +23,7 @@ import {
   type SegmentedOption,
 } from '../../shared/ui';
 import { formatWeekdayDayMonth } from '../../shared/format/date';
+import { useTransientFeedback } from '../../shared/navigation/useTransientFeedback';
 import {
   useAssistantSessionsViewModel,
   useAuth,
@@ -129,8 +130,6 @@ function TimelineCard({
   );
 }
 
-type Feedback = { tone: 'success' | 'danger'; title: string; message: string };
-
 export function CalendarScreen({ navigation }: Props) {
   const { user } = useAuth();
   const isAssistant = isAssistantRole(user?.role);
@@ -142,7 +141,7 @@ export function CalendarScreen({ navigation }: Props) {
   const [view, setView] = useState<CalendarView>('week');
   const [preview, setPreview] = useState<Session | null>(null);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const { feedback, showFeedback, clearFeedback } = useTransientFeedback();
 
   if (source.loading) {
     return (
@@ -217,7 +216,7 @@ export function CalendarScreen({ navigation }: Props) {
         : await assistant.closeSession(session.id);
     setBusy(false);
     setPreview(null);
-    setFeedback(
+    showFeedback(
       result.ok
         ? {
             tone: 'success',
@@ -267,7 +266,7 @@ export function CalendarScreen({ navigation }: Props) {
           tone={feedback.tone}
           title={feedback.title}
           message={feedback.message}
-          onDismiss={() => setFeedback(null)}
+          onDismiss={clearFeedback}
         />
       ) : null}
 
