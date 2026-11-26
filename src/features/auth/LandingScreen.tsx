@@ -15,7 +15,13 @@ import type { AuthStackParamList } from '../../app/navigation';
 import { isFirebaseConfigured } from '../../services/firebase';
 import { Banner } from '../../shared/ui/Banner';
 import { Text } from '../../shared/ui/Text';
-import { colors, radius, shadow, spacing } from '../../theme/tokens';
+import {
+  colors,
+  radius,
+  shadow,
+  spacing,
+  typography,
+} from '../../theme/tokens';
 import { useAuth } from '../../state';
 import { GoogleLogo } from './GoogleLogo';
 
@@ -317,11 +323,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   titlePrimary: {
-    fontSize: 50,
+    ...typography.displayLanding,
     includeFontPadding: false,
   },
   titleItalic: {
-    fontSize: 50,
+    ...typography.displayLanding,
     color: colors.lime,
     marginLeft: 2,
     includeFontPadding: false,
