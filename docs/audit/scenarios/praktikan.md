@@ -23,20 +23,20 @@
 | Step | Aksi user | Sistem | Temuan | Rekomendasi | Bukti |
 |---|---|---|---|---|---|
 | 1 | Buka Beranda | Hero sesi hari ini/berikutnya + list hari ini + mendatang + pintasan | Banyak blok; informasi sesi bisa muncul berulang | Refine: satu hero + satu list "Hari ini/Mendatang" + pintasan kontekstual | `src/features/student/StudentHome.tsx` |
-| 2 | Tap "Lihat semua" | Ke `StudentSchedule` | Dua CTA "Lihat semua" ke tujuan sama (hari ini & mendatang) | Merge jadi satu CTA | `src/features/student/StudentHome.tsx` |
+| 2 | Buka jadwal/riwayat dari Beranda | CTA ke `StudentSchedule` / `StudentAttendanceHistory` / kalender | **Update:** CTA ganda "Lihat semua" sudah tidak terlihat; pintasan sekarang lebih beragam | Keep; pastikan label CTA tetap jelas dan tidak duplikatif | `src/features/student/StudentHome.tsx` |
 | 3 | Buka Kalender | Week strip + preview sheet | Preview sheet bagus untuk mengurangi navigasi | Keep | `src/features/calendar/CalendarScreen.tsx` |
-| 4 | Buka detail sesi | Info sesi + status + aksi presensi/izin | Aksi izin selalu tampil, termasuk sudah hadir/sesi tidak relevan | Refine aturan tampil aksi | `src/features/student/StudentSessionDetailScreen.tsx` |
+| 4 | Buka detail sesi | Info sesi + status + aksi presensi/izin | **Update:** tombol izin kini disabled dengan label kontekstual (`Sudah Hadir, Tidak Bisa Izin` / `Izin Sudah Diajukan`) dan presensi dinonaktifkan saat izin approved; aksi masih tampil, tapi lebih aman | Pertimbangkan sembunyikan aksi izin saat tidak relevan agar layar lebih ringkas; tetap pertahankan guard state | `src/features/student/StudentSessionDetailScreen.tsx` |
 | 5 | Buka dari notifikasi | Deep-ish route via `notificationRoute` | Bagus; perlu pastikan route tujuan masih valid | Keep, tambah regression check | `src/app/NotificationsScreen.tsx`, `src/domain/notificationTypes.ts` |
 
-**Potong/sederhanakan:**
-- "Ajukan Izin Ketidakhadiran": sembunyikan jika `attendance` sudah ada, atau ubah jadi informasi "Sudah hadir, izin tidak diperlukan". 
+**Potong/sederhanakan (update):**
+- Guard state sudah ada (`canRequestLeave`, `isLeaveBlockingCheckIn`, label/disabled). Masih opsional: sembunyikan tombol izin sepenuhnya saat sudah hadir/izin approved agar fokus ke status.
 - Pertimbangkan sembunyikan/disable izin untuk sesi `closed` kecuali kebijakan produk mengizinkan izin retroaktif.
 
 ## Skenario 3 — Presensi (Scan QR + Geofence)
 
 | Step | Aksi user | Sistem | Temuan | Rekomendasi | Bukti |
 |---|---|---|---|---|---|
-| 1 | Tap FAB kamera | Buka `BarcodeScan` | Jalur cepat jelas | Keep | `src/app/AppNavigator.tsx` |
+| 1 | Tap FAB kamera / tombol "Scan QR Presensi" di detail sesi | Buka `BarcodeScan` | Jalur cepat jelas; detail sesi kini juga mengarah ke scan QR | Keep | `src/app/AppNavigator.tsx`, `src/features/student/StudentSessionDetailScreen.tsx` |
 | 2 | Scan QR | Parse session QR, `replace` ke `StudentCheckIn` | `replace` tepat, mencegah back ke kamera | Keep | `src/features/checkin/BarcodeScanScreen.tsx` |
 | 3 | Lihat layar presensi | Detail sesi + status geofence + tombol presensi | Info sesi mengulang detail sesi; user sudah "intent presensi" | Refine: ringkas detail, fokus status lokasi & CTA | `src/features/checkin/StudentCheckInScreen.tsx` |
 | 4 | Periksa lokasi | Manual refresh lokasi/geofence | Berguna saat GPS lambat, tapi jadi step ekstra | Keep sebagai fallback; auto-check saat masuk layar jika belum ada | `src/features/checkin/StudentCheckInScreen.tsx` |
@@ -82,8 +82,8 @@
 
 | ID | Usulan | Jenis | Prioritas |
 |---|---|---|---|
-| STU-01 | Sembunyikan/ubah aksi izin saat sudah hadir atau status sesi tidak mendukung | Cut/Refine | P1 |
-| STU-02 | Satukan CTA "Lihat semua" di Home praktikan | Merge | P2 |
+| STU-01 | Sembunyikan/ubah aksi izin saat sudah hadir atau status sesi tidak mendukung | Cut/Refine | P1 (Partial) - label/disabled sudah ada, masih bisa diringkas |
+| STU-02 | Satukan CTA "Lihat semua" di Home praktikan | Merge | Done/Outdated - Home sudah direstrukturisasi; CTA "Lihat semua" ganda tidak ditemukan |
 | STU-03 | Ringkas layar check-in: fokus geofence, pindahkan detail sesi ke collapsible | Refine | P1 |
 | STU-04 | Setelah submit izin sukses, ganti form dengan status + next action | Refine | P2 |
 | STU-05 | Tampilkan pintasan denda/pembayaran secara kontekstual (badge/count) | Refine | P3 |

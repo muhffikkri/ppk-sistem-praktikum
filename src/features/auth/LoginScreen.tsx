@@ -5,13 +5,14 @@ import { StyleSheet, View } from 'react-native';
 import type { AuthStackParamList } from '../../app/navigation';
 import { isFirebaseConfigured } from '../../services/firebase';
 import {
+  BackButton,
   Banner,
   Button,
   IconButton,
   Screen,
   spacing,
+  Text,
   TextField,
-  BackButton,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { AuthSwitchLink } from './AuthSwitchLink';
@@ -87,6 +88,13 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <Screen withDock={false}>
       <BackButton onPress={handleBack} />
+
+      <View style={styles.titleBlock}>
+        <Text variant="display">Masuk</Text>
+        <Text variant="body" tone="muted">
+          Gunakan email dan password akun praktikan atau asisten.
+        </Text>
+      </View>
 
       {!isFirebaseConfigured ? (
         <Banner
@@ -191,6 +199,7 @@ export function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  titleBlock: { gap: spacing.xs },
   fields: { gap: spacing.md },
   actions: { gap: spacing.sm },
 });

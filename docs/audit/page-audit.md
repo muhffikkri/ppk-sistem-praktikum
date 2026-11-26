@@ -2,6 +2,8 @@
 
 Gunakan dokumen ini untuk review cepat tiap layar. Status: `keep`, `cut`, `refine`, `merge`, `blocker`.
 
+**Pembaruan 2026-11-26:** diperbarui setelah merge fix `#49/#50/#51`. Cek kolom Temuan/Rekomendasi untuk status terkini.
+
 ## Cara Audit
 
 - Cek **tujuan halaman**: satu halaman = satu tugas utama.
@@ -19,9 +21,9 @@ Gunakan dokumen ini untuk review cepat tiap layar. Status: `keep`, `cut`, `refin
 | `Login` | `src/features/auth/LoginScreen.tsx` | Public | Autentikasi | Masuk | Google login + email/password; link daftar | Keep; cek error copy Firebase |  |
 | `Register` | `src/features/auth/RegisterScreen.tsx` | Public | Buat akun | Buat akun | Role Aslab tidak tersedia | Produk: by design/provisioning? |  |
 | `RoleSelection` | `src/features/auth/RoleSelectionScreen.tsx` | Auth butuh role | Pilih role | Lanjutkan | Ada "Daftar dengan email" di konteks pasca-login Google | Cut/ubah CTA sesuai konteks |  |
-| `DockTabs/Home` | `src/app/HomeScreen.tsx`, `src/features/student/StudentHome.tsx`, `src/features/assistant/AssistantHome.tsx` | Semua auth | Ringkasan & next action | Buka sesi aktif / aksi role | Banyak pintasan duplikat | Refine: 1 hero, 1-2 section, pintasan kontekstual |  |
+| `DockTabs/Home` | `src/app/HomeScreen.tsx`, `src/features/student/StudentHome.tsx`, `src/features/assistant/AssistantHome.tsx` | Semua auth | Ringkasan & next action | Buka sesi aktif / aksi role | **Update:** icon settings kecil di hero Asisten sudah dihapus, tapi hero card belum jelas sebagai affordance buka detail; pintasan duplikat masih ada | Jadikan hero pressable bila sesuai, dan kurangi pintasan duplikat |  |
 | `StudentSchedule` | `src/features/student/StudentScheduleScreen.tsx` | Student | Lihat jadwal | Buka detail sesi | - | Pastikan filter/status jelas |  |
-| `StudentSessionDetail` | `src/features/student/StudentSessionDetailScreen.tsx` | Student | Detail sesi + next action | Presensi jika open | Tombol izin selalu tampil, termasuk sudah hadir | Sembunyikan/ubah aksi izin berdasarkan state |  |
+| `StudentSessionDetail` | `src/features/student/StudentSessionDetailScreen.tsx` | Student | Detail sesi + next action | Presensi jika open | **Update:** izin/presensi sudah punya guard state & label kontekstual; tombol masih tampil sebagai disabled | Opsional ringkas dengan menyembunyikan aksi yang tidak relevan |  |
 | `StudentCheckIn` | `src/features/checkin/StudentCheckInScreen.tsx` | Student | Presensi geofence | Presensi Sekarang | Info sesi berulang; manual cek lokasi | Ringkas; auto-check lokasi saat masuk |  |
 | `BarcodeScan` | `src/features/checkin/BarcodeScanScreen.tsx` | Student | Scan QR sesi | Scan otomatis | Bagus pakai `replace` | Keep; tambahkan fallback input kode jika kamera gagal |  |
 | `StudentAttendanceHistory` | `src/features/student/StudentAttendanceHistoryScreen.tsx` | Student | Riwayat hadir | Lihat riwayat | - | Pastikan empty state actionable |  |
@@ -40,7 +42,7 @@ Gunakan dokumen ini untuk review cepat tiap layar. Status: `keep`, `cut`, `refin
 | `AssistantAllAttendance` | `src/features/assistant/AssistantAllAttendanceScreen.tsx` | Asisten/Aslab | Rekap presensi lintas sesi | Buka roster | Label tab dock "Presensi" kurang tepat | Rename tab untuk asisten |  |
 | `AssistantClassList` | `src/features/assistant/AssistantClassListScreen.tsx` | Asisten/Aslab | Kelola kelas | Tambah/edit kelas | Entry point banyak | Tetapkan entry point utama |  |
 | `AssistantClassForm` | `src/features/assistant/AssistantClassFormScreen.tsx` | Asisten/Aslab | Buat/edit kelas | Simpan | - | Validasi & dirty-state guard |  |
-| `AssistantSessionForm` | `src/features/assistant/AssistantSessionFormScreen.tsx` | Asisten/Aslab | Buat/edit sesi | Simpan | Link ke LabForm perlu guard role | Sembunyikan untuk non-aslab |  |
+| `AssistantSessionForm` | `src/features/assistant/AssistantSessionFormScreen.tsx` | Asisten/Aslab | Buat/edit sesi | Simpan | **Open:** Link/navigasi ke LabForm masih ada; guard role belum jelas | Sembunyikan untuk non-aslab + guard di screen |  |
 | `AssistantLeaveReviewList` | `src/features/leave/AssistantLeaveReviewListScreen.tsx` | Asisten/Aslab | Review izin | Terima/Tolak | Tidak ada filter status | Tambah filter/pencarian |  |
 | `AssistantLabList` | `src/features/labs/AssistantLabListScreen.tsx` | Aslab | Kelola master lab | Tambah/edit lab | Route global, guard menu saja | Tambah guard role di screen |  |
 | `AssistantLabForm` | `src/features/labs/AssistantLabFormScreen.tsx` | Aslab | Buat/edit lab | Simpan | Input geofence kritikal | Validasi ketat & konfirmasi destructive |  |

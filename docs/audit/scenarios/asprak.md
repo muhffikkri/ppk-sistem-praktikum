@@ -18,7 +18,7 @@
 
 | Step | Aksi user | Sistem | Temuan | Rekomendasi | Bukti |
 |---|---|---|---|---|---|
-| 1 | Buka Home | Hero sesi aktif/berikutnya + stat hadir/izin/belum hadir + aksi buka/tutup | Padat tapi informatif | Keep | `src/features/assistant/AssistantHome.tsx` |
+| 1 | Buka Home | Hero sesi aktif/berikutnya + stat hadir/izin/belum hadir + aksi buka/tutup | Tombol settings kecil sudah dihapus (issue #50), tapi hero card masih belum menjadi affordance utama buka detail sesi | Pertimbangkan buat hero card pressable ke `AssistantSessionDetail` jika tidak bentrok dengan aksi primer | `src/features/assistant/AssistantHome.tsx` |
 | 2 | Buka/tutup sesi dari Home | ConfirmSheet untuk tutup, buka langsung | Buka sesi tanpa konfirmasi; tutup pakai konfirmasi | Refine: pertimbangkan konfirmasi ringan saat buka jika sesi belum waktunya, atau tampilkan dampak | `src/features/assistant/AssistantHome.tsx` |
 | 3 | Lihat jadwal hari ini | Daftar sesi hari ini dengan status | Duplikasi dengan Schedule/Calendar | Keep, tapi batasi jumlah item | `src/features/assistant/AssistantHome.tsx` |
 | 4 | Gunakan pintasan | Kelola kelas, Buat sesi, Semua sesi, Pemeriksaan izin, Peta | Banyak pintasan; beberapa juga ada di Profile/Schedule | Refine: kelompokkan pintasan berdasarkan frekuensi | `src/features/assistant/AssistantHome.tsx`, `src/app/ProfileScreen.tsx` |
@@ -37,7 +37,7 @@
 
 | Step | Aksi user | Sistem | Temuan | Rekomendasi | Bukti |
 |---|---|---|---|---|---|
-| 1 | Buat sesi | Form sesi, bisa navigasi ke buat kelas/lab | Navigasi ke LabForm berguna untuk Aslab; untuk Asprak bisa dead-end jika tidak berhak | Refine: tampilkan "Buat lab" hanya untuk Aslab | `src/features/assistant/AssistantSessionFormScreen.tsx` |
+| 1 | Buat sesi | Form sesi, bisa navigasi ke buat kelas/lab | **Open:** Navigasi ke LabForm masih tersedia; perlu guard role agar non-aslab tidak masuk flow master lab | Refine: tampilkan "Buat lab" hanya untuk Aslab + guard screen | `src/features/assistant/AssistantSessionFormScreen.tsx` |
 | 2 | Buka detail sesi | Stat hadir/izin/belum hadir, info waktu, aksi buka/tutup/QR/rekap | Layout jelas | Keep | `src/features/assistant/AssistantSessionDetailScreen.tsx` |
 | 3 | Buka sesi | ConfirmSheet | Baik untuk mencegah salah buka | Keep | `src/features/assistant/AssistantSessionDetailScreen.tsx` |
 | 4 | Tampilkan QR | Hanya saat sesi open; QR + jumlah hadir/peserta | Bagus, tindakan kontekstual | Keep | `src/features/assistant/AssistantSessionQrScreen.tsx` |
@@ -78,7 +78,7 @@
 | ID | Usulan | Jenis | Prioritas |
 |---|---|---|---|
 | ASP-01 | Ubah label tab "Presensi" untuk asisten menjadi "Rekap" | Refine | P2 |
-| ASP-02 | Sembunyikan CTA "Buat lab" di form sesi untuk non-aslab | Cut/Guard | P1 |
+| ASP-02 | Sembunyikan CTA "Buat lab" di form sesi untuk non-aslab | Cut/Guard | P1 (Open) - navigasi ke `AssistantLabForm` masih ada di SessionForm |
 | ASP-03 | Kurangi duplikasi pintasan Kelola Kelas/Buat Sesi antar Home/Profile/Schedule | Merge | P2 |
 | ASP-04 | Tambah filter status pada pemeriksaan izin | Refine | P2 |
 | ASP-05 | Tambah CTA "Lihat rekap" di layar QR sesi | Refine | P3 |

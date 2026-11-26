@@ -63,7 +63,7 @@ Aslab menjalankan skenario yang sama dengan [Asprak](./asprak.md), termasuk:
 | ID | Usulan | Jenis | Prioritas |
 |---|---|---|---|
 | ASL-01 | Tentukan dan dokumentasikan provisioning role Aslab | Product/Ops | P1 |
-| ASL-02 | Tambah guard role pada layar master lab | Guard | P1 |
-| ASL-03 | Sembunyikan/disable CTA buat lab di session form untuk non-aslab | Cut/Guard | P1 |
+| ASL-02 | Tambah guard role pada layar master lab | Guard | P1 (Open) |
+| ASL-03 | Sembunyikan/disable CTA buat lab di session form untuk non-aslab | Cut/Guard | P1 (Open) - `AssistantSessionForm` masih menavigasi ke `AssistantLabForm` |
 | ASL-04 | Validasi koordinat/radius lab dan cegah hapus lab yang dipakai sesi | Refine | P1 |
 | ASL-05 | Normalisasi label role Asprak/Aslab/Asisten praktikum | Refine | P2 |

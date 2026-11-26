@@ -357,242 +357,244 @@ export function AppNavigator() {
         <LeaveProvider db={db} user={user}>
           <NotificationInboxProvider>
             <View style={styles.root}>
-              <Stack.Navigator
-                initialRouteName="DockTabs"
+              <View style={styles.content}>
+                <Stack.Navigator
+                  initialRouteName="DockTabs"
 
-                screenOptions={STACK_SCREEN_OPTIONS}
-              >
-                <Stack.Screen
-                  name="DockTabs"
-                  component={DockTabsScreen}
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="Home"
-
-                  component={HomeScreen}
-
-                  options={{
-                    title: 'Beranda',
-
-                    headerRight: () => null,
-
-                    headerBackTitle: '',
-
-                    headerShown: false,
-                  }}
-                />
-
-                <Stack.Group screenOptions={{ title: 'Praktikan' }}>
+                  screenOptions={STACK_SCREEN_OPTIONS}
+                >
                   <Stack.Screen
-                    name="StudentSchedule"
+                    name="DockTabs"
+                    component={DockTabsScreen}
+                    options={{ headerShown: false }}
+                  />
 
-                    component={StudentScheduleScreen}
+                  <Stack.Screen
+                    name="Home"
+
+                    component={HomeScreen}
+
+                    options={{
+                      title: 'Beranda',
+
+                      headerRight: () => null,
+
+                      headerBackTitle: '',
+
+                      headerShown: false,
+                    }}
+                  />
+
+                  <Stack.Group screenOptions={{ title: 'Praktikan' }}>
+                    <Stack.Screen
+                      name="StudentSchedule"
+
+                      component={StudentScheduleScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentSessionDetail"
+
+                      component={StudentSessionDetailScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentCheckIn"
+
+                      component={StudentCheckInScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentAttendanceHistory"
+
+                      component={StudentAttendanceHistoryScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentAllSessions"
+
+                      component={StudentAllSessionsScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentAllAttendance"
+
+                      component={StudentAllAttendanceScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentLeaveRequestForm"
+
+                      component={StudentLeaveRequestFormScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentLeaveList"
+
+                      component={StudentLeaveListScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentFineList"
+                      component={StudentFineListScreen}
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentFineDetail"
+                      component={StudentFineDetailScreen}
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="StudentPaymentHistory"
+                      component={StudentPaymentHistoryScreen}
+                      options={{ headerShown: false }}
+                    />
+                  </Stack.Group>
+
+                  <Stack.Group screenOptions={{ headerShown: false }}>
+                    <Stack.Screen
+                      name="AssistantSchedule"
+
+                      component={AssistantScheduleScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantSessionDetail"
+
+                      component={AssistantSessionDetailScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantSessionQr"
+                      component={AssistantSessionQrScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantAttendanceRoster"
+
+                      component={AssistantAttendanceRosterScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantAllSessions"
+
+                      component={AssistantAllSessionsScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantAllAttendance"
+
+                      component={AssistantAllAttendanceScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantClassList"
+
+                      component={AssistantClassListScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantClassForm"
+
+                      component={AssistantClassFormScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantSessionForm"
+
+                      component={AssistantSessionFormScreen}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantLeaveReviewList"
+
+                      component={AssistantLeaveReviewListScreen}
+
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantLabList"
+                      component={AssistantLabListScreen}
+                      options={{ headerShown: false }}
+                    />
+
+                    <Stack.Screen
+                      name="AssistantLabForm"
+                      component={AssistantLabFormScreen}
+                      options={{ headerShown: false }}
+                    />
+                  </Stack.Group>
+
+                  <Stack.Screen
+                    name="Calendar"
+
+                    component={CalendarScreen}
 
                     options={{ headerShown: false }}
                   />
 
                   <Stack.Screen
-                    name="StudentSessionDetail"
+                    name="Profile"
 
-                    component={StudentSessionDetailScreen}
-
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="StudentCheckIn"
-
-                    component={StudentCheckInScreen}
+                    component={ProfileScreen}
 
                     options={{ headerShown: false }}
                   />
 
                   <Stack.Screen
-                    name="StudentAttendanceHistory"
+                    name="ProfileEdit"
 
-                    component={StudentAttendanceHistoryScreen}
-
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="StudentAllSessions"
-
-                    component={StudentAllSessionsScreen}
+                    component={ProfileEditScreen}
 
                     options={{ headerShown: false }}
                   />
 
                   <Stack.Screen
-                    name="StudentAllAttendance"
+                    name="Notifications"
 
-                    component={StudentAllAttendanceScreen}
-
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="StudentLeaveRequestForm"
-
-                    component={StudentLeaveRequestFormScreen}
+                    component={NotificationsScreen}
 
                     options={{ headerShown: false }}
                   />
 
                   <Stack.Screen
-                    name="StudentLeaveList"
+                    name="LabMaps"
 
-                    component={StudentLeaveListScreen}
-
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="StudentFineList"
-                    component={StudentFineListScreen}
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="StudentFineDetail"
-                    component={StudentFineDetailScreen}
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="StudentPaymentHistory"
-                    component={StudentPaymentHistoryScreen}
-                    options={{ headerShown: false }}
-                  />
-                </Stack.Group>
-
-                <Stack.Group screenOptions={{ headerShown: false }}>
-                  <Stack.Screen
-                    name="AssistantSchedule"
-
-                    component={AssistantScheduleScreen}
+                    component={LabMapsScreen}
 
                     options={{ headerShown: false }}
                   />
 
                   <Stack.Screen
-                    name="AssistantSessionDetail"
-
-                    component={AssistantSessionDetailScreen}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantSessionQr"
-                    component={AssistantSessionQrScreen}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantAttendanceRoster"
-
-                    component={AssistantAttendanceRosterScreen}
-
+                    name="BarcodeScan"
+                    component={BarcodeScanScreen}
                     options={{ headerShown: false }}
                   />
-
-                  <Stack.Screen
-                    name="AssistantAllSessions"
-
-                    component={AssistantAllSessionsScreen}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantAllAttendance"
-
-                    component={AssistantAllAttendanceScreen}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantClassList"
-
-                    component={AssistantClassListScreen}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantClassForm"
-
-                    component={AssistantClassFormScreen}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantSessionForm"
-
-                    component={AssistantSessionFormScreen}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantLeaveReviewList"
-
-                    component={AssistantLeaveReviewListScreen}
-
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantLabList"
-                    component={AssistantLabListScreen}
-                    options={{ headerShown: false }}
-                  />
-
-                  <Stack.Screen
-                    name="AssistantLabForm"
-                    component={AssistantLabFormScreen}
-                    options={{ headerShown: false }}
-                  />
-                </Stack.Group>
-
-                <Stack.Screen
-                  name="Calendar"
-
-                  component={CalendarScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="Profile"
-
-                  component={ProfileScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="ProfileEdit"
-
-                  component={ProfileEditScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="Notifications"
-
-                  component={NotificationsScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="LabMaps"
-
-                  component={LabMapsScreen}
-
-                  options={{ headerShown: false }}
-                />
-
-                <Stack.Screen
-                  name="BarcodeScan"
-                  component={BarcodeScanScreen}
-                  options={{ headerShown: false }}
-                />
-              </Stack.Navigator>
+                </Stack.Navigator>
+              </View>
 
               <BottomDock
                 tabs={DOCK_TABS}
@@ -626,6 +628,7 @@ export function AppNavigator() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
+  content: { flex: 1 },
 
   pager: { flex: 1 },
 

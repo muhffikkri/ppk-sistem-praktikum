@@ -7,6 +7,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect } from 'react';
+import { NavigationBar } from 'expo-navigation-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppNavigator } from './src/app/AppNavigator';
@@ -64,6 +65,7 @@ function AppNavigation() {
       <NavigationContainer ref={navigation}>
         <AppNavigator />
         <StatusBar style="dark" />
+        <NavigationBar style="light" />
       </NavigationContainer>
     </DevicePermissionGate>
   );
