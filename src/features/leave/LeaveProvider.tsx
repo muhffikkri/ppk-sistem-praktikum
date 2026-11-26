@@ -67,7 +67,8 @@ function LeaveRequestsSubscription({
   // Assistants: reuse the session list AssistantSessionsContext already
   // listens to instead of opening a second sessions listener.
   const assistant = useAssistantSessionsViewModel();
-  const isAssistant = user?.role === 'assistant';
+  const isAssistant =
+    user?.role === 'assistant' || user?.role === 'lab_assistant';
   const assistantSessionKey = isAssistant
     ? assistant.sessions.map((s) => s.id).join(',')
     : '';
