@@ -1,4 +1,4 @@
-import { StackActions, useNavigation } from '@react-navigation/native';
+﻿import { StackActions, useNavigation } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -182,7 +182,7 @@ const DockPage = memo(function DockPage({
       <StudentAttendanceHistoryScreen navigation={nav} route={route} />
     );
   }
-  return <ProfileScreen navigation={nav} route={route} />;
+  return <ProfileScreen navigation={navigation as any} route={route as any} />;
 });
 
 function DockTabsScreen({
@@ -323,7 +323,7 @@ export function AppNavigator() {
     );
   };
 
-  // When unauthenticated or loading, show auth stack (Landing → Login/Register)
+  // When unauthenticated or loading, show auth stack (Landing â†’ Login/Register)
   if (authStatus === 'unauthenticated' || authStatus === 'loading') {
     return (
       <AuthStack.Navigator screenOptions={{ headerShown: false }}>
