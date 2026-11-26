@@ -4,11 +4,7 @@ import {
   buildSessionRosterRecap,
   type SessionRecapResult,
 } from '../../domain/sessionRecapRules';
-import type {
-  AttendanceRecord,
-  Session,
-  SessionActionFailure,
-} from '../../domain/types';
+import type { AttendanceRecord, Session } from '../../domain/types';
 import { useAssistantSessionsViewModel } from '../../state';
 import { useAssistantLeaveViewModel } from '../leave';
 import { formatClock } from './formatters';
@@ -17,9 +13,7 @@ export type AssistantFeedback =
   { kind: 'success'; message: string } | { kind: 'error'; message: string };
 
 type LastAction =
-  | { type: 'opened' }
-  | { type: 'closed' }
-  | { type: 'failed'; reason: SessionActionFailure };
+  { type: 'opened' } | { type: 'closed' } | { type: 'failed'; reason: string };
 
 export type AssistantSessionDetailViewModel = {
   session: Session | undefined;
@@ -34,7 +28,7 @@ export type AssistantSessionDetailViewModel = {
   dismissFeedback: () => void;
 };
 
-const failureMessages: Record<SessionActionFailure, string> = {
+const failureMessages: Record<string, string> = {
   session_not_found: 'Sesi tidak ditemukan pada data demo.',
   invalid_status: 'Aksi tidak sesuai dengan status sesi saat ini.',
   outside_window:
@@ -49,7 +43,7 @@ function statusHintFor(session: Session | undefined): string {
     case 'open':
       return 'Sesi sedang terbuka. Tutup sesi bila praktikum telah selesai.';
     case 'closed':
-      return 'Sesi sudah ditutup dan tidak dapat dibuka kembali. Rekap tetap dapat dilihat.';
+      return 'Sesi sudah ditutup. Buka kembali dalam jendela jadwal bila perlu.';
     default:
       return '';
   }
@@ -75,7 +69,10 @@ function toFeedback(
     return { kind: 'success', message: `Sesi ditutup${time}.` };
   }
 
-  return { kind: 'error', message: failureMessages[action.reason] };
+  return {
+    kind: 'error',
+    message: failureMessages[action.reason] ?? 'Aksi tidak dapat diselesaikan.',
+  };
 }
 
 /**
@@ -120,7 +117,7 @@ export function useAssistantSessionDetail(
     setLastAction(
       result.ok
         ? { type: 'opened' }
-        : { type: 'failed', reason: 'invalid_status' },
+        : { type: 'failed', reason: result.reason },
     );
   };
 
@@ -129,7 +126,7 @@ export function useAssistantSessionDetail(
     setLastAction(
       result.ok
         ? { type: 'closed' }
-        : { type: 'failed', reason: 'invalid_status' },
+        : { type: 'failed', reason: result.reason },
     );
   };
 
@@ -137,7 +134,7 @@ export function useAssistantSessionDetail(
     session,
     attendees,
     recap,
-    canOpen: session?.status === 'scheduled',
+    canOpen: session?.status === 'scheduled' || session?.status === 'closed',
     canClose: session?.status === 'open',
     statusHint: statusHintFor(session),
     feedback: toFeedback(lastAction, session),
