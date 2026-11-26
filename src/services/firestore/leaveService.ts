@@ -19,6 +19,7 @@ import type {
 } from '../../domain/types';
 import { classifyLeaveReason } from '../../../ai/leaveClassifier';
 import { chunkIds } from './batching';
+import { waiveFineIfPresent } from './fineService';
 
 export class LeaveError extends Error {
   constructor(
@@ -223,12 +224,14 @@ export function createLeaveService(db: Firestore) {
       decisionNote?: string,
     ) {
       requireRole(user, 'assistant');
+      let targetLeave: LeaveRequest | undefined;
       await runTransaction(db, async (transaction) => {
         const ref = doc(leaves, id);
         const snapshot = await transaction.get(ref);
         if (!snapshot.exists())
           throw new LeaveError('leave_not_found', 'Pengajuan tidak ditemukan.');
         const leave = snapshot.data() as LeaveRequest;
+        targetLeave = leave;
         const session = await transaction.get(
           doc(db, 'sessions', leave.sessionId),
         );
@@ -252,6 +255,14 @@ export function createLeaveService(db: Firestore) {
           reviewedAt: new Date().toISOString(),
         });
       });
+
+      // Pembebasan tagihan denda keterlambatan jika izin disetujui (SRS-4.11 & Kontrak K6)
+      if (status === 'approved' && targetLeave) {
+        void waiveFineIfPresent(db, targetLeave.sessionId, targetLeave.studentId, {
+          ...targetLeave,
+          status: 'approved',
+        });
+      }
     },
   };
 }

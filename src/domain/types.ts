@@ -76,6 +76,27 @@ export type AttendanceRecord = {
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 
+export type FineStatus = 'unpaid' | 'paid' | 'waived';
+
+export type Fine = {
+  id: string; // deterministik: "fine_${sessionId}_${studentId}" (SRS-4.11)
+  studentId: string;
+  studentName: string;
+  sessionId: string;
+  attendanceId: string;
+  classId?: string;
+  courseName?: string;
+  groupName?: string;
+  labId?: string;
+  amount: number; // integer rupiah, misal 10000
+  status: FineStatus;
+  createdAt: string; // ISO 8601 UTC
+  waivedAt?: string | null;
+  waiveReason?: string | null;
+  paidAt?: string | null;
+  paymentOrderId?: string | null;
+};
+
 export type AiClassificationResult = {
   category: string | null;
   confidence: number | null;

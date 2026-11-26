@@ -235,5 +235,22 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
+    // 6. Tagihan Denda Keterlambatan (Sprint 4 - SRS-4.11)
+    match /fines/{fineId} {
+      allow read: if isAssistant()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && (request.auth.uid == request.resource.data.studentId || isAssistant())
+        && request.resource.data.status in ['unpaid', 'waived']
+        && request.resource.data.amount is int
+        && request.resource.data.amount > 0;
+
+      allow update: if isAssistant()
+        && request.resource.data.status in ['unpaid', 'waived'];
+
+      allow delete: if false;
+    }
   }
 }
