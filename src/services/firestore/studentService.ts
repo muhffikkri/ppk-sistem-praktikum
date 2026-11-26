@@ -90,10 +90,8 @@ export function subscribeStudentAttendance(
     (snap) => {
       const records = snap.docs
         .map((d) => normalizeAttendanceRecord(d.id, d.data()))
-        .sort(
-          (a, b) =>
-            new Date(b.checkedInAt).getTime() -
-            new Date(a.checkedInAt).getTime(),
+        .sort((a, b) =>
+          (b.checkedInAt ?? '').localeCompare(a.checkedInAt ?? ''),
         );
       onData(records);
     },

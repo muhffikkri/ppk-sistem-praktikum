@@ -575,10 +575,8 @@ export function subscribeAttendanceForSession(
     (snap: any) => {
       const records = snap.docs
         .map((d: any) => normalizeAttendanceRecord(d.id, d.data()))
-        .sort(
-          (a: AttendanceRecord, b: AttendanceRecord) =>
-            new Date(a.checkedInAt).getTime() -
-            new Date(b.checkedInAt).getTime(),
+        .sort((a: AttendanceRecord, b: AttendanceRecord) =>
+          (a.checkedInAt ?? '').localeCompare(b.checkedInAt ?? ''),
         );
       onData(records);
     },

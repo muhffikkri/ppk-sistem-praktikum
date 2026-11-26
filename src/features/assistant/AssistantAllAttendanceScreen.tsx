@@ -3,8 +3,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   Avatar,
-  Banner,
   EmptyState,
+  ErrorState,
   Header,
   ListRow,
   ScreenList,
@@ -46,11 +46,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
             description="Semua catatan hadir dari sesi Anda"
           />
           {error ? (
-            <Banner
-              tone="danger"
-              title="Gagal memuat rekap kehadiran"
-              message={error}
-            />
+            <ErrorState title="Gagal memuat rekap kehadiran" message={error} />
           ) : null}
           <StatRow>
             <StatCard variant="panel" value={sessions.length} label="Sesi" />
