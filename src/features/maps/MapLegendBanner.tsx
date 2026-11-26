@@ -146,6 +146,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     flex: 1,
+    minHeight: 44,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.full,
