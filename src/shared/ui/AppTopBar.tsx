@@ -11,6 +11,8 @@ export type AppTopBarProps = {
   logoIcon: IconName;
   /** Product / screen name shown next to the logo. */
   title: string;
+  /** Optional violet overline under the title, e.g. the current portal. */
+  subtitle?: string;
   /** Right-hand actions, e.g. notification + profile IconButtons. */
   trailing?: ReactNode;
 };
@@ -21,16 +23,28 @@ export type AppTopBarProps = {
  * header. The bottom dock keeps its own 52px row, so this bar sits above
  * the scrollable screen content only.
  */
-export function AppTopBar({ logoIcon, title, trailing }: AppTopBarProps) {
+export function AppTopBar({
+  logoIcon,
+  title,
+  subtitle,
+  trailing,
+}: AppTopBarProps) {
   return (
     <View style={styles.bar}>
       <View style={styles.brand}>
         <View style={styles.logo} accessibilityElementsHidden>
           <Ionicons name={logoIcon} size={20} color={colors.violet} />
         </View>
-        <Text variant="bodyStrong" style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
+        <View style={styles.brandText}>
+          <Text variant="bodyStrong" style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text variant="overline" tone="violet" numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
       </View>
       {trailing ? <View style={styles.actions}>{trailing}</View> : null}
     </View>
@@ -65,6 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  brandText: { flex: 1, flexShrink: 1, gap: spacing.xs },
   title: { color: colors.ink, flexShrink: 1 },
   actions: {
     flexDirection: 'row',

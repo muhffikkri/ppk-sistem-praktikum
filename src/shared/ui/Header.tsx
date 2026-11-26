@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { spacing } from '../../theme/tokens';
@@ -14,6 +15,8 @@ export type HeaderProps = {
   description?: string;
   /** On a violet/ink surface: switches every line to on-dark tones. */
   dark?: boolean;
+  /** Optional badge/action aligned to the right of the title row. */
+  trailing?: ReactNode;
 };
 
 export function Header({
@@ -22,6 +25,7 @@ export function Header({
   accent,
   description,
   dark,
+  trailing,
 }: HeaderProps) {
   return (
     <View style={styles.container}>
@@ -30,18 +34,22 @@ export function Header({
           {eyebrow}
         </Text>
       ) : null}
-      <Text
-        variant="display"
-        tone={dark ? 'onDark' : 'ink'}
-        accessibilityRole="header"
-      >
-        {title}
-        {accent ? (
-          <Text variant="displayAccent" tone={dark ? 'onDark' : 'violet'}>
-            {` ${accent}`}
-          </Text>
-        ) : null}
-      </Text>
+      <View style={styles.titleRow}>
+        <Text
+          variant="display"
+          tone={dark ? 'onDark' : 'ink'}
+          accessibilityRole="header"
+          style={styles.titleText}
+        >
+          {title}
+          {accent ? (
+            <Text variant="displayAccent" tone={dark ? 'onDark' : 'violet'}>
+              {` ${accent}`}
+            </Text>
+          ) : null}
+        </Text>
+        {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
+      </View>
       {description ? (
         <Text variant="body" tone={dark ? 'onDarkMuted' : 'muted'}>
           {description}
@@ -53,4 +61,12 @@ export function Header({
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  titleText: { flexShrink: 1 },
+  trailing: { flexShrink: 0 },
 });

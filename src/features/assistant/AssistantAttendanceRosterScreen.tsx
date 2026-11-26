@@ -1,6 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
@@ -14,18 +13,18 @@ import {
   type AvatarTone,
   EmptyState,
   Header,
-  ListRow,
   Screen,
   ScreenList,
   SectionHeader,
   SegmentedControl,
-  type SegmentedOption,
-  spacing,
   StatusBadge,
-  type BadgeTone,
-  Text,
   TopBar,
+  type BadgeTone,
+  type SegmentedOption,
 } from '../../shared/ui';
+import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
+import { AttendanceSummary } from '../attendance/AttendanceSummary';
+import { colors } from '../../theme/tokens';
 import { useAssistantSessionsViewModel } from '../../state';
 import {
   sessionStatusLabel,
@@ -73,6 +72,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   const { session, recap } = useSessionRosterRecap(sessionId);
 
   const [filter, setFilter] = useState<FilterType>('all');
+  const [newestFirst, setNewestFirst] = useState(true);
 
   const filterOptions = useMemo<SegmentedOption<FilterType>[]>(
     () => [
@@ -85,9 +85,16 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   );
 
   const displayedEntries = useMemo(() => {
-    if (filter === 'all') return recap.entries;
-    return recap.entries.filter((entry) => entry.status === filter);
-  }, [recap.entries, filter]);
+    const filtered =
+      filter === 'all'
+        ? recap.entries
+        : recap.entries.filter((entry) => entry.status === filter);
+    const timeOf = (entry: SessionRosterEntry) =>
+      entry.checkedInAt ? Date.parse(entry.checkedInAt) : 0;
+    return [...filtered].sort((a, b) =>
+      newestFirst ? timeOf(b) - timeOf(a) : timeOf(a) - timeOf(b),
+    );
+  }, [recap.entries, filter, newestFirst]);
 
   if (!session) {
     return (
@@ -102,6 +109,9 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
     );
   }
 
+  const { total, presentCount, excusedCount, absentCount } = recap.summary;
+  const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+
   return (
     <ScreenList
       withDock={false}
@@ -111,8 +121,18 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         <>
           <TopBar onBack={() => navigation.goBack()} />
           <Header
-            title={session.courseName}
-            description={`${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
+            eyebrow="LabPresensi · Asprak"
+            title="Rekap"
+            accent="kehadiran"
+            description={`${session.courseName} · ${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
+            trailing={
+              <StatusBadge
+                label={sessionStatusLabel[session.status]}
+                tone={sessionStatusTone[session.status]}
+                dot={session.status === 'open'}
+                live={session.status === 'open'}
+              />
+            }
           />
           {error ? (
             <Banner
@@ -121,27 +141,63 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
               message={error}
             />
           ) : null}
-          <View style={styles.summary}>
-            <StatusBadge
-              label={sessionStatusLabel[session.status]}
-              tone={sessionStatusTone[session.status]}
-            />
-            <Text variant="bodyStrong">
-              {recap.summary.presentCount} hadir · {recap.summary.excusedCount}{' '}
-              izin · {recap.summary.absentCount} belum hadir
-            </Text>
-          </View>
-          <View style={styles.filterBlock}>
-            <SegmentedControl
-              options={filterOptions}
-              value={filter}
-              onChange={setFilter}
-              accessibilityLabel="Filter kehadiran"
-            />
-          </View>
+          <AttendanceSummary
+            metrics={[
+              {
+                key: 'total',
+                label: 'Total peserta',
+                value: total,
+                badge: `${presentCount} hadir`,
+                badgeTone: 'success',
+                caption: 'Peserta terdaftar pada sesi',
+                dotColor: colors.lime,
+              },
+              {
+                key: 'rate',
+                label: 'Kehadiran',
+                value: `${rate}%`,
+                caption: 'Hadir dari seluruh peserta',
+                captionTone: 'violet',
+                dotColor: colors.violet,
+              },
+            ]}
+            breakdown={[
+              {
+                key: 'present',
+                label: 'Hadir',
+                value: presentCount,
+                dotColor: colors.success,
+              },
+              {
+                key: 'excused',
+                label: 'Izin',
+                value: excusedCount,
+                dotColor: colors.pink,
+              },
+              {
+                key: 'absent',
+                label: 'Belum hadir',
+                value: absentCount,
+                dotColor: colors.inkSubtle,
+              },
+            ]}
+          />
+          <SegmentedControl
+            options={filterOptions}
+            value={filter}
+            onChange={setFilter}
+            accessibilityLabel="Filter kehadiran"
+            scrollable
+          />
         </>
       }
-      sectionHeader={<SectionHeader title="Daftar kehadiran" />}
+      sectionHeader={
+        <SectionHeader
+          title="Daftar kehadiran"
+          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onAction={() => setNewestFirst((value) => !value)}
+        />
+      }
       empty={
         <EmptyState
           icon="people-outline"
@@ -162,39 +218,17 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         const meta = [identity, leaveMeta].filter(Boolean).join(' · ');
 
         return (
-          <ListRow
-            title={record.studentName}
-            meta={meta}
+          <AttendanceRecordCard
             leading={<Avatar name={record.studentName} tone={avatarTone} />}
-            trailing={
-              <View style={styles.trailing}>
-                <StatusBadge label={badgeLabel} tone={badgeTone} />
-                {record.checkedInAt ? (
-                  <Text variant="caption">
-                    {formatClock(record.checkedInAt)}
-                  </Text>
-                ) : null}
-              </View>
-            }
+            title={record.studentName}
+            meta={meta || 'Tanpa keterangan identitas'}
+            status={{ label: badgeLabel, tone: badgeTone }}
+            time={record.checkedInAt ? formatClock(record.checkedInAt) : '–'}
+            timeLabel={record.checkedInAt ? 'Hadir' : 'Belum'}
+            timeTone={record.checkedInAt ? 'ink' : 'muted'}
           />
         );
       }}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  summary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    flexWrap: 'wrap',
-  },
-  filterBlock: {
-    marginTop: spacing.md,
-  },
-  trailing: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-});
