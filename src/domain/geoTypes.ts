@@ -22,9 +22,14 @@ export type Lab = {
   name: string;
   building: string;
   description: string | null;
+  /** ID atau kode mata kuliah pengampu lab (SRS-4.01–4.03). */
+  courseId?: string | null;
+  courseCode?: string | null;
   location: GeoPoint;
   /** Radius geofence presensi dalam meter. */
   radiusMeters: number;
+  /** Durasi toleransi keterlambatan dalam menit (K4 / SRS-4.02). */
+  lateToleranceMinutes?: number;
   /** Lab nonaktif tidak dipakai untuk sesi baru dan disembunyikan di peta. */
   isActive: boolean;
   createdBy: string;
@@ -32,31 +37,40 @@ export type Lab = {
   updatedAt: string; // ISO 8601 UTC
 };
 
-/** Input form tambah/edit lab dari asisten. */
+/** Input form tambah/edit lab dari Aslab. */
 export type LabInput = {
   name: string;
   building: string;
   description?: string | null;
+  courseId?: string | null;
+  courseCode?: string | null;
   latitude: number;
   longitude: number;
   radiusMeters: number;
+  lateToleranceMinutes?: number;
   isActive: boolean;
 };
 
 export type LabInputField =
-  'name' | 'building' | 'latitude' | 'longitude' | 'radiusMeters';
+  | 'name'
+  | 'building'
+  | 'courseId'
+  | 'latitude'
+  | 'longitude'
+  | 'radiusMeters'
+  | 'lateToleranceMinutes';
 
 export type LabInputErrors = Partial<Record<LabInputField, string>>;
 
 /**
- * Hasil pemeriksaan geofence:
- * - `inside`: dalam radius, presensi boleh dicatat.
- * - `outside`: di luar radius.
- * - `inaccurate`: lokasi terbaca tapi akurasi GPS terlalu rendah.
- * - `unavailable`: lokasi perangkat atau koordinat lab tidak tersedia.
+- Hasil pemeriksaan geofence:
+- - `inside`: dalam radius, presensi boleh dicatat.
+- - `outside`: di luar radius.
+- - `inaccurate`: lokasi terbaca tapi akurasi GPS terlalu rendah.
+- - `unavailable`: lokasi perangkat atau koordinat lab tidak tersedia.
  */
 export type GeofenceStatus =
-  'inside' | 'outside' | 'inaccurate' | 'unavailable';
+  | 'inside' | 'outside' | 'inaccurate' | 'unavailable';
 
 export type GeofenceCheckResult = {
   status: GeofenceStatus;
@@ -118,7 +132,7 @@ export interface UserLocationState {
 export type LabMapFilter = 'all' | 'occupied' | 'available';
 
 /**
- * Titik tengah default lingkungan Laboratorium Informatika Undip Tembalang.
+- Titik tengah default lingkungan Laboratorium Informatika Undip Tembalang.
  */
 export const DEFAULT_CAMPUS_CENTER: GeoCoordinates = {
   latitude: -7.0507,
@@ -126,8 +140,8 @@ export const DEFAULT_CAMPUS_CENTER: GeoCoordinates = {
 };
 
 /**
- * Data awal (fallback & seed) laboratorium lingkungan Informatika Undip Tembalang
- * yang selaras dengan data sesi di Sprint 1 & 2.
+- Data awal (fallback & seed) laboratorium lingkungan Informatika Undip Tembalang
+- yang selaras dengan data sesi di Sprint 1 & 2.
  */
 export const DEFAULT_CAMPUS_LABS: LabLocation[] = [
   {
