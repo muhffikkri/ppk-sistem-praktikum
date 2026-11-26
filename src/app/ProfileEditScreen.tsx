@@ -1,16 +1,8 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { View } from 'react-native';
 
 import { normalizeNim, NIM_INVALID } from '../domain/nim';
-import {
-  Banner,
-  Button,
-  Screen,
-  spacing,
-  TextField,
-  TopBar,
-} from '../shared/ui';
+import { Banner, Button, Screen, Stack, TextField, TopBar } from '../shared/ui';
 import { useAuth } from '../state';
 import type { RootStackParamList } from './navigation';
 
@@ -65,7 +57,7 @@ export function ProfileEditScreen({ navigation }: Props) {
         />
       ) : null}
 
-      <View style={{ gap: spacing.md }}>
+      <Stack gap="md">
         <TextField
           label="Nama Lengkap"
           value={displayName}
@@ -95,7 +87,7 @@ export function ProfileEditScreen({ navigation }: Props) {
           value={roleLabel}
           editable={false}
         />
-      </View>
+      </Stack>
 
       <Button
         label={submitting ? 'Menyimpan...' : 'Simpan Perubahan'}

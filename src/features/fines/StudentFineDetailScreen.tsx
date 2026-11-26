@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { Linking } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import type { Fine } from '../../domain/types';
@@ -17,10 +17,10 @@ import {
   InfoRow,
   LoadingState,
   Screen,
+  Stack,
   StatusBadge,
   Text,
   TopBar,
-  spacing,
 } from '../../shared/ui';
 import { fineStatusLabel, fineStatusTone, formatRupiah } from './fineFormat';
 import { formatSessionDate } from '../student/formatters';
@@ -96,16 +96,16 @@ export function StudentFineDetailScreen({ navigation, route }: Props) {
       ) : null}
 
       {!loading && fine ? (
-        <View style={{ gap: spacing.md }}>
+        <Stack gap="md">
           <Card>
             <CardContent>
-              <View style={{ gap: spacing.sm }}>
+              <Stack gap="sm">
                 <StatusBadge
                   label={fineStatusLabel(fine.status)}
                   tone={fineStatusTone(fine.status)}
                 />
                 <Text variant="title">{formatRupiah(fine.amount)}</Text>
-              </View>
+              </Stack>
               <InfoRow label="Sesi" value={fine.courseName ?? fine.sessionId} />
               {fine.groupName ? (
                 <InfoRow label="Kelompok" value={fine.groupName} />
@@ -157,7 +157,7 @@ export function StudentFineDetailScreen({ navigation, route }: Props) {
             variant="outline"
             onPress={() => navigation.navigate('StudentPaymentHistory')}
           />
-        </View>
+        </Stack>
       ) : null}
     </Screen>
   );

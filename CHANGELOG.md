@@ -2,6 +2,10 @@
 
 Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletakkan paling atas.
 
+## [Unreleased]
+
+- **Konsistensi style UI**: primitif `Stack` untuk gap/direction, style dinamis QR/geofence dihitung di luar JSX, guard ESLint `no-inline-styles` + `no-restricted-syntax`, serta dokumentasi aturan inline style di `design.md` dan `docs/README.md`.
+
 ## [1.2.0] - 2026-11-11
 
 ### Implementasi Sprint 2 — Data Dinamis dengan Firebase

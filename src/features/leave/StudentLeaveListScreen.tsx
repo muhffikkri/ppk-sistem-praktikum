@@ -1,12 +1,11 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { View } from 'react-native';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   EmptyState,
   Header,
   Screen,
   SectionHeader,
-  spacing,
+  Stack,
   TopBar,
 } from '../../shared/ui';
 import { ListFeedback, RequestCard } from './components';
@@ -29,7 +28,7 @@ export function StudentLeaveListScreen({
           navigation.navigate('StudentLeaveRequestForm', { sessionId })
         }
       />
-      <View style={{ gap: spacing.md }}>
+      <Stack gap="md">
         <SectionHeader title="Riwayat pengajuan" />
         <ListFeedback
           {...vm}
@@ -45,7 +44,7 @@ export function StudentLeaveListScreen({
         {vm.leaveRequests.map((item) => (
           <RequestCard key={item.id} item={item} />
         ))}
-      </View>
+      </Stack>
     </Screen>
   );
 }

@@ -175,6 +175,11 @@ export const typography = {
     lineHeight: 36,
     letterSpacing: -0.6, // hero time "08:00 — 10:30"
   },
+  // Ukuran hero editorial pada landing screen, dipakai sebagai override
+  // fontSize pada variant display/displayAccent.
+  displayLanding: {
+    fontSize: 50,
+  },
   title: {
     fontFamily: fontFamily.displaySemibold,
     fontSize: 24,
