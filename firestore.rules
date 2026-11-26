@@ -23,6 +23,12 @@ service cloud.firestore {
       return hasRole('student');
     }
 
+    function hasAssistantInvite() {
+      return isSignedIn()
+        && request.auth.token.email is string
+        && exists(/databases/$(database)/documents/assistant_invites/$(request.auth.token.email.lower()));
+    }
+
     function sessionData(sessionId) {
       return get(/databases/$(database)/documents/sessions/$(sessionId)).data;
     }
@@ -40,17 +46,33 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == uid
-        && request.resource.data.role in ['student', 'assistant']
+        && (
+          request.resource.data.role == 'student'
+          || (request.resource.data.role == 'assistant' && hasAssistantInvite())
+        )
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0;
 
       allow update: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.email == resource.data.email;
+        && request.resource.data.email == resource.data.email
+        && (
+          request.resource.data.role == resource.data.role
+          || (resource.data.role == 'student'
+            && request.resource.data.role == 'assistant'
+            && hasAssistantInvite())
+        );
 
       allow delete: if false;
+    }
+
+    // Undangan asisten ditulis admin (Admin SDK); klien hanya cek statusnya.
+    match /assistant_invites/{email} {
+      allow read: if isSignedIn()
+        && request.auth.token.email is string
+        && request.auth.token.email.lower() == email;
+      allow write: if false;
     }
 
     match /users/{uid}/push_tokens/{installationId} {

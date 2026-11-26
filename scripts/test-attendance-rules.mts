@@ -78,6 +78,16 @@ await adminAuth.createUser({
   email: 'budi@rules.test',
   password: PASSWORD,
 });
+await adminAuth.createUser({
+  uid: 'invited',
+  email: 'invited@rules.test',
+  password: PASSWORD,
+});
+await adminAuth.createUser({
+  uid: 'stranger',
+  email: 'stranger@rules.test',
+  password: PASSWORD,
+});
 await adminDb.doc('users/asisten').set({
   uid: 'asisten',
   role: 'assistant',
@@ -90,6 +100,9 @@ await adminDb.doc('users/budi').set({
   role: 'student',
   displayName: 'Budi',
   email: 'budi@rules.test',
+  createdAt: lab.createdAt,
+});
+await adminDb.doc('assistant_invites/invited@rules.test').set({
   createdAt: lab.createdAt,
 });
 const { id: labId, ...labDoc } = lab;
@@ -252,6 +265,18 @@ const attempt = async (action: () => Promise<unknown>) => {
   }
 };
 
+const check = (
+  label: string,
+  result: string,
+  expected: 'allowed' | 'denied',
+) => {
+  const pass = result === expected;
+  if (!pass) failures += 1;
+  console.log(
+    `${pass ? '✅' : '❌'} role: ${label}: server ${result} (harap ${expected})`,
+  );
+};
+
 await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
 const inboxCases: [string, () => Promise<unknown>, 'allowed' | 'denied'][] = [
   [
@@ -305,6 +330,67 @@ for (const [label, action, expected] of inboxCases) {
     `${pass ? '✅' : '❌'} inbox: ${label}: server ${result} (harap ${expected})`,
   );
 }
+await signOut(auth);
+
+// --- Role asisten hanya bisa diberikan lewat undangan admin ---
+const profile = (uid: string, email: string, role: string) => ({
+  uid,
+  email,
+  role,
+  displayName: uid,
+  createdAt: lab.createdAt,
+});
+
+await signInWithEmailAndPassword(auth, 'stranger@rules.test', PASSWORD);
+check(
+  'user tanpa undangan daftar sebagai praktikan',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'users', 'stranger'),
+      profile('stranger', 'stranger@rules.test', 'student'),
+    ),
+  ),
+  'allowed',
+);
+check(
+  'user tanpa undangan mengangkat diri jadi asisten',
+  await attempt(() =>
+    updateDoc(doc(db, 'users', 'stranger'), { role: 'assistant' }),
+  ),
+  'denied',
+);
+check(
+  'baca undangan orang lain',
+  await attempt(() => getDoc(doc(db, 'assistant_invites', 'invited@rules.test'))),
+  'denied',
+);
+check(
+  'menulis undangan sendiri',
+  await attempt(() =>
+    setDoc(doc(db, 'assistant_invites', 'stranger@rules.test'), {
+      createdAt: lab.createdAt,
+    }),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'invited@rules.test', PASSWORD);
+check(
+  'baca undangan sendiri',
+  await attempt(() => getDoc(doc(db, 'assistant_invites', 'invited@rules.test'))),
+  'allowed',
+);
+check(
+  'user dengan undangan daftar sebagai asisten',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'users', 'invited'),
+      profile('invited', 'invited@rules.test', 'assistant'),
+    ),
+  ),
+  'allowed',
+);
 await signOut(auth);
 
 console.log(
