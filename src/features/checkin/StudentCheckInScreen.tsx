@@ -114,6 +114,14 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         />
       ) : null}
 
+      {error ? (
+        <Button
+          label="Scan ulang QR"
+          variant="outline"
+          onPress={() => navigation.replace('BarcodeScan')}
+        />
+      ) : null}
+
       {checkedIn ? (
         <Banner
           tone="success"

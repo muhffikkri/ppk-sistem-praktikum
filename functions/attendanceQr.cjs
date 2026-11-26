@@ -28,7 +28,7 @@ function issueQrToken(sessionId, secret, nowMs = Date.now()) {
   return {
     token: `${sessionId}.${slot}.${signature}`,
     slot,
-    expiresAt: new Date(slot + QR_SLOT_MS * 2).toISOString(),
+    expiresAt: new Date(slot + QR_SLOT_MS).toISOString(),
   };
 }
 
