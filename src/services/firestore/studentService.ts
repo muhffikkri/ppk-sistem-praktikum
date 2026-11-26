@@ -19,9 +19,11 @@ import {
 import { db } from '../firebase';
 import { normalizeAttendanceRecord } from './normalize';
 export type {
-  AsyncActionResult, AttendanceRecord, PracticalClass,
+  AsyncActionResult,
+  AttendanceRecord,
+  PracticalClass,
   Session,
-  UserProfile
+  UserProfile,
 };
 
 const classesCol = collection(db, 'classes');
@@ -79,18 +81,20 @@ export function subscribeStudentAttendance(
   onData: (records: AttendanceRecord[]) => void,
   onError: (msg: string) => void,
 ) {
-  const q = query(
-    attendanceCol,
-    where('studentId', '==', uid),
-    orderBy('checkedInAt', 'desc'),
-  );
+  // Query single-field (studentId) lalu urutkan di klien agar tidak gagal saat
+  // composite index (studentId, checkedInAt) belum di-deploy di Firestore.
+  const q = query(attendanceCol, where('studentId', '==', uid));
 
   return onSnapshot(
     q,
     (snap) => {
-      const records = snap.docs.map((d) =>
-        normalizeAttendanceRecord(d.id, d.data()),
-      );
+      const records = snap.docs
+        .map((d) => normalizeAttendanceRecord(d.id, d.data()))
+        .sort(
+          (a, b) =>
+            new Date(b.checkedInAt).getTime() -
+            new Date(a.checkedInAt).getTime(),
+        );
       onData(records);
     },
     (err) => {

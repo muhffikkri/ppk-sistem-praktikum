@@ -312,6 +312,13 @@ export const AssistantSessionsProvider = ({
   // snapshot updates its sessions in a single dispatch.
   useEffect(() => {
     const listeners = attendanceUnsubsRef.current;
+
+    if (!enabled || !user?.uid) {
+      listeners.forEach((unsubscribe) => unsubscribe());
+      listeners.clear();
+      return;
+    }
+
     const chunks = chunkIds(sessionIds ? sessionIds.split(',') : []);
     const wanted = new Set(chunks.map((chunk) => chunk.join(',')));
 
@@ -330,11 +337,15 @@ export const AssistantSessionsProvider = ({
         subscribeAttendanceForSessionChunk(
           chunk,
           (bySession) => dispatch({ type: 'SET_ATTENDANCE_BULK', bySession }),
-          (msg: string) => dispatch({ type: 'SET_ERROR', error: msg }),
+          (msg: string) => {
+            // Lepas listener yang gagal agar retry() dapat menyambung ulang.
+            listeners.delete(key);
+            dispatch({ type: 'SET_ERROR', error: msg });
+          },
         ),
       );
     });
-  }, [sessionIds]);
+  }, [enabled, user?.uid, sessionIds, retryCounter]);
 
   // Close every attendance listener on unmount/logout.
   useEffect(() => {

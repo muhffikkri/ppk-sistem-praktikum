@@ -11,7 +11,10 @@ import type {
   AttendanceRecord,
   Session,
 } from '../../domain/types';
-import { checkInWithGeofence } from '../../services/firestore/geoAttendanceService';
+import {
+  checkInWithGeofence,
+  subscribeStudentSessionAttendance,
+} from '../../services/firestore/geoAttendanceService';
 import { getLabById } from '../../services/firestore/labService';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
 import { useAuth } from '../../state';
@@ -43,7 +46,30 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   } = useStudentAttendanceViewModel();
 
   const session = getSessionById(sessionId);
-  const attendance = getAttendanceForSession(sessionId);
+  const contextAttendance = getAttendanceForSession(sessionId);
+
+  const attendanceKey = user ? `${sessionId}_${user.uid}` : null;
+  const [directAttendance, setDirectAttendance] = useState<{
+    key: string;
+    record: AttendanceRecord | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!user?.uid || !attendanceKey) return;
+    return subscribeStudentSessionAttendance(sessionId, user.uid, (record) => {
+      setDirectAttendance({ key: attendanceKey, record });
+    });
+  }, [attendanceKey, sessionId, user?.uid]);
+
+  const directRecord =
+    attendanceKey && directAttendance?.key === attendanceKey
+      ? directAttendance.record
+      : null;
+  const attendance = contextAttendance ?? directRecord ?? undefined;
+  const attendanceLoading =
+    !!attendanceKey &&
+    contextAttendance === undefined &&
+    directAttendance?.key !== attendanceKey;
 
   const [labResult, setLabResult] = useState<{
     key: string;
@@ -131,6 +157,12 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
       return { ok: false, reason: 'session_not_found', message: msg };
     }
 
+    if (attendance) {
+      const msg = 'Kamu sudah presensi di sesi ini.';
+      setError(msg);
+      return { ok: false, reason: 'already_checked_in', message: msg };
+    }
+
     let currentFix = deviceFix;
     if (!currentFix) {
       setCheckingLocation(true);
@@ -163,11 +195,14 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
         return result;
       }
 
+      if (attendanceKey) {
+        setDirectAttendance({ key: attendanceKey, record: result.data.record });
+      }
       return { ok: true };
     } finally {
       setSubmitting(false);
     }
-  }, [attendance, deviceFix, lab, session, user]);
+  }, [attendance, attendanceKey, deviceFix, lab, session, user]);
 
   const isAlreadyCheckedIn = attendance !== undefined;
   const isOpen = session?.status === 'open';
@@ -178,7 +213,7 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
     attendance,
     deviceFix,
     geofence,
-    loading: sessionsLoading || labLoading,
+    loading: sessionsLoading || labLoading || attendanceLoading,
     checkingLocation,
     submitting,
     error: error ?? labError,

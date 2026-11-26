@@ -11,6 +11,7 @@ import {
 import type { LeaveRequest } from '../../domain/types';
 import {
   Avatar,
+  Banner,
   type AvatarTone,
   EmptyState,
   Header,
@@ -43,7 +44,7 @@ type FilterType = 'all' | StudentAttendanceStatus;
 
 export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const { getSessionById, getAttendanceForSession } =
+  const { getSessionById, getAttendanceForSession, error } =
     useAssistantSessionsViewModel();
   const { leaveRequests } = useAssistantLeaveViewModel();
 
@@ -107,6 +108,13 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
             title={session.courseName}
             description={`${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
           />
+          {error ? (
+            <Banner
+              tone="danger"
+              title="Gagal memuat rekap kehadiran"
+              message={error}
+            />
+          ) : null}
           <View style={styles.summary}>
             <StatusBadge
               label={sessionStatusLabel[session.status]}
