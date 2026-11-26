@@ -91,6 +91,14 @@ function withinCheckInWindow(session, nowMs = Date.now()) {
 }
 
 /**
+ * Izin yang masih menunggu tidak memblokir presensi: praktikan bisa hadir
+ * meski sudah mengajukan izin. Hanya izin yang disetujui yang memblokir.
+ */
+function isLeaveBlockingCheckIn(leave) {
+  return Boolean(leave && leave.status === 'approved');
+}
+
+/**
  * Validasi server untuk presensi QR. Lokasi dihitung server dari dokumen lab,
  * bukan dari `distanceMeters` yang dikirim klien.
  */
@@ -141,6 +149,7 @@ module.exports = {
   EARLY_CHECK_IN_MS,
   LATE_CHECK_IN_MS,
   haversineMeters,
+  isLeaveBlockingCheckIn,
   issueQrToken,
   qrSlot,
   validateQrCheckIn,

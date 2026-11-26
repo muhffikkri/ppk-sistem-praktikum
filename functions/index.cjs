@@ -25,6 +25,7 @@ const {
 } = require('./pushEvents.cjs');
 const { LATE_CHECK_IN_MS, closeExpiredSession } = require('./sessionClose.cjs');
 const {
+  isLeaveBlockingCheckIn,
   issueQrToken,
   validateQrCheckIn,
   verifyQrToken,
@@ -583,7 +584,7 @@ exports.submitQrCheckIn = onCall(
       .collection('leave_requests')
       .doc(`${signedSessionId}_${uid}`)
       .get();
-    if (leaveSnap.exists && leaveSnap.data().status === 'approved')
+    if (isLeaveBlockingCheckIn(leaveSnap.exists ? leaveSnap.data() : null))
       throw qrFailure('leave_approved');
 
     let lab = null;
