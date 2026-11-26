@@ -57,6 +57,12 @@ service cloud.firestore {
         || (from == 'closed' && to == 'open' && withinOpenWindow(data));
     }
 
+    // Izin hanya sampai batas waktu sesi; sesi closed tidak menerima izin.
+    function withinLeaveWindow(data) {
+      return data.endsAtMs is int
+        && request.time.toMillis() <= data.endsAtMs;
+    }
+
     // 1. Profil Pengguna
     match /users/{uid} {
       allow read: if isSignedIn() && (request.auth.uid == uid || isAssistant());
@@ -252,6 +258,8 @@ service cloud.firestore {
           >= sessionData(request.resource.data.sessionId).startsAtMs - 15 * 60 * 1000
         && request.time.toMillis()
           <= sessionData(request.resource.data.sessionId).endsAtMs + 10 * 60 * 1000
+        && (!exists(/databases/$(database)/documents/leave_requests/$(attendanceId))
+          || get(/databases/$(database)/documents/leave_requests/$(attendanceId)).data.status != 'approved')
         && request.resource.data.checkedInAt is string
         && request.resource.data.studentName is string
         && withinLabGeofence(
@@ -267,25 +275,56 @@ service cloud.firestore {
       allow read: if isAssistant()
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
+      // ID deterministik {sessionId}_{studentId} mencegah duplikat lintas perangkat.
       allow create: if isStudent()
+        && leaveId == request.resource.data.sessionId + '_' + request.auth.uid
         && request.resource.data.studentId == request.auth.uid
         && request.resource.data.status == 'pending'
         && request.resource.data.reviewedBy == null
         && request.resource.data.reviewedAt == null
         && request.resource.data.reason is string
         && request.resource.data.reason.size() > 0
+        && validStudentNim(request.resource.data)
         && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
-        && request.auth.uid in get(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.participantIds;
+        && sessionData(request.resource.data.sessionId).status != 'closed'
+        && withinLeaveWindow(sessionData(request.resource.data.sessionId))
+        && request.auth.uid in sessionData(request.resource.data.sessionId).participantIds
+        && !exists(/databases/$(database)/documents/attendance/$(leaveId));
 
-      allow update: if isAssistant()
-        && resource.data.status == 'pending'
-        && request.resource.data.status in ['approved', 'rejected']
-        && request.resource.data.reviewedBy == request.auth.uid
-        && request.resource.data.studentId == resource.data.studentId
-        && request.resource.data.sessionId == resource.data.sessionId
-        && request.resource.data.reason == resource.data.reason
-        && request.resource.data.aiPrediction == resource.data.aiPrediction
-        && request.auth.uid in sessionData(resource.data.sessionId).assistantIds;
+      allow update: if isSignedIn() && (
+        // Pengajuan ulang setelah ditolak oleh praktikan yang bersangkutan.
+        (
+          isStudent()
+          && request.auth.uid == resource.data.studentId
+          && resource.data.status == 'rejected'
+          && request.resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'reason', 'aiPrediction', 'status', 'decisionNote', 'reviewedBy',
+            'reviewedAt', 'createdAt', 'studentNim'
+          ])
+          && request.resource.data.reason is string
+          && request.resource.data.reason.size() > 0
+          && request.resource.data.reviewedBy == null
+          && request.resource.data.reviewedAt == null
+          && validStudentNim(request.resource.data)
+          && sessionData(resource.data.sessionId).status != 'closed'
+          && withinLeaveWindow(sessionData(resource.data.sessionId))
+          && !exists(/databases/$(database)/documents/attendance/$(leaveId))
+        ) || (
+          // Keputusan asisten; izin tidak boleh disetujui bila presensi ada.
+          isAssistant()
+          && resource.data.status == 'pending'
+          && request.resource.data.status in ['approved', 'rejected']
+          && request.resource.data.reviewedBy == request.auth.uid
+          && request.resource.data.studentId == resource.data.studentId
+          && request.resource.data.sessionId == resource.data.sessionId
+          && request.resource.data.reason == resource.data.reason
+          && request.resource.data.aiPrediction == resource.data.aiPrediction
+          && request.auth.uid in sessionData(resource.data.sessionId).assistantIds
+          && (request.resource.data.status != 'approved'
+            || !exists(/databases/$(database)/documents/attendance/$(leaveId)))
+        )
+      );
 
       allow delete: if false;
     }

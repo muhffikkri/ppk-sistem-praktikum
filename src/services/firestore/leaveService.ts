@@ -2,12 +2,12 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   setDoc,
+  updateDoc,
   where,
   type Firestore,
 } from 'firebase/firestore';
@@ -182,27 +182,23 @@ export function createLeaveService(db: Firestore) {
           'forbidden',
           'Anda tidak terdaftar pada sesi ini.',
         );
-      const checkDuplicate = async () => {
-        const existing = await getDocs(
-          query(leaves, where('studentId', '==', user.uid)),
-        );
-        if (
-          existing.docs.some(
-            (item) =>
-              item.data().sessionId === sessionId &&
-              ['pending', 'approved'].includes(item.data().status),
-          )
-        )
+      // ID deterministik: satu izin per praktikan per sesi, diverifikasi rules.
+      const ref = doc(leaves, `${sessionId}_${user.uid}`);
+      const existing = await getDoc(ref);
+      if (existing.exists()) {
+        const status = existing.data().status;
+        if (status === 'pending' || status === 'approved')
           throw new LeaveError(
             'duplicate_leave_request',
             'Sudah ada izin menunggu atau diterima untuk sesi ini.',
           );
-      };
-      await checkDuplicate();
+        if (status !== 'rejected')
+          throw new LeaveError(
+            'invalid_status',
+            'Pengajuan izin tidak dapat dilanjutkan.',
+          );
+      }
       const aiPrediction = await classifyLeaveReason(reason);
-      await checkDuplicate();
-      // Auto ID follows the shared contract. Cross-device uniqueness needs a server contract from Dev 2/PM.
-      const ref = doc(leaves);
       const request: LeaveRequest = {
         id: ref.id,
         sessionId,
@@ -221,7 +217,21 @@ export function createLeaveService(db: Firestore) {
         reviewedAt: null,
         createdAt: new Date().toISOString(),
       };
-      await setDoc(ref, request);
+      if (existing.exists()) {
+        // Izin ditolak boleh diajukan ulang: update status, bukan dokumen baru.
+        await updateDoc(ref, {
+          reason,
+          aiPrediction,
+          status: 'pending',
+          decisionNote: null,
+          reviewedBy: null,
+          reviewedAt: null,
+          createdAt: request.createdAt,
+          ...(user.nim ? { studentNim: user.nim } : {}),
+        });
+      } else {
+        await setDoc(ref, request);
+      }
       return request;
     },
     async review(

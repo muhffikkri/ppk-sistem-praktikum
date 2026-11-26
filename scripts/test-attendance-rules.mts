@@ -146,6 +146,9 @@ await adminDb
 await adminDb
   .doc('sessions/s6-closed')
   .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'closed'));
+await adminDb
+  .doc('sessions/s7-leave-closed')
+  .set(sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'closed'));
 
 const app = initializeApp({ projectId, apiKey: 'emulator' });
 const auth = getAuth(app);
@@ -365,6 +368,147 @@ for (const [label, sessionId, expected] of openCases) {
     expected,
   );
 }
+await signOut(auth);
+
+// --- Izin: jendela sesi, ID deterministik, dan konflik dengan presensi ---
+const leaveDoc = (sessionId: string, status: string) => ({
+  sessionId,
+  classId: 'c1',
+  courseName: 'Praktikum',
+  groupName: 'A',
+  sessionStartsAt: new Date(nowMs - 10 * minuteMs).toISOString(),
+  studentId: 'budi',
+  studentName: 'Budi',
+  studentNim: '12345678',
+  reason: 'Sakit demam',
+  aiPrediction: { category: 'sakit', confidence: 0.9 },
+  status,
+  decisionNote: null,
+  reviewedBy: null,
+  reviewedAt: null,
+  createdAt: new Date().toISOString(),
+});
+const attendanceStub = {
+  sessionId: 's1',
+  studentId: 'budi',
+  studentNim: '12345678',
+  studentName: 'Budi',
+  checkedInAt: new Date().toISOString(),
+};
+const resetLeaveFixtures = async () => {
+  const leaves = await adminDb.collection('leave_requests').get();
+  await Promise.all(leaves.docs.map((item) => item.ref.delete()));
+  await adminDb.doc('attendance/s1_budi').delete();
+};
+
+await resetLeaveFixtures();
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'izin sesi masih berjalan',
+  await attempt(() =>
+    setDoc(doc(db, 'leave_requests', 's1_budi'), leaveDoc('s1', 'pending')),
+  ),
+  'allowed',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'izin sesi yang sudah ditutup',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'leave_requests', 's7-leave-closed_budi'),
+      leaveDoc('s7-leave-closed', 'pending'),
+    ),
+  ),
+  'denied',
+);
+check(
+  'izin sesi yang sudah lewat jadwal',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'leave_requests', 's3-late_budi'),
+      leaveDoc('s3-late', 'pending'),
+    ),
+  ),
+  'denied',
+);
+check(
+  'izin dengan ID acak',
+  await attempt(() =>
+    setDoc(doc(db, 'leave_requests', 'acak-1'), leaveDoc('s1', 'pending')),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('attendance/s1_budi').set(attendanceStub);
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'izin setelah praktikan presensi',
+  await attempt(() =>
+    setDoc(doc(db, 'leave_requests', 's1_budi'), leaveDoc('s1', 'pending')),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'rejected'));
+await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+check(
+  'pengajuan ulang izin yang ditolak',
+  await attempt(() =>
+    updateDoc(doc(db, 'leave_requests', 's1_budi'), {
+      reason: 'Izin baru',
+      aiPrediction: { category: 'sakit', confidence: 0.9 },
+      status: 'pending',
+      decisionNote: null,
+      reviewedBy: null,
+      reviewedAt: null,
+      createdAt: new Date().toISOString(),
+      studentNim: '12345678',
+    }),
+  ),
+  'allowed',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'pending'));
+await adminDb.doc('attendance/s1_budi').set(attendanceStub);
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'izin tidak disetujui bila presensi ada',
+  await attempt(() =>
+    updateDoc(doc(db, 'leave_requests', 's1_budi'), {
+      status: 'approved',
+      reviewedBy: 'asisten',
+      reviewedAt: new Date().toISOString(),
+      decisionNote: 'Hadir',
+    }),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await resetLeaveFixtures();
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'pending'));
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'izin disetujui tanpa presensi',
+  await attempt(() =>
+    updateDoc(doc(db, 'leave_requests', 's1_budi'), {
+      status: 'approved',
+      reviewedBy: 'asisten',
+      reviewedAt: new Date().toISOString(),
+      decisionNote: 'Disetujui',
+    }),
+  ),
+  'allowed',
+);
 await signOut(auth);
 
 await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
