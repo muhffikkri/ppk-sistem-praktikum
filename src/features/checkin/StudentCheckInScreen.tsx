@@ -37,6 +37,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
     error,
     isAlreadyCheckedIn,
     isOpen,
+    leaveApproved,
     refreshLocation,
     performCheckIn,
     clearError,
@@ -95,7 +96,11 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
 
   const checkedIn = isAlreadyCheckedIn || successBanner;
   const canCheckIn =
-    isOpen && !checkedIn && !loading && geofence?.status === 'inside';
+    isOpen &&
+    !checkedIn &&
+    !leaveApproved &&
+    !loading &&
+    geofence?.status === 'inside';
 
   return (
     <Screen withDock={false}>
@@ -119,6 +124,14 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           label="Scan ulang QR"
           variant="outline"
           onPress={() => navigation.replace('BarcodeScan')}
+        />
+      ) : null}
+
+      {leaveApproved && !checkedIn ? (
+        <Banner
+          tone="warning"
+          title="Izin sudah disetujui"
+          message="Presensi untuk sesi ini tidak diperlukan. Hubungi asisten bila ada perubahan status izin."
         />
       ) : null}
 
@@ -207,7 +220,13 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           />
         ) : (
           <Button
-            label={submitting ? 'Memproses Presensi…' : 'Presensi Sekarang'}
+            label={
+              submitting
+                ? 'Memproses Presensi…'
+                : leaveApproved
+                  ? 'Izin Disetujui'
+                  : 'Presensi Sekarang'
+            }
             variant="primary"
             loading={submitting}
             disabled={!canCheckIn || submitting}

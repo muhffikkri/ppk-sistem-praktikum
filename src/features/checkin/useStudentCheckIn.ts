@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { evaluateGeofence } from '../../domain/geofenceRules';
+import { isLeaveBlockingCheckIn } from '../../domain/leaveRules';
 import { isWithinCheckInWindow } from '../../domain/sessionRules';
 import type {
   DeviceFix,
@@ -16,6 +17,7 @@ import { checkInWithQr } from '../../services/firestore/attendanceQrService';
 import { getLabById } from '../../services/firestore/labService';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
+import { useStudentLeaveViewModel } from '../leave';
 
 export type StudentCheckInViewModel = {
   session: Session | undefined;
@@ -29,6 +31,7 @@ export type StudentCheckInViewModel = {
   error: string | null;
   isAlreadyCheckedIn: boolean;
   isOpen: boolean;
+  leaveApproved: boolean;
   refreshLocation: () => Promise<void>;
   performCheckIn: () => Promise<AsyncActionResult>;
   clearError: () => void;
@@ -44,9 +47,11 @@ export function useStudentCheckIn(
     reportError,
     loading: sessionsLoading,
   } = useStudentAttendanceViewModel();
+  const { getLeaveForSession } = useStudentLeaveViewModel();
 
   const session = getSessionById(sessionId);
   const attendance = getAttendanceForSession(sessionId);
+  const leaveApproved = isLeaveBlockingCheckIn(getLeaveForSession(sessionId));
 
   const [labResult, setLabResult] = useState<{
     key: string;
@@ -136,6 +141,15 @@ export function useStudentCheckIn(
       return { ok: false, reason: 'session_not_found', message: msg };
     }
 
+    // Guard lokal sebelum mengambil lokasi/memanggil server: izin approved
+    // memang sudah ditolak backend, tapi UI tidak boleh mengirimkan usaha sia-sia.
+    if (leaveApproved) {
+      const msg = 'Izin kamu sudah disetujui untuk sesi ini.';
+      setError(msg);
+      reportError(msg);
+      return { ok: false, reason: 'leave_approved', message: msg };
+    }
+
     let currentFix = deviceFix;
     if (!currentFix) {
       setCheckingLocation(true);
@@ -173,7 +187,7 @@ export function useStudentCheckIn(
     } finally {
       setSubmitting(false);
     }
-  }, [deviceFix, qrToken, reportError, session, sessionId]);
+  }, [deviceFix, leaveApproved, qrToken, reportError, session, sessionId]);
 
   const isAlreadyCheckedIn = attendance !== undefined;
   const isOpen = Boolean(
@@ -192,6 +206,7 @@ export function useStudentCheckIn(
     error: error ?? labError,
     isAlreadyCheckedIn,
     isOpen,
+    leaveApproved,
     refreshLocation,
     performCheckIn,
     clearError: () => setError(null),
