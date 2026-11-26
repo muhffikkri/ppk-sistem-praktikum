@@ -21,6 +21,7 @@ export type PracticalClass = {
   courseCode: string;
   courseName: string;
   groupName: string;
+  labId?: string;
   assistantIds: string[];
   participantIds: string[];
   createdBy: string;
