@@ -17,6 +17,26 @@ type GeofenceStatusCardProps = {
   checkingLocation?: boolean;
 };
 
+type GeofenceTone = 'inside' | 'inaccurate' | 'outside';
+
+const toneBoxStyles = StyleSheet.create({
+  inside: { backgroundColor: colors.successSoft },
+  inaccurate: { backgroundColor: colors.pink },
+  outside: { backgroundColor: colors.dangerSoft },
+});
+
+const toneTitleStyles = StyleSheet.create({
+  inside: { color: colors.successInk },
+  inaccurate: { color: colors.pinkInk },
+  outside: { color: colors.dangerInk },
+});
+
+const toneIconColors = {
+  inside: colors.successInk,
+  inaccurate: colors.pinkInk,
+  outside: colors.dangerInk,
+} as const;
+
 export function GeofenceStatusCard({
   geofence,
   checkingLocation = false,
@@ -26,12 +46,7 @@ export function GeofenceStatusCard({
       <Card interactive={false}>
         <CardContent>
           <View style={styles.row}>
-            <View
-              style={[
-                styles.iconBox,
-                { backgroundColor: colors.lavenderSubtle },
-              ]}
-            >
+            <View style={[styles.iconBox, styles.checkingBox]}>
               <Ionicons
                 name="navigate-outline"
                 size={20}
@@ -55,9 +70,7 @@ export function GeofenceStatusCard({
       <Card interactive={false}>
         <CardContent>
           <View style={styles.row}>
-            <View
-              style={[styles.iconBox, { backgroundColor: colors.borderSubtle }]}
-            >
+            <View style={[styles.iconBox, styles.unknownBox]}>
               <Ionicons
                 name="location-outline"
                 size={20}
@@ -86,17 +99,11 @@ export function GeofenceStatusCard({
       ? 'warning-outline'
       : 'close-circle-outline';
 
-  const iconColor = isInside
-    ? colors.successInk
+  const tone: GeofenceTone = isInside
+    ? 'inside'
     : isInaccurate
-      ? colors.pinkInk
-      : colors.dangerInk;
-
-  const boxBg = isInside
-    ? colors.successSoft
-    : isInaccurate
-      ? colors.pink
-      : colors.dangerSoft;
+      ? 'inaccurate'
+      : 'outside';
 
   const headerTitle = isInside
     ? 'Dalam Radius Lab'
@@ -110,11 +117,11 @@ export function GeofenceStatusCard({
     <Card interactive={false}>
       <CardContent>
         <View style={styles.row}>
-          <View style={[styles.iconBox, { backgroundColor: boxBg }]}>
-            <Ionicons name={iconName} size={22} color={iconColor} />
+          <View style={[styles.iconBox, toneBoxStyles[tone]]}>
+            <Ionicons name={iconName} size={22} color={toneIconColors[tone]} />
           </View>
           <View style={styles.textContainer}>
-            <Text variant="captionStrong" style={{ color: iconColor }}>
+            <Text variant="captionStrong" style={toneTitleStyles[tone]}>
               {headerTitle}
             </Text>
             <Text variant="caption" tone="muted">
@@ -166,6 +173,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  checkingBox: {
+    backgroundColor: colors.lavenderSubtle,
+  },
+  unknownBox: {
+    backgroundColor: colors.borderSubtle,
   },
   textContainer: {
     flex: 1,
