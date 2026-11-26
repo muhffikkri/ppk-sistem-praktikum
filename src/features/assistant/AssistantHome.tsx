@@ -475,6 +475,10 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 4,
+    // iOS cards no longer clip children (so the shadow can render); keep the
+    // accent visually inside the rounded corner explicitly.
+    borderTopLeftRadius: radius['3xl'],
+    borderBottomLeftRadius: radius['3xl'],
     backgroundColor: colors.violet,
   },
   scheduleText: { flex: 1, gap: spacing.xs, minWidth: 0 },

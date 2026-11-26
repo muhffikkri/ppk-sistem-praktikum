@@ -17,7 +17,7 @@ import {
 } from '../../theme/tokens';
 import { interpolate, useAnimatedStyle } from 'react-native-reanimated';
 
-import { rippleOnDark, rippleOnLight } from './ripple';
+import { androidClip, rippleOnDark, rippleOnLight } from './ripple';
 import { AnimatedPressable, usePressFeedback } from './usePressFeedback';
 
 const PRESSED_OPACITY = 0.92;
@@ -143,7 +143,8 @@ export function CardOverline({
 const styles = StyleSheet.create({
   base: {
     borderRadius: radius['3xl'], // 24 — section cards in sticker sheet
-    overflow: 'hidden',
+    // Clip only on Android: iOS would clip the variant's shadow as well.
+    ...androidClip,
   },
   content: {
     padding: spacing.lg,
