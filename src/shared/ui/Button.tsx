@@ -105,6 +105,8 @@ export function Button({
       accessibilityLabel={iconOnly ? label : undefined}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
+      // `sm`/`iconOnly` are 40px visually; 2px slop lifts the hit area to 44.
+      hitSlop={2}
       android_ripple={variant === 'primary' ? rippleOnDark : rippleOnLight}
       style={[
         styles.button,

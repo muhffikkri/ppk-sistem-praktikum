@@ -33,6 +33,9 @@ export function SegmentedControl<T extends string>({
         accessibilityRole="tab"
         accessibilityState={{ selected }}
         accessibilityLabel={option.label}
+        // 40px visual tabs; 2px slop keeps the 44px minimum without overlap
+        // (the container gap already equals the slop on both sides).
+        hitSlop={2}
         onPress={() => onChange(option.value)}
         style={[
           styles.item,
