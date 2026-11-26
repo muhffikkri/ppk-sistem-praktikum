@@ -345,7 +345,8 @@ menolak literal hex/rgba di luar `src/theme`, `fontSize`/`fontFamily`/
 `fontWeight`/`fontStyle` di luar `src/theme` & `src/shared/ui`, `Text`
 dari `react-native` di layar, dan copy di luar SRS (QR, Beacon, Shift,
 SIAKAD, SSO, …). `--report` mencetak jumlah pelanggaran per file tanpa
-gagal.
+gagal. `npm run lint` menambah guard `react-native/no-inline-styles` dan
+`no-restricted-syntax` untuk object literal pada prop `style`.
 
 ### Bottom dock (mobile)
 
@@ -384,7 +385,9 @@ src/
 1. Jangan hardcode warna/radius/spacing/typo di component — selalu import
    dari `shared/ui` (yang me-re-export token) atau `theme/tokens`.
 2. Component layar = susunan primitif `shared/ui`, bukan style inline
-   ad-hoc. Style lokal hanya untuk layout (gap, direction, flex).
+   ad-hoc. Layout vertikal/horizontal pakai `<Stack gap="md">`;
+   `gap`/`direction` didefinisikan di `StyleSheet.create`, bukan object
+   literal di JSX.
 3. Nama prop component mengikuti naming sticker sheet (variant, tone,
    dark, live).
 4. Teks aksesibel wajib: `accessibilityRole`, `accessibilityLabel` pada
@@ -393,6 +396,18 @@ src/
    `react-native`, agar font & ukuran selalu dari token.
 6. Feedback setelah tulis ke Firestore hanya ditampilkan setelah promise
    berhasil; gagal → banner danger dengan pesan dari service.
+
+### Inline style
+
+- Warna, spacing, radius, dan tipografi selalu dari token
+  `src/theme/tokens.ts` (di-re-export oleh `src/shared/ui`).
+- `style={{ ... }}` dilarang; nilai literal di dalam `style={[styles.x,
+  { ... }]}` juga dilarang. Gunakan `StyleSheet.create` atau `Stack`.
+- Nilai runtime (ukuran QR dinamis, warna status, inset perangkat)
+  diperbolehkan, tetapi dihitung di luar JSX (`useMemo`/peta konstan),
+  mis. `const frameStyle = useMemo(() => ({ width: size }), [size])`.
+- `Text` dari `shared/ui`: `style` hanya untuk layout, bukan tipografi.
+- Guard: `npm run lint` dan `npm run check:ui` (keduanya berjalan di CI).
 
 ## Layar & elemen
 
