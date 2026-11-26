@@ -5,6 +5,7 @@ import {
   CHECK_IN_EARLY_MS,
   CHECK_IN_LATE_MS,
   cancelSessionRule,
+  findOpenSessionConflict,
   isWithinCheckInWindow,
   openSessionRule,
 } from './sessionRules';
@@ -57,6 +58,90 @@ test('openSessionRule: sesi yang salah tutup bisa dibuka ulang di jendela', () =
   assert.equal(reopened.ok, true);
   if (reopened.ok) {
     assert.equal(reopened.updatedSession.closedAt, null);
+  }
+});
+
+const managed: Session = {
+  ...session,
+  id: 's-managed',
+  labId: 'lab-a',
+  assistantIds: ['asprak-1'],
+};
+
+const openElsewhere: Session = {
+  ...managed,
+  id: 's-elsewhere',
+  labId: 'lab-b',
+  status: 'open',
+  openedAt: '2026-10-21T08:00:00.000Z',
+};
+
+const contextFor = (openSessions: Session[]) => ({
+  actorUid: 'asprak-1',
+  openSessions,
+});
+
+test('findOpenSessionConflict: sesi open asprak lain terdeteksi', () => {
+  assert.equal(
+    findOpenSessionConflict(
+      managed,
+      [{ ...openElsewhere, labId: 'lab-a' }],
+      'asprak-1',
+    )?.id,
+    's-elsewhere',
+    'lab sama tetap konflik',
+  );
+  assert.equal(
+    findOpenSessionConflict(managed, [openElsewhere], 'asprak-1')?.id,
+    's-elsewhere',
+    'lab berbeda tetap konflik',
+  );
+  assert.equal(
+    findOpenSessionConflict(managed, [openElsewhere], 'asprak-2'),
+    undefined,
+    'sesi asprak lain tidak menghalangi',
+  );
+  assert.equal(
+    findOpenSessionConflict(managed, [], 'asprak-1'),
+    undefined,
+    'tanpa sesi open tidak ada konflik',
+  );
+});
+
+test('openSessionRule: sesi open lain menolak pembukaan', () => {
+  for (const other of [openElsewhere, { ...openElsewhere, labId: 'lab-a' }]) {
+    const result = openSessionRule(
+      managed,
+      '2026-10-21T08:00:00.000Z',
+      contextFor([other]),
+    );
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.reason, 'active_session_conflict');
+    }
+  }
+});
+
+test('openSessionRule: sesi closed/cancelled tidak dihitung konflik', () => {
+  for (const status of ['closed', 'cancelled'] as const) {
+    const result = openSessionRule(
+      managed,
+      '2026-10-21T08:00:00.000Z',
+      contextFor([{ ...openElsewhere, status }]),
+    );
+    assert.equal(result.ok, true, `${status} tidak memblokir`);
+  }
+});
+
+test('openSessionRule: buka ulang sesi sendiri tetap diperbolehkan', () => {
+  const result = openSessionRule(
+    { ...managed, status: 'closed', closedAt: '2026-10-21T08:05:00.000Z' },
+    '2026-10-21T08:06:00.000Z',
+    contextFor([{ ...openElsewhere, assistantIds: ['asprak-2'] }]),
+  );
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.updatedSession.closedAt, null);
   }
 });
 

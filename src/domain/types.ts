@@ -246,6 +246,7 @@ export type SessionActionFailure =
   | 'session_not_found'
   | 'invalid_status'
   | 'outside_window'
+  | 'active_session_conflict'
   | 'already_checked_in';
 
 export type SessionActionResult =

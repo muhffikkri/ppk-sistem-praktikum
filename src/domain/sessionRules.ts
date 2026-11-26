@@ -7,8 +7,35 @@ export type SessionTransitionResult =
   | { ok: true; updatedSession: Session }
   | {
       ok: false;
-      reason: 'session_not_found' | 'invalid_status' | 'outside_window';
+      reason:
+        | 'session_not_found'
+        | 'invalid_status'
+        | 'outside_window'
+        | 'active_session_conflict';
     };
+
+export type OpenSessionContext = {
+  actorUid: string;
+  openSessions: Session[];
+};
+
+/**
+ * Asprak hanya boleh punya satu sesi open. Konflik dihitung dari daftar sesi
+ * open milik actorUid; sesi yang sedang dibuka sendiri tidak dihitung.
+ */
+export function findOpenSessionConflict(
+  session: Session,
+  openSessions: Session[],
+  actorUid: string,
+): Session | undefined {
+  if (!actorUid || session.status === 'open') return undefined;
+  return openSessions.find(
+    (other) =>
+      other.id !== session.id &&
+      other.status === 'open' &&
+      (other.assistantIds?.includes(actorUid) ?? false),
+  );
+}
 
 const startMs = (session: Session) =>
   session.startsAtMs ?? Date.parse(session.startsAt);
@@ -53,6 +80,7 @@ export function isWithinOpenWindow(
 export function openSessionRule(
   session: Session | undefined,
   nowIso: string = new Date().toISOString(),
+  context?: OpenSessionContext,
 ): SessionTransitionResult {
   if (!session) {
     return { ok: false, reason: 'session_not_found' };
@@ -64,6 +92,13 @@ export function openSessionRule(
 
   if (!isWithinOpenWindow(session, Date.parse(nowIso))) {
     return { ok: false, reason: 'outside_window' };
+  }
+
+  if (
+    context &&
+    findOpenSessionConflict(session, context.openSessions, context.actorUid)
+  ) {
+    return { ok: false, reason: 'active_session_conflict' };
   }
 
   const updatedSession: Session = {
