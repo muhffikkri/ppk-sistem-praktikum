@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     function isAssistant() {
-      return hasRole('assistant');
+      return hasRole('assistant') || hasRole('lab_assistant');
     }
 
     function isStudent() {
@@ -63,6 +63,18 @@ service cloud.firestore {
         && request.resource.data.platform in ['android', 'ios']
         && request.resource.data.updatedAt == request.time;
       allow delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Inbox notifikasi: hanya ditulis server (Admin SDK); pemilik hanya boleh
+    // membaca dan menandai sudah dibaca.
+    match /users/{uid}/notifications/{notificationId} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+        && request.resource.data.readAt is string
+        && request.resource.data.readAt.size() <= 40;
+      allow create, delete: if false;
     }
 
     // 2. Kelas & Peserta
@@ -140,6 +152,9 @@ service cloud.firestore {
     // Rules tidak punya cos(): 1° lintang ≈ 111.320 m, 1° bujur ≥ 110.000 m untuk
     // lintang wilayah Indonesia (|lat| ≤ ~11°), jadi kotak batas ini tidak menolak
     // posisi yang sah di dalam radius.
+    // Pembagi wajib float (111320.0): int / int di rules adalah pembagian bulat,
+    // sehingga 50 / 111320 = 0 dan semua presensi tertolak. Toleransi +1 m
+    // menutup selisih pembulatan jarak di aplikasi (Math.round).
     function withinLabGeofence(data, session) {
       return session.labId is string
         && exists(/databases/$(database)/documents/labs/$(session.labId))
@@ -159,9 +174,9 @@ service cloud.firestore {
         && data.distanceMeters >= 0
         && data.distanceMeters <= lab.radiusMeters
         && math.abs(data.deviceLocation.latitude - lab.location.latitude)
-          <= lab.radiusMeters / 111320
+          <= (lab.radiusMeters + 1) / 111320.0
         && math.abs(data.deviceLocation.longitude - lab.location.longitude)
-          <= lab.radiusMeters / 110000;
+          <= (lab.radiusMeters + 1) / 110000.0;
     }
 
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})
@@ -219,6 +234,20 @@ service cloud.firestore {
         && request.auth.uid in sessionData(resource.data.sessionId).assistantIds;
 
       allow delete: if false;
+    }
+
+    // 6. Tagihan Denda (Sprint 4, P4 read; P2/backend write)
+    match /fines/{fineId} {
+      allow read: if isAssistant()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    // 7. Transaksi Pembayaran (Sprint 4, P4/backend only)
+    match /payment_transactions/{orderId} {
+      allow read: if isAssistant()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+      allow create, update, delete: if false;
     }
   }
 }

@@ -24,9 +24,11 @@ import {
   StatusBadge,
   Text,
 } from '../../shared/ui';
+import { formatWeekdayDayMonth } from '../../shared/format/date';
 import { useAssistantSessionsViewModel, useAuth } from '../../state';
 import { useAssistantLeaveViewModel } from '../leave';
 import { formatClock, formatTimeRange } from '../student/formatters';
+import { NotificationBellButton } from '../notifications/NotificationBellButton';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 type Feedback = { tone: 'success' | 'danger'; title: string; message: string };
@@ -52,9 +54,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
             accessibilityLabel="Peta Laboratorium"
             onPress={() => navigation.navigate('LabMaps')}
           />
-          <IconButton
-            icon="notifications-outline"
-            accessibilityLabel="Notifikasi"
+          <NotificationBellButton
             onPress={() => navigation.navigate('Notifications')}
           />
           <IconButton
@@ -98,12 +98,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
     );
   };
   const todaySessions = vm.sessions.filter((s) => isSameDay(s.startsAt));
-  const todayLabel =
-    new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(today) +
-    ', ' +
-    new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long' }).format(
-      today,
-    );
+  const todayLabel = formatWeekdayDayMonth(today);
 
   const byStart = [...vm.sessions].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),

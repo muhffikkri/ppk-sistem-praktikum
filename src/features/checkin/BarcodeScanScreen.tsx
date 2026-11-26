@@ -1,12 +1,15 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { parseSessionQr } from '../../domain/sessionQr';
+import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
 import {
   Banner,
   Button,
+  colors,
   EmptyState,
   Header,
   LoadingState,
@@ -21,7 +24,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'BarcodeScan'>;
 export function BarcodeScanScreen({ navigation }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [value, setValue] = useState<string | null>(null);
+  // The camera can report several frames before `scanned` re-renders; the
+  // ref drops those so only the first code navigates.
+  const handled = useRef(false);
+  const [invalid, setInvalid] = useState(false);
+  // Start the camera after the push animation so it does not stall it.
+  const cameraReady = useTransitionReady();
 
   if (!permission) {
     return (
@@ -38,12 +46,18 @@ export function BarcodeScanScreen({ navigation }: Props) {
         <TopBar onBack={() => navigation.goBack()} />
         <Header
           title="Scan Presensi"
-          description="Kamera diperlukan untuk memindai barcode presensi."
+          description="Kamera diperlukan untuk memindai kode presensi dari asisten."
         />
         <EmptyState
           title="Izin kamera belum diberikan"
-          description="Izinkan akses kamera agar bisa memindai barcode presensi."
-          action={<Button label="Izinkan Kamera" variant="primary" onPress={requestPermission} />}
+          description="Izinkan akses kamera agar bisa memindai kode presensi."
+          action={
+            <Button
+              label="Izinkan Kamera"
+              variant="primary"
+              onPress={requestPermission}
+            />
+          }
         />
       </Screen>
     );
@@ -52,45 +66,53 @@ export function BarcodeScanScreen({ navigation }: Props) {
   return (
     <Screen withDock={false} scroll={false}>
       <TopBar onBack={() => navigation.goBack()} />
-      <Header title="Scan Presensi" description="Arahkan kamera ke barcode presensi." />
+      <Header
+        title="Scan Presensi"
+        description="Arahkan kamera ke kode presensi yang ditampilkan asisten."
+      />
       <View style={styles.cameraWrap}>
-        <CameraView
-          style={StyleSheet.absoluteFill}
-          barcodeScannerSettings={{ barcodeTypes: ['qr', 'code128', 'code39', 'ean13', 'ean8'] }}
-          onBarcodeScanned={
-            scanned
-              ? undefined
-              : ({ data }) => {
-                  setScanned(true);
-                  setValue(data);
-                }
-          }
-        />
+        {cameraReady ? (
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={
+              scanned
+                ? undefined
+                : ({ data }) => {
+                    if (handled.current) return;
+                    handled.current = true;
+                    setScanned(true);
+                    const sessionId = parseSessionQr(data);
+                    if (sessionId) {
+                      navigation.replace('StudentCheckIn', { sessionId });
+                    } else {
+                      setInvalid(true);
+                    }
+                  }
+            }
+          />
+        ) : null}
       </View>
-      {value ? (
+      {invalid ? (
         <View style={styles.result}>
           <Banner
-            tone="success"
-            title="Barcode terbaca"
-            message={value}
-          />
-          <Button
-            label="Gunakan untuk Presensi"
-            variant="primary"
-            onPress={() => navigation.navigate('StudentCheckIn', { sessionId: value })}
+            tone="danger"
+            title="Bukan kode presensi"
+            message="Pindai kode presensi yang ditampilkan asisten pada sesi yang sedang dibuka."
           />
           <Button
             label="Scan Lagi"
             variant="outline"
             onPress={() => {
+              handled.current = false;
+              setInvalid(false);
               setScanned(false);
-              setValue(null);
             }}
           />
         </View>
       ) : (
         <Text variant="caption" tone="muted" style={styles.hint}>
-          Barcode akan terbaca otomatis.
+          Kode akan terbaca otomatis, lalu halaman presensi terbuka.
         </Text>
       )}
     </Screen>
@@ -103,6 +125,7 @@ const styles = StyleSheet.create({
     minHeight: 320,
     overflow: 'hidden',
     marginTop: spacing.md,
+    backgroundColor: colors.ink,
   },
   result: {
     gap: spacing.sm,

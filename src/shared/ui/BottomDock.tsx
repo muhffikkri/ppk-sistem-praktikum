@@ -1,15 +1,23 @@
 import type { ComponentProps } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   colors,
   radius,
+  ripple,
   shadow,
   spacing,
   typography,
 } from '../../theme/tokens';
+import { usePressFeedback } from './usePressFeedback';
+
+// Borderless so the ripple reads as a circle on the dark dock.
+const TAB_RIPPLE = { color: ripple.onDark, borderless: true, radius: 28 };
+const FAB_RIPPLE = { color: ripple.onLight, borderless: true, radius: 36 };
 
 /** How far the center FAB rises above the dock into the screen content. */
 export const DOCK_FAB_OVERLAP = 30;
@@ -32,6 +40,32 @@ type BottomDockProps = {
     onPress: () => void;
   };
 };
+
+/** Center action. Scales on press via a shared value (UI thread). */
+function DockFab({
+  glyph,
+  label,
+  onPress,
+}: NonNullable<BottomDockProps['fab']>) {
+  const { scaleStyle, handlers } = usePressFeedback();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      android_ripple={FAB_RIPPLE}
+      style={styles.fabSlot}
+      {...handlers}
+    >
+      <Animated.View style={[styles.fab, scaleStyle]}>
+        <Ionicons name={glyph} size={32} color={colors.ink} />
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 /**
  * Mobile bottom dock (sticker sheet "BottomNavigationPreview").
@@ -61,8 +95,17 @@ export function BottomDock({
         key={tab.key}
         accessibilityRole="button"
         accessibilityState={{ selected: active }}
-        onPress={() => onTabPress(tab.key)}
-        style={styles.tabSlot}
+        onPress={() => {
+          // One selection tick per actual tab change; the ripple is the
+          // visual that stands on its own when haptics are off.
+          if (!active) void Haptics.selectionAsync();
+          onTabPress(tab.key);
+        }}
+        android_ripple={TAB_RIPPLE}
+        style={({ pressed }) => [
+          styles.tabSlot,
+          pressed && styles.tabSlotPressed,
+        ]}
       >
         <Ionicons name={tab.glyph} size={22} color={iconColor} />
         <Text style={[styles.tabLabel, { color: iconColor }]}>{tab.label}</Text>
@@ -74,21 +117,7 @@ export function BottomDock({
     <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.row}>
         {leftTabs.map(renderTab)}
-        {fab ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={fab.label}
-            onPress={fab.onPress}
-            style={({ pressed }) => [
-              styles.fabSlot,
-              pressed && styles.fabSlotPressed,
-            ]}
-          >
-            <View style={styles.fab}>
-              <Ionicons name={fab.glyph} size={32} color={colors.ink} />
-            </View>
-          </Pressable>
-        ) : null}
+        {fab ? <DockFab {...fab} /> : null}
         {rightTabs.map(renderTab)}
       </View>
     </View>
@@ -115,6 +144,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     minHeight: 52,
   },
+  tabSlotPressed: { opacity: 0.7 },
   tabGlyph: { ...typography.title, fontSize: 20 },
   tabLabel: { ...typography.caption, fontSize: 9, fontWeight: '600' },
   fabSlot: {
@@ -122,7 +152,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fabSlotPressed: { opacity: 0.85 },
   fab: {
     width: 72,
     height: 72,

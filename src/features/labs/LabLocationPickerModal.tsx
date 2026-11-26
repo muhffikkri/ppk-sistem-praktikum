@@ -54,6 +54,21 @@ export function LabLocationPickerModal({
 
   const [locating, setLocating] = useState(false);
 
+  // Reset the pin to the initial coordinates each time the modal opens.
+  // Done during render (not in an effect) to avoid a second cascading render.
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
+    if (visible) {
+      setSelectedCoords({
+        latitude: hasInitial ? initialLatitude : DEFAULT_CAMPUS_CENTER.latitude,
+        longitude: hasInitial
+          ? initialLongitude
+          : DEFAULT_CAMPUS_CENTER.longitude,
+      });
+    }
+  }
+
   useEffect(() => {
     if (visible) {
       const coords = {
@@ -62,7 +77,6 @@ export function LabLocationPickerModal({
           ? initialLongitude
           : DEFAULT_CAMPUS_CENTER.longitude,
       };
-      setSelectedCoords(coords);
       setTimeout(() => {
         mapRef.current?.animateToRegion(
           {
@@ -176,6 +190,7 @@ export function LabLocationPickerModal({
           <IconButton
             icon={locating ? 'sync-outline' : 'locate-outline'}
             accessibilityLabel="Gunakan lokasi saya sekarang"
+            disabled={locating}
             onPress={handleUseCurrentLocation}
           />
         </View>

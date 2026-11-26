@@ -9,7 +9,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export function HomeScreen({ navigation }: Props) {
   const { user } = useAuth();
-  return user?.role === 'assistant' ? (
+  return user?.role === 'assistant' || user?.role === 'lab_assistant' ? (
     <AssistantHome navigation={navigation} />
   ) : (
     <StudentHome navigation={navigation} />

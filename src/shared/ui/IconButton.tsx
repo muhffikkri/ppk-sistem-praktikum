@@ -1,8 +1,9 @@
 import type { ComponentProps } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { Pressable, type PressableProps, StyleSheet } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Pressable, type PressableProps, StyleSheet, View } from 'react-native';
 
-import { colors, radius } from '../../theme/tokens';
+import { colors, radius, ripple, typography } from '../../theme/tokens';
+import { Text } from './Text';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -16,9 +17,14 @@ export type IconButtonProps = Omit<
   /** Required: an icon has no visible text for screen readers to announce. */
   accessibilityLabel: string;
   variant?: IconButtonVariant;
+  /** Label badge kecil di pojok kanan atas, mis. jumlah notifikasi belum dibaca. */
+  badge?: string | null;
 };
 
 const SIZE = 40;
+// Borderless so the ripple needs no overflow clip: clipping would cut off
+// the badge, which sits outside the button's corner.
+const RIPPLE = { color: ripple.onLight, borderless: true, radius: SIZE / 2 };
 // Extends the 40px visual target to the 44px minimum touch target.
 const HIT_SLOP = (44 - SIZE) / 2;
 
@@ -33,6 +39,8 @@ export function IconButton({
   icon,
   variant = 'outline',
   disabled,
+  badge,
+  accessibilityLabel,
   ...pressableProps
 }: IconButtonProps) {
   return (
@@ -40,7 +48,11 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
+      accessibilityLabel={
+        badge ? `${accessibilityLabel}, ${badge} baru` : accessibilityLabel
+      }
       hitSlop={HIT_SLOP}
+      android_ripple={RIPPLE}
       style={({ pressed }) => [
         styles.base,
         styles[variant],
@@ -50,6 +62,11 @@ export function IconButton({
       {...pressableProps}
     >
       <Ionicons name={icon} size={20} color={iconColor[variant]} />
+      {badge ? (
+        <View style={styles.badge} pointerEvents="none">
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -71,4 +88,23 @@ const styles = StyleSheet.create({
   outline: { backgroundColor: colors.panel, borderColor: colors.border },
   outlinePressed: { backgroundColor: colors.surface },
   disabled: { opacity: 0.5 },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: colors.panel,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    ...typography.overline,
+    color: colors.onPrimary,
+    lineHeight: 12,
+  },
 });

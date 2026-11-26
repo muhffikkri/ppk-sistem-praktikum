@@ -3,7 +3,7 @@
  * Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
  */
 
-export type UserRole = 'student' | 'assistant';
+export type UserRole = 'student' | 'assistant' | 'lab_assistant';
 
 export type UserProfile = {
   uid: string;
@@ -187,6 +187,46 @@ export type AssistantLeaveViewModel = {
     decisionNote?: string,
   ) => Promise<AsyncActionResult>;
   retry: () => void;
+};
+
+// --- Sprint 4: Denda & Pembayaran (P4 contract) ---
+
+export type FineStatus = 'unpaid' | 'paid' | 'waived';
+
+export type Fine = {
+  id: string; // deterministik per presensi terlambat
+  studentId: string;
+  sessionId: string;
+  attendanceId: string;
+  classId?: string;
+  courseName?: string;
+  groupName?: string;
+  labId?: string;
+  lab?: string;
+  amount: number; // rupiah integer
+  issuedAt: string; // ISO 8601 UTC
+  status: FineStatus;
+  paidAt?: string | null;
+  waivedAt?: string | null;
+  waivedReason?: string | null;
+};
+
+export type PaymentTransactionStatus = 'pending' | 'success' | 'failed';
+
+export type PaymentTransaction = {
+  id: string; // orderId Midtrans
+  fineId: string;
+  studentId: string;
+  sessionId?: string;
+  amount: number; // rupiah integer
+  status: PaymentTransactionStatus;
+  createdAt: string; // ISO 8601 UTC
+  updatedAt: string; // ISO 8601 UTC
+  paidAt?: string | null;
+  snapRedirectUrl?: string | null;
+  midtransTransactionId?: string | null;
+  paymentType?: string | null;
+  failureReason?: string | null;
 };
 
 // --- Tipe transisi Sprint 1 yang masih dipakai domain rules & fixtures ---

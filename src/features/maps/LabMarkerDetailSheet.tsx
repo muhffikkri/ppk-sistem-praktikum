@@ -4,6 +4,7 @@
  * dan jadwal praktikum berikutnya per laboratorium.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
+import { formatHourMinute } from '../../shared/format/date';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import { Text } from '../../shared/ui/Text';
 import { StatusBadge } from '../../shared/ui/StatusBadge';
@@ -22,16 +23,7 @@ type Props = {
 };
 
 function formatTime(isoString: string): string {
-  try {
-    const d = new Date(isoString);
-    return new Intl.DateTimeFormat('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(d);
-  } catch {
-    return isoString;
-  }
+  return formatHourMinute(new Date(isoString));
 }
 
 export function LabMarkerDetailSheet({

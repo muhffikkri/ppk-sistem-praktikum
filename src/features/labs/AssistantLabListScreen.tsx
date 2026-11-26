@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  Banner,
   Button,
   EmptyState,
   ErrorState,
@@ -14,6 +15,8 @@ import {
   StatusBadge,
   TopBar,
 } from '../../shared/ui';
+import { useAuth } from '../../state';
+import { canManageLabMaster } from '../../domain/asprakScope';
 import { useLabManagement } from './useLabManagement';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantLabList'>;
@@ -22,8 +25,10 @@ const formatCoord = (value: number) =>
   Number.isFinite(value) ? value.toFixed(5) : '—';
 
 export function AssistantLabListScreen({ navigation }: Props) {
+  const { user } = useAuth();
   const { labs, loading, error, retry } = useLabManagement();
   const goBack = () => navigation.goBack();
+  const isLabManager = canManageLabMaster(user?.role);
 
   if (loading && labs.length === 0) {
     return (
@@ -57,6 +62,14 @@ export function AssistantLabListScreen({ navigation }: Props) {
         description={`${labs.length} laboratorium · ${activeCount} aktif`}
       />
 
+      {!isLabManager && (
+        <Banner
+          tone="warning"
+          title="Kewenangan Aslab"
+          message="Konfigurasi dan penambahan master laboratorium dikelola oleh Aslab."
+        />
+      )}
+
       {labs.length === 0 ? (
         <EmptyState
           icon="location-outline"
@@ -77,20 +90,27 @@ export function AssistantLabListScreen({ navigation }: Props) {
                   dot
                 />
               }
-              accessibilityHint="Buka form edit laboratorium"
-              onPress={() =>
-                navigation.navigate('AssistantLabForm', { labId: lab.id })
+              accessibilityHint={
+                isLabManager ? 'Buka form edit laboratorium' : undefined
+              }
+              onPress={
+                isLabManager
+                  ? () =>
+                      navigation.navigate('AssistantLabForm', { labId: lab.id })
+                  : undefined
               }
             />
           ))}
         </View>
       )}
 
-      <Button
-        label="Tambah lab"
-        icon="add"
-        onPress={() => navigation.navigate('AssistantLabForm', {})}
-      />
+      {isLabManager && (
+        <Button
+          label="Tambah lab"
+          icon="add"
+          onPress={() => navigation.navigate('AssistantLabForm', {})}
+        />
+      )}
     </Screen>
   );
 }

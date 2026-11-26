@@ -160,7 +160,9 @@ export function subscribeLabActivities(
   );
 
   const membershipField =
-    scope.role === 'assistant' ? 'assistantIds' : 'participantIds';
+    scope.role === 'assistant' || scope.role === 'lab_assistant'
+      ? 'assistantIds'
+      : 'participantIds';
   const unsubSessions = onSnapshot(
     query(
       collection(db, 'sessions'),

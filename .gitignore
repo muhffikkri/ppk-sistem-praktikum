@@ -53,3 +53,6 @@ credentials/
 
 # Service account untuk seeder (jangan di-commit)
 service-account*.json
+
+# Log Firebase Emulator
+*-debug.log

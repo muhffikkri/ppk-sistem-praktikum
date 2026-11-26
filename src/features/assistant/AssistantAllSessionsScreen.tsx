@@ -1,15 +1,13 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import type { Session } from '../../domain/types';
 import {
   EmptyState,
   Header,
-  Screen,
+  ScreenList,
   SegmentedControl,
-  spacing,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import { AssistantSessionCard } from './components/AssistantSessionCard';
@@ -36,38 +34,40 @@ export function AssistantAllSessionsScreen({ navigation }: Props) {
     );
 
   return (
-    <Screen>
-      <Header
-        title="Semua sesi"
-        description={`${sessions.length} sesi tercatat`}
-      />
-      <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} />
-      <View style={styles.list}>
-        {visible.length === 0 ? (
-          <EmptyState
-            icon="calendar-outline"
-            title="Tidak ada sesi"
-            description="Belum ada sesi dengan status ini."
+    <ScreenList
+      data={visible}
+      keyExtractor={(session) => session.id}
+      header={
+        <>
+          <Header
+            title="Semua sesi"
+            description={`${sessions.length} sesi tercatat`}
           />
-        ) : (
-          visible.map((session) => (
-            <AssistantSessionCard
-              key={session.id}
-              session={session}
-              attendeeCount={getAttendanceForSession(session.id).length}
-              onPress={() =>
-                navigation.navigate('AssistantSessionDetail', {
-                  sessionId: session.id,
-                })
-              }
-            />
-          ))
-        )}
-      </View>
-    </Screen>
+          <SegmentedControl
+            options={FILTERS}
+            value={filter}
+            onChange={setFilter}
+          />
+        </>
+      }
+      empty={
+        <EmptyState
+          icon="calendar-outline"
+          title="Tidak ada sesi"
+          description="Belum ada sesi dengan status ini."
+        />
+      }
+      renderItem={({ item: session }) => (
+        <AssistantSessionCard
+          session={session}
+          attendeeCount={getAttendanceForSession(session.id).length}
+          onPress={() =>
+            navigation.navigate('AssistantSessionDetail', {
+              sessionId: session.id,
+            })
+          }
+        />
+      )}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  list: { gap: spacing.sm },
-});

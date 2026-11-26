@@ -1,11 +1,14 @@
-import { useNavigation } from '@react-navigation/native';
+import { StackActions, useNavigation } from '@react-navigation/native';
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
 
-import { useEffect, useMemo, useState } from 'react';
-import { Animated, PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { memo, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import PagerView, {
+  type PagerViewOnPageSelectedEvent,
+} from 'react-native-pager-view';
 
 import {
   LoginScreen,
@@ -22,6 +25,7 @@ import {
   AssistantScheduleScreen,
   AssistantSessionDetailScreen,
   AssistantSessionFormScreen,
+  AssistantSessionQrScreen,
 } from '../features/assistant';
 
 import {
@@ -48,6 +52,11 @@ import {
   StudentLeaveListScreen,
   StudentLeaveRequestFormScreen,
 } from '../features/leave';
+import {
+  StudentFineDetailScreen,
+  StudentFineListScreen,
+  StudentPaymentHistoryScreen,
+} from '../features/fines';
 
 import { LabMapsScreen } from '../features/maps';
 
@@ -55,7 +64,12 @@ import { db } from '../services/firebase';
 
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
 
-import { useActorRole, useAuth } from '../state';
+import {
+  type ActorRole,
+  NotificationInboxProvider,
+  useActorRole,
+  useAuth,
+} from '../state';
 
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
 import { StudentAttendanceProvider } from '../state/StudentAttendanceContext';
@@ -64,7 +78,11 @@ import { CalendarScreen } from './CalendarScreen';
 
 import { HomeScreen } from './HomeScreen';
 
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type {
+  NativeStackNavigationOptions,
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 import type { RootStackParamList } from './navigation';
 
 import { NotificationsScreen } from './NotificationsScreen';
@@ -119,104 +137,146 @@ const AuthStack = createNativeStackNavigator<{
 type DockTabKey = 'Home' | 'Schedule' | 'Attendance' | 'Profile';
 const DOCK_ORDER: DockTabKey[] = ['Home', 'Schedule', 'Attendance', 'Profile'];
 
+function neighbourTabs(index: number): Set<DockTabKey> {
+  return new Set(
+    [index - 1, index, index + 1]
+      .filter((i) => i >= 0 && i < DOCK_ORDER.length)
+      .map((i) => DOCK_ORDER[i]),
+  );
+}
+
+// Tab pages are rendered inside DockTabs rather than as their own routes, so
+// they get a fixed stand-in route. Module-level objects keep the props
+// referentially stable across DockTabs re-renders.
+const DOCK_PAGE_ROUTES = Object.fromEntries(
+  DOCK_ORDER.map((key) => [key, { key, name: key, params: undefined }]),
+) as Record<DockTabKey, { key: string; name: string; params: undefined }>;
+
+type DockPageProps = {
+  tab: DockTabKey;
+  role: ActorRole;
+  navigation: NativeStackScreenProps<RootStackParamList, 'DockTabs'>['navigation'];
+};
+
+// Memoized so a tab change (a `setParams` on DockTabs) does not re-render
+// every mounted page.
+const DockPage = memo(function DockPage({ tab, role, navigation }: DockPageProps) {
+  const nav = navigation as any;
+  const route = DOCK_PAGE_ROUTES[tab] as any;
+  if (tab === 'Home') return <HomeScreen navigation={nav} route={route} />;
+  if (tab === 'Schedule') {
+    return role === 'asisten' ? (
+      <AssistantScheduleScreen navigation={nav} route={route} />
+    ) : (
+      <StudentScheduleScreen navigation={nav} route={route} />
+    );
+  }
+  if (tab === 'Attendance') {
+    return role === 'asisten' ? (
+      <AssistantAllAttendanceScreen navigation={nav} route={route} />
+    ) : (
+      <StudentAttendanceHistoryScreen navigation={nav} route={route} />
+    );
+  }
+  return <ProfileScreen navigation={nav} route={route} />;
+});
+
 function DockTabsScreen({
   navigation,
   route,
 }: NativeStackScreenProps<RootStackParamList, 'DockTabs'>) {
   const actorRole = useActorRole();
-  const { width } = useWindowDimensions();
   const activeTab = (route.params?.tab as DockTabKey | undefined) ?? 'Home';
   const activeIndex = Math.max(0, DOCK_ORDER.indexOf(activeTab));
-  const [translateX] = useState(() => new Animated.Value(-activeIndex * width));
-  const drag = useMemo(() => ({ x: 0 }), []);
+  const pagerRef = useRef<PagerView>(null);
+  // Page the native pager is showing; lets us skip redundant setPage calls.
+  const pagerPosition = useRef(activeIndex);
 
-  useEffect(() => {
-    Animated.spring(translateX, {
-      toValue: -activeIndex * width,
-      useNativeDriver: true,
-      tension: 68,
-      friction: 12,
-    }).start();
-  }, [activeIndex, translateX, width]);
-
-  const panHandlers = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) =>
-          Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy) * 1.1,
-        onPanResponderGrant: () => {
-          translateX.stopAnimation((v) => {
-            drag.x = v;
-          });
-        },
-        onPanResponderMove: (_, g) => {
-          const min = -(DOCK_ORDER.length - 1) * width;
-          const next = Math.max(min, Math.min(0, drag.x + g.dx));
-          translateX.setValue(next);
-        },
-        onPanResponderRelease: (_, g) => {
-          const threshold = width * 0.18;
-          let nextIndex = activeIndex;
-          if (g.dx < -threshold && activeIndex < DOCK_ORDER.length - 1) nextIndex = activeIndex + 1;
-          if (g.dx > threshold && activeIndex > 0) nextIndex = activeIndex - 1;
-          navigation.setParams({ tab: DOCK_ORDER[nextIndex] });
-        },
-        onPanResponderTerminate: () => navigation.setParams({ tab: DOCK_ORDER[activeIndex] }),
-      }).panHandlers,
-    [activeIndex, drag, navigation, translateX, width],
+  // Mount a page on first visit (plus its neighbours, so a swipe never
+  // reveals a blank page) and keep it mounted afterwards to preserve scroll.
+  const [mounted, setMounted] = useState<ReadonlySet<DockTabKey>>(() =>
+    neighbourTabs(activeIndex),
   );
+  const wanted = neighbourTabs(activeIndex);
+  if ([...wanted].some((tab) => !mounted.has(tab))) {
+    setMounted(new Set([...mounted, ...wanted]));
+  }
 
-  const page = (key: DockTabKey) => {
-    const nav = navigation as any;
-    const fakeRoute = { key, name: key, params: undefined } as any;
-    if (key === 'Home') return <HomeScreen navigation={nav} route={fakeRoute} />;
-    if (key === 'Schedule') {
-      return actorRole === 'asisten' ? (
-        <AssistantScheduleScreen navigation={nav} route={fakeRoute} />
-      ) : (
-        <StudentScheduleScreen navigation={nav} route={fakeRoute} />
-      );
+  // Dock taps change the `tab` param; move the pager to match.
+  useEffect(() => {
+    if (pagerPosition.current !== activeIndex) {
+      pagerPosition.current = activeIndex;
+      pagerRef.current?.setPage(activeIndex);
     }
-    if (key === 'Attendance') {
-      return actorRole === 'asisten' ? (
-        <AssistantAllAttendanceScreen navigation={nav} route={fakeRoute} />
-      ) : (
-        <StudentAttendanceHistoryScreen navigation={nav} route={fakeRoute} />
-      );
-    }
-    return <ProfileScreen navigation={nav} route={fakeRoute} />;
+  }, [activeIndex]);
+
+  // Swipes settle natively; mirror the page back into the route param so
+  // the BottomDock highlight follows.
+  const onPageSelected = (e: PagerViewOnPageSelectedEvent) => {
+    const position = e.nativeEvent.position;
+    pagerPosition.current = position;
+    const tab = DOCK_ORDER[position];
+    if (tab && tab !== activeTab) navigation.setParams({ tab });
   };
 
   return (
-    <View style={{ flex: 1, overflow: 'hidden' }} {...panHandlers}>
-      <Animated.View
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          width: width * DOCK_ORDER.length,
-          transform: [{ translateX }],
-        }}
-      >
-        {DOCK_ORDER.map((key) => (
-          <View key={key} style={{ width }}>
-            {page(key)}
-          </View>
-        ))}
-      </Animated.View>
-    </View>
+    <PagerView
+      ref={pagerRef}
+      style={styles.pager}
+      initialPage={activeIndex}
+      onPageSelected={onPageSelected}
+    >
+      {DOCK_ORDER.map((key) => (
+        <View key={key} style={styles.page} collapsable={false}>
+          {mounted.has(key) ? (
+            <DockPage tab={key} role={actorRole} navigation={navigation} />
+          ) : null}
+        </View>
+      ))}
+    </PagerView>
   );
 }
 
+function ProfileHeaderButton() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Buka profil"
+      onPress={() => navigation.navigate('Profile')}
+      style={({ pressed }) => [styles.changeRole, pressed && styles.pressed]}
+    >
+      <Text variant="label" tone="violet">
+        Profil
+      </Text>
+    </Pressable>
+  );
+}
+
+const renderProfileHeaderButton = () => <ProfileHeaderButton />;
+
+// Module-level so the navigator does not receive new options on every
+// AppNavigator render.
+const STACK_SCREEN_OPTIONS: NativeStackNavigationOptions = {
+  headerStyle: { backgroundColor: colors.panel },
+  headerTintColor: colors.violet,
+  headerShadowVisible: false,
+  headerBackButtonDisplayMode: 'minimal',
+  contentStyle: { backgroundColor: colors.surface },
+  // Screens covered by a pushed screen skip re-renders until they are
+  // focused again.
+  freezeOnBlur: true,
+  headerRight: renderProfileHeaderButton,
+};
+
 export function AppNavigator() {
-  const { authStatus, user, logout, needsRoleSelection } = useAuth();
+  const { authStatus, user, needsRoleSelection } = useAuth();
   const actorRole = useActorRole();
 
   const navigation = useNavigation() as unknown as {
     navigate: (name: string | keyof RootStackParamList) => void;
-    reset: (state: {
-      index: number;
-      routes: { name: string; params?: Record<string, unknown> }[];
-    }) => void;
+    dispatch: (action: ReturnType<typeof StackActions.popTo>) => void;
     addListener: (event: 'state', cb: (e: any) => void) => () => void;
     getState: () => { index?: number; routes: { name: string }[] } | undefined;
   };
@@ -241,11 +301,13 @@ export function AppNavigator() {
     return navigation.addListener('state', (e) => sync(e.data?.state));
   }, [actorRole, navigation]);
 
+  // Pop back to the existing DockTabs route and merge the tab param so the
+  // tab pages stay mounted. A reset would mint a new route key and remount
+  // every tab page on each tap.
   const onTabPress = (key: string) => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'DockTabs', params: { tab: key as DockTabKey } }],
-    });
+    navigation.dispatch(
+      StackActions.popTo('DockTabs', { tab: key as DockTabKey }, { merge: true }),
+    );
   };
 
   // When unauthenticated or loading, show auth stack (Landing → Login/Register)
@@ -277,42 +339,19 @@ export function AppNavigator() {
   }
 
   return (
-    <AssistantSessionsProvider enabled={user?.role === 'assistant'}>
+    <AssistantSessionsProvider
+      enabled={
+        user?.role === 'assistant' || user?.role === 'lab_assistant'
+      }
+    >
       <StudentAttendanceProvider enabled={user?.role === 'student'}>
         <LeaveProvider db={db} user={user}>
+          <NotificationInboxProvider>
           <View style={styles.root}>
             <Stack.Navigator
               initialRouteName="DockTabs"
 
-              screenOptions={({ route }) => ({
-                headerStyle: { backgroundColor: colors.panel },
-
-                headerTintColor: colors.violet,
-
-                headerShadowVisible: false,
-
-                headerBackButtonDisplayMode: 'minimal',
-
-                contentStyle: { backgroundColor: colors.surface },
-
-                headerRight: () => (
-                  <Pressable
-                    accessibilityRole="button"
-
-                    accessibilityLabel="Buka profil"
-
-                    onPress={() => navigation.navigate('Profile')}
-
-                    style={({ pressed }) => [
-                      styles.changeRole,
-
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text variant="label" tone="violet">Profil</Text>
-                  </Pressable>
-                ),
-              })}
+              screenOptions={STACK_SCREEN_OPTIONS}
             >
               <Stack.Screen
                 name="DockTabs"
@@ -400,6 +439,24 @@ export function AppNavigator() {
 
                   options={{ headerShown: false }}
                 />
+
+                <Stack.Screen
+                  name="StudentFineList"
+                  component={StudentFineListScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentFineDetail"
+                  component={StudentFineDetailScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="StudentPaymentHistory"
+                  component={StudentPaymentHistoryScreen}
+                  options={{ headerShown: false }}
+                />
               </Stack.Group>
 
               <Stack.Group screenOptions={{ headerShown: false }}>
@@ -415,6 +472,11 @@ export function AppNavigator() {
                   name="AssistantSessionDetail"
 
                   component={AssistantSessionDetailScreen}
+                />
+
+                <Stack.Screen
+                  name="AssistantSessionQr"
+                  component={AssistantSessionQrScreen}
                 />
 
                 <Stack.Screen
@@ -530,15 +592,21 @@ export function AppNavigator() {
 
               onTabPress={onTabPress}
 
-              fab={{
-                glyph: 'camera',
-                label: 'Scan presensi',
-                onPress: () => {
-                  navigation.navigate('BarcodeScan');
-                },
-              }}
+              fab={
+                // Asisten menampilkan kode presensi, tidak ikut presensi.
+                actorRole === 'praktikan'
+                  ? {
+                      glyph: 'camera',
+                      label: 'Scan presensi',
+                      onPress: () => {
+                        navigation.navigate('BarcodeScan');
+                      },
+                    }
+                  : undefined
+              }
             />
           </View>
+          </NotificationInboxProvider>
         </LeaveProvider>
       </StudentAttendanceProvider>
     </AssistantSessionsProvider>
@@ -547,6 +615,10 @@ export function AppNavigator() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
+
+  pager: { flex: 1 },
+
+  page: { flex: 1 },
 
   changeRole: {
     minHeight: 44,

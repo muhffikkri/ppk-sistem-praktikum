@@ -19,6 +19,7 @@ export type RootStackParamList = {
   StudentLeaveList: undefined;
   AssistantSchedule: undefined;
   AssistantSessionDetail: { sessionId: string };
+  AssistantSessionQr: { sessionId: string };
   AssistantAttendanceRoster: { sessionId: string };
   AssistantAllSessions: undefined;
   AssistantAllAttendance: undefined;
@@ -30,6 +31,9 @@ export type RootStackParamList = {
   AssistantLabForm: { labId?: string };
   StudentAllSessions: undefined;
   StudentAllAttendance: undefined;
+  StudentFineList: undefined;
+  StudentFineDetail: { fineId: string };
+  StudentPaymentHistory: undefined;
   Calendar: undefined;
   Profile: undefined;
   ProfileEdit: undefined;

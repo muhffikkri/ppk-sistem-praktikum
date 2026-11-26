@@ -16,12 +16,27 @@ export const pushSupported =
   (Platform.OS === 'android' || Platform.OS === 'ios') &&
   Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
-export type PushTarget =
+export type PushTarget = (
   | {
       type: 'session_opened' | 'session_scheduled' | 'schedule_changed';
       sessionId: string;
     }
-  | { type: 'leave_decided'; leaveId: string };
+  | { type: 'leave_decided'; leaveId: string }
+  | {
+      type: 'fine_issued' | 'payment_success' | 'payment_failed';
+      fineId: string;
+    }
+) & {
+  /** ID dokumen inbox `users/{uid}/notifications/{id}`, bila ada. */
+  notificationId?: string;
+};
+
+function inboxIdOf(data: Record<string, unknown>) {
+  return typeof data.notificationId === 'string' &&
+    /^[A-Za-z0-9_-]{1,128}$/.test(data.notificationId)
+    ? { notificationId: data.notificationId }
+    : {};
+}
 
 export function parsePushTarget(
   data: Record<string, unknown> | undefined,
@@ -33,11 +48,17 @@ export function parsePushTarget(
     case 'session_scheduled':
     case 'schedule_changed':
       return typeof data.sessionId === 'string' && data.sessionId
-        ? { type: data.type, sessionId: data.sessionId }
+        ? { type: data.type, sessionId: data.sessionId, ...inboxIdOf(data) }
         : null;
     case 'leave_decided':
       return typeof data.leaveId === 'string' && data.leaveId
-        ? { type: data.type, leaveId: data.leaveId }
+        ? { type: data.type, leaveId: data.leaveId, ...inboxIdOf(data) }
+        : null;
+    case 'fine_issued':
+    case 'payment_success':
+    case 'payment_failed':
+      return typeof data.fineId === 'string' && data.fineId
+        ? { type: data.type, fineId: data.fineId, ...inboxIdOf(data) }
         : null;
     default:
       return null;

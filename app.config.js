@@ -1,11 +1,34 @@
+/* global __dirname */
 const fs = require('fs');
 const path = require('path');
 
-const appJson = require('./app.json');
+/**
+ * Android size options. The minify/shrink flags only apply to release
+ * variants (preview, production); the development client is a debug build.
+ */
+function androidBuildProperties() {
+  const props = {
+    // R8 minification is disabled because it strips native JNI bindings for
+    // react-native-worklets / reanimated in release/preview APKs.
+    enableMinifyInReleaseBuilds: false,
+    enableShrinkResourcesInReleaseBuilds: false,
+  };
+
+  // The preview profile ships a universal APK for internal installs, which
+  // carries native libraries for every ABI. Real phones are ARM, so leave out
+  // the x86 emulator ABIs there. Development keeps every ABI for emulators,
+  // and production is an app bundle that Play already splits per device.
+  if (process.env.EAS_BUILD_PROFILE === 'preview') {
+    props.buildArchs = ['arm64-v8a', 'armeabi-v7a'];
+  }
+
+  return props;
+}
 
 /** @type {import('expo/config').ExpoConfig} */
-module.exports = () => {
-  const config = { ...appJson.expo };
+module.exports = ({ config: staticConfig }) => {
+  // `staticConfig` is the `expo` object from app.json.
+  const config = { ...staticConfig };
 
   // EAS file secret: GOOGLE_SERVICES_JSON is a file path on build runners.
   const secretPath = process.env.GOOGLE_SERVICES_JSON;
@@ -18,5 +41,10 @@ module.exports = () => {
         ? localPath
         : config.android.googleServicesFile;
 
-  return { expo: config };
+  config.plugins = [
+    ...(config.plugins ?? []),
+    ['expo-build-properties', { android: androidBuildProperties() }],
+  ];
+
+  return config;
 };

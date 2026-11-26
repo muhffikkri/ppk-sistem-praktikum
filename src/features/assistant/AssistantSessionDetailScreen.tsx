@@ -35,6 +35,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
   const {
     session,
     attendees,
+    recap,
     canOpen,
     canClose,
     statusHint,
@@ -102,8 +103,9 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
       ) : null}
 
       <StatRow>
-        <StatCard variant="panel" value={attendees.length} label="Hadir" />
-        <StatCard variant="panel" value={totalParticipants} label="Peserta" />
+        <StatCard variant="panel" value={recap.summary.presentCount} label="Hadir" />
+        <StatCard variant="panel" value={recap.summary.excusedCount} label="Izin" />
+        <StatCard variant="panel" value={recap.summary.absentCount} label="Belum hadir" />
       </StatRow>
 
       <View style={styles.info}>
@@ -127,6 +129,14 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
         {canOpen ? (
           <Button label="Buka sesi" onPress={() => setSheet('open')} />
         ) : null}
+        {session.status === 'open' ? (
+          <Button
+            label="Tampilkan kode presensi"
+            onPress={() =>
+              navigation.navigate('AssistantSessionQr', { sessionId })
+            }
+          />
+        ) : null}
         {canClose ? (
           <Button
             label="Tutup sesi"
@@ -135,7 +145,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
           />
         ) : null}
         <Button
-          label={`Lihat rekap kehadiran (${attendees.length})`}
+          label={`Lihat rekap kehadiran (${recap.summary.presentCount}/${recap.summary.total})`}
           variant="soft"
           onPress={() =>
             navigation.navigate('AssistantAttendanceRoster', { sessionId })

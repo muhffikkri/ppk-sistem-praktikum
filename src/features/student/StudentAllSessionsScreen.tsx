@@ -1,6 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import type { Session } from '../../domain/types';
@@ -11,8 +10,8 @@ import {
   ListRow,
   LoadingState,
   Screen,
+  ScreenList,
   SegmentedControl,
-  spacing,
   StatusBadge,
   TopBar,
   type BadgeTone,
@@ -74,21 +73,25 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Semua sesi"
-        description={`${sorted.length} sesi praktikum terdaftar`}
-      />
-
-      <SegmentedControl
-        options={FILTER_OPTIONS}
-        value={filter}
-        onChange={setFilter}
-        accessibilityLabel="Filter status sesi"
-      />
-
-      {visible.length === 0 ? (
+    <ScreenList
+      data={visible}
+      keyExtractor={(session) => session.id}
+      header={
+        <>
+          <TopBar onBack={() => navigation.goBack()} />
+          <Header
+            title="Semua sesi"
+            description={`${sorted.length} sesi praktikum terdaftar`}
+          />
+          <SegmentedControl
+            options={FILTER_OPTIONS}
+            value={filter}
+            onChange={setFilter}
+            accessibilityLabel="Filter status sesi"
+          />
+        </>
+      }
+      empty={
         <EmptyState
           icon="calendar-outline"
           title="Tidak ada sesi"
@@ -98,33 +101,25 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
               : 'Tidak ada sesi dengan status ini.'
           }
         />
-      ) : (
-        <View style={styles.list}>
-          {visible.map((session) => (
-            <ListRow
-              key={session.id}
-              title={session.courseName}
-              meta={`${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
-              accessibilityHint="Membuka detail sesi"
-              onPress={() =>
-                navigation.navigate('StudentSessionDetail', {
-                  sessionId: session.id,
-                })
-              }
-              trailing={
-                <StatusBadge
-                  label={STATUS_LABEL[session.status]}
-                  tone={STATUS_TONE[session.status]}
-                />
-              }
+      }
+      renderItem={({ item: session }) => (
+        <ListRow
+          title={session.courseName}
+          meta={`${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
+          accessibilityHint="Membuka detail sesi"
+          onPress={() =>
+            navigation.navigate('StudentSessionDetail', {
+              sessionId: session.id,
+            })
+          }
+          trailing={
+            <StatusBadge
+              label={STATUS_LABEL[session.status]}
+              tone={STATUS_TONE[session.status]}
             />
-          ))}
-        </View>
+          }
+        />
       )}
-    </Screen>
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  list: { gap: spacing.sm },
-});

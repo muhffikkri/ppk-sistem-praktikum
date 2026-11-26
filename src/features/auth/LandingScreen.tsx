@@ -1,8 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AuthStackParamList } from '../../app/navigation';
@@ -24,9 +30,18 @@ export function LandingScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { loginWithGoogle, error, clearError } = useAuth();
 
+  const [googlePending, setGooglePending] = useState(false);
+
+  // Show the pending state on the tap frame and block a second prompt.
   const handleGoogleLogin = async () => {
+    if (googlePending) return;
+    setGooglePending(true);
     clearError();
-    await loginWithGoogle();
+    try {
+      await loginWithGoogle();
+    } finally {
+      setGooglePending(false);
+    }
   };
 
   return (
@@ -185,13 +200,19 @@ export function LandingScreen({ navigation }: Props) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Masuk dengan Google"
+            accessibilityState={{ busy: googlePending, disabled: googlePending }}
+            disabled={googlePending}
             onPress={handleGoogleLogin}
             style={({ pressed }) => [
               styles.secondaryBtn,
-              pressed && styles.btnPressed,
+              (pressed || googlePending) && styles.btnPressed,
             ]}
           >
-            <Ionicons name="logo-google" size={16} color={colors.lavender} />
+            {googlePending ? (
+              <ActivityIndicator size="small" color={colors.lavender} />
+            ) : (
+              <Ionicons name="logo-google" size={16} color={colors.lavender} />
+            )}
             <Text style={styles.secondaryBtnText}>
               Masuk dengan Akun Google
             </Text>

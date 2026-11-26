@@ -18,6 +18,7 @@ import type {
   UserProfile,
 } from '../../domain/types';
 import { classifyLeaveReason } from '../../../ai/leaveClassifier';
+import { chunkIds } from './batching';
 
 export class LeaveError extends Error {
   constructor(
@@ -110,67 +111,50 @@ export function createLeaveService(db: Firestore) {
         onError,
       );
     },
+    /**
+     * Leave requests for the assistant's managed sessions only; never
+     * download all students' requests. Session ids come from the caller
+     * (AssistantSessionsContext already listens to them), and requests are
+     * fetched with one listener per chunk of up to 30 sessions.
+     */
     subscribeAssistant(
       user: UserProfile,
+      sessionIds: readonly string[],
       onData: (items: LeaveRequest[]) => void,
       onError: (error: unknown) => void,
     ) {
       requireRole(user, 'assistant');
-      // Subscribe only to managed sessions; never download all students' requests.
-      const subscriptions = new Map<string, () => void>();
-      const items = new Map<string, LeaveRequest[]>();
-      const emit = () =>
+      const chunks = chunkIds(sessionIds);
+      if (chunks.length === 0) {
+        onData([]);
+        return () => {};
+      }
+      const items = new Map<number, LeaveRequest[]>();
+      const emit = () => {
+        // Wait until every chunk has reported once.
+        if (items.size !== chunks.length) return;
         onData(
           [...items.values()]
             .flat()
             .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
         );
-      const stop = onSnapshot(
-        query(
-          collection(db, 'sessions'),
-          where('assistantIds', 'array-contains', user.uid),
-        ),
-        (snapshot) => {
-          const ids = new Set(snapshot.docs.map((item) => item.id));
-          subscriptions.forEach((unsubscribe, id) => {
-            if (!ids.has(id)) {
-              unsubscribe();
-              subscriptions.delete(id);
-              items.delete(id);
-            }
-          });
-          snapshot.docs.forEach((session) => {
-            if (subscriptions.has(session.id)) return;
-            subscriptions.set(
-              session.id,
-              onSnapshot(
-                query(
-                  leaves,
-                  where('sessionId', '==', session.id),
-                  orderBy('createdAt', 'desc'),
-                ),
-                (result) => {
-                  items.set(
-                    session.id,
-                    result.docs.map(
-                      (item) =>
-                        ({ ...item.data(), id: item.id }) as LeaveRequest,
-                    ),
-                  );
-                  if (items.size === subscriptions.size) emit();
-                },
-                onError,
+      };
+      const stops = chunks.map((chunk, index) =>
+        onSnapshot(
+          query(leaves, where('sessionId', 'in', chunk)),
+          (result) => {
+            items.set(
+              index,
+              result.docs.map(
+                (item) => ({ ...item.data(), id: item.id }) as LeaveRequest,
               ),
             );
-          });
-          if (items.size === subscriptions.size) emit();
-        },
-        onError,
+            emit();
+          },
+          onError,
+        ),
       );
-      return () => {
-        stop();
-        subscriptions.forEach((unsubscribe) => unsubscribe());
-      };
+      return () => stops.forEach((stop) => stop());
     },
     async getSession(sessionId: string): Promise<Session> {
       const snapshot = await getDoc(doc(db, 'sessions', sessionId));

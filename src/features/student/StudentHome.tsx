@@ -22,7 +22,9 @@ import {
   type BadgeTone,
 } from '../../shared/ui';
 import { useAuth, useStudentAttendanceViewModel } from '../../state';
+import { formatWeekdayDayMonth } from '../../shared/format/date';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
+import { NotificationBellButton } from '../notifications/NotificationBellButton';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -57,19 +59,6 @@ function isSameDay(a: string, b: Date) {
   );
 }
 
-function formatTodayLong(iso: string): string {
-  // "Senin, 17 November" — nama hari pendek + tanggal, tanpa tahun.
-  const d = new Date(iso);
-  const weekday = new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(
-    d,
-  );
-  const date = new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'long',
-  }).format(d);
-  return `${weekday}, ${date}`;
-}
-
 export function StudentHome({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
   const { sessions, attendanceHistory, loading, error, retry } =
@@ -87,9 +76,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
             accessibilityLabel="Peta Laboratorium"
             onPress={() => navigation.navigate('LabMaps')}
           />
-          <IconButton
-            icon="notifications-outline"
-            accessibilityLabel="Notifikasi"
+          <NotificationBellButton
             onPress={() => navigation.navigate('Notifications')}
           />
           <IconButton
@@ -118,7 +105,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         <ErrorState
           title="Gagal memuat jadwal"
           message={error}
-          onRetry={() => navigation.replace('Home')}
+          onRetry={retry}
         />
       </Screen>
     );
@@ -149,7 +136,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 
   const header = (
     <Header
-      eyebrow={formatTodayLong(today.toISOString())}
+      eyebrow={formatWeekdayDayMonth(today)}
       title={user?.displayName?.trim() || 'Praktikan'}
     />
   );
@@ -277,6 +264,14 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
         <ListRow
           title="Izin saya"
           onPress={() => navigation.navigate('StudentLeaveList')}
+        />
+        <ListRow
+          title="Tagihan denda"
+          onPress={() => navigation.navigate('StudentFineList')}
+        />
+        <ListRow
+          title="Riwayat pembayaran"
+          onPress={() => navigation.navigate('StudentPaymentHistory')}
         />
       </View>
     </Screen>
