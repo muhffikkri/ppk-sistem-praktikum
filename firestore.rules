@@ -106,7 +106,13 @@ service cloud.firestore {
 
     // 1. Profil Pengguna
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAssistant());
+      // Asisten hanya boleh mengambil profil praktikan satu per satu (nama/NIM
+      // untuk rekap). Query seluruh users dilarang; pencarian email lewat
+      // Cloud Function resolveStudentByEmail.
+      allow get: if isSignedIn()
+        && (request.auth.uid == uid
+          || (isAssistant() && resource.data.role == 'student'));
+      allow list: if false;
 
       allow create: if isSignedIn()
         && request.auth.uid == uid
@@ -279,10 +285,15 @@ service cloud.firestore {
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})
     match /attendance/{attendanceId} {
       // get dokumen milik sendiri boleh walau belum ada (cek duplikasi setelah permission-denied)
-      allow get: if isAssistant()
+      allow get: if (isAssistant()
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
         || (isStudent() && attendanceId.matches('^.+_' + request.auth.uid + '$'));
 
-      allow list: if isAssistant()
+      allow list: if (isAssistant()
+        && exists(/databases/$(database)/documents/sessions/$(resource.data.sessionId))
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
       allow create: if isStudent()
@@ -314,7 +325,17 @@ service cloud.firestore {
 
     // 5. Pengajuan Izin & Pemeriksaan Asisten
     match /leave_requests/{leaveId} {
-      allow read: if isAssistant()
+      // Alasan izin bisa berisi data kesehatan: hanya asisten sesi terkait.
+      allow get: if (isAssistant()
+        && exists(/databases/$(database)/documents/sessions/$(resource.data.sessionId))
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+
+      allow list: if (isAssistant()
+        && exists(/databases/$(database)/documents/sessions/$(resource.data.sessionId))
+        && request.auth.uid
+          in sessionData(resource.data.sessionId).assistantIds)
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
       // ID deterministik {sessionId}_{studentId} mencegah duplikat lintas perangkat.

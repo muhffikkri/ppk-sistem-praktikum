@@ -84,6 +84,11 @@ await adminAuth.createUser({
   password: PASSWORD,
 });
 await adminAuth.createUser({
+  uid: 'asistenB',
+  email: 'asistenB@rules.test',
+  password: PASSWORD,
+});
+await adminAuth.createUser({
   uid: 'stranger',
   email: 'stranger@rules.test',
   password: PASSWORD,
@@ -102,6 +107,13 @@ await adminDb.doc('users/budi').set({
   email: 'budi@rules.test',
   createdAt: lab.createdAt,
 });
+await adminDb.doc('users/asistenB').set({
+  uid: 'asistenB',
+  role: 'assistant',
+  displayName: 'Asisten B',
+  email: 'asistenB@rules.test',
+  createdAt: lab.createdAt,
+});
 await adminDb.doc('assistant_invites/invited@rules.test').set({
   createdAt: lab.createdAt,
 });
@@ -118,6 +130,9 @@ const classDoc = () => ({
 });
 await adminDb.doc('classes/c1').set(classDoc());
 await adminDb.doc('classes/c2').set(classDoc());
+await adminDb
+  .doc('classes/cB')
+  .set({ ...classDoc(), assistantIds: ['asistenB'] });
 
 const minuteMs = 60_000;
 const nowMs = Date.now();
@@ -166,6 +181,11 @@ await adminDb
 await adminDb
   .doc('sessions/s9-cancel')
   .set(sessionDoc(nowMs + 60 * minuteMs, nowMs + 120 * minuteMs, 'scheduled'));
+await adminDb.doc('sessions/sB').set({
+  ...sessionDoc(nowMs - 10 * minuteMs, nowMs + 50 * minuteMs, 'scheduled'),
+  assistantIds: ['asistenB'],
+  classId: 'cB',
+});
 
 const app = initializeApp({ projectId, apiKey: 'emulator' });
 const auth = getAuth(app);
@@ -603,6 +623,85 @@ check(
       decisionNote: 'Disetujui',
     }),
   ),
+  'allowed',
+);
+await signOut(auth);
+
+// --- Scope asisten: hanya sesi yang dikelola yang boleh dibaca ---
+await resetLeaveFixtures();
+await adminDb.doc('attendance/s1_budi').set(attendanceStub);
+await adminDb.doc('leave_requests/s1_budi').set(leaveDoc('s1', 'pending'));
+
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'asisten A baca presensi sesinya',
+  await attempt(() => getDoc(doc(db, 'attendance', 's1_budi'))),
+  'allowed',
+);
+check(
+  'asisten A list presensi sesinya',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'attendance'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'allowed',
+);
+check(
+  'asisten A baca izin sesinya',
+  await attempt(() => getDoc(doc(db, 'leave_requests', 's1_budi'))),
+  'allowed',
+);
+check(
+  'asisten A list izin sesinya',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'leave_requests'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'allowed',
+);
+check(
+  'asisten tidak boleh query seluruh users',
+  await attempt(() =>
+    getDocs(query(collection(db, 'users'), where('role', '==', 'student'))),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'asistenB@rules.test', PASSWORD);
+check(
+  'asisten B tidak baca presensi sesi A',
+  await attempt(() => getDoc(doc(db, 'attendance', 's1_budi'))),
+  'denied',
+);
+check(
+  'asisten B tidak list presensi sesi A',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'attendance'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'denied',
+);
+check(
+  'asisten B tidak baca izin sesi A',
+  await attempt(() => getDoc(doc(db, 'leave_requests', 's1_budi'))),
+  'denied',
+);
+check(
+  'asisten B tidak list izin sesi A',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'leave_requests'), where('sessionId', '==', 's1')),
+    ),
+  ),
+  'denied',
+);
+check(
+  'asisten B tetap bisa baca profil praktikan',
+  await attempt(() => getDoc(doc(db, 'users', 'budi'))),
   'allowed',
 );
 await signOut(auth);

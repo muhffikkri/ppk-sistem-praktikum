@@ -12,7 +12,8 @@ import {
   updateDoc,
   deleteField,
 } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { auth, db, functions } from '../firebase';
 import { groupBySession } from './batching';
 import { normalizeAttendanceRecord } from './normalize';
 import {
@@ -23,7 +24,6 @@ import {
 import {
   PracticalClass,
   Session,
-  UserProfile,
   AttendanceRecord,
   ClassInput,
   SessionInput,
@@ -37,7 +37,6 @@ import {
 const classesCol = collection(db, 'classes');
 const sessionsCol = collection(db, 'sessions');
 const attendanceCol = collection(db, 'attendance');
-const usersCol = collection(db, 'users');
 
 type AsyncFailure = { ok: false; reason: string; message: string };
 
@@ -179,44 +178,20 @@ export async function addParticipantByEmail(
 
     const classData = classSnap.data() as PracticalClass;
 
-    const trimmedEmail = email.trim();
-    const normalizedEmail = trimmedEmail.toLowerCase();
-
-    // Cari user berdasarkan email (normalized lowercase, fallback raw trim)
-    let usersSnap = await getDocs(
-      query(usersCol, where('email', '==', normalizedEmail)),
-    );
-    if (usersSnap.empty && trimmedEmail !== normalizedEmail) {
-      usersSnap = await getDocs(
-        query(usersCol, where('email', '==', trimmedEmail)),
-      );
+    // Resolusi email dilakukan server: klien asisten tidak boleh query users.
+    let studentUid: string | undefined;
+    try {
+      const resolve = httpsCallable(functions, 'resolveStudentByEmail');
+      const response = await resolve({ email: email.trim() });
+      studentUid = (response.data as { uid?: string } | null)?.uid;
+    } catch {
+      studentUid = undefined;
     }
-
-    if (usersSnap.empty) {
+    if (!studentUid) {
       return {
         ok: false,
         reason: 'user_not_found',
         message: 'User dengan email tersebut tidak terdaftar',
-      };
-    }
-
-    const userDoc = usersSnap.docs[0];
-    const userData = userDoc.data() as UserProfile;
-
-    if (userData.role !== 'student') {
-      return {
-        ok: false,
-        reason: 'validation_error',
-        message: 'Email tersebut bukan akun praktikan',
-      };
-    }
-
-    const studentUid = userData.uid || userDoc.id;
-    if (!studentUid) {
-      return {
-        ok: false,
-        reason: 'validation_error',
-        message: 'UID praktikan tidak ditemukan',
       };
     }
 

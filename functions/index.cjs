@@ -416,6 +416,48 @@ async function createMidtransSnap(orderId, amount, fine, user) {
   return data;
 }
 
+// Pencarian praktikan by email dipindah ke server agar rules bisa melarang
+// query `users` oleh klien asisten (profil mengandung email & data pribadi).
+exports.resolveStudentByEmail = onCall({ cors: true }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'Harus login.');
+
+  const caller = await db.collection('users').doc(uid).get();
+  const role = caller.exists ? caller.data().role : null;
+  if (role !== 'assistant' && role !== 'lab_assistant')
+    throw new HttpsError(
+      'permission-denied',
+      'Hanya asisten yang bisa mencari praktikan.',
+    );
+
+  const typed =
+    typeof request.data?.email === 'string' ? request.data.email.trim() : '';
+  const candidates = [...new Set([typed.toLowerCase(), typed])].filter(
+    (email) => email.length > 0,
+  );
+  for (const email of candidates) {
+    const snap = await db
+      .collection('users')
+      .where('email', '==', email)
+      .limit(1)
+      .get();
+    if (snap.empty) continue;
+    const student = snap.docs[0];
+    const data = student.data();
+    if (data.role !== 'student') break;
+    // Hanya field minimum yang dibutuhkan untuk menambah peserta kelas.
+    return {
+      uid: student.id,
+      displayName: data.displayName || '',
+      nim: data.nim || null,
+    };
+  }
+  throw new HttpsError(
+    'not-found',
+    'Praktikan dengan email itu tidak ditemukan.',
+  );
+});
+
 exports.createFineCheckout = onCall(
   { secrets: [midtransServerKey], cors: true },
   async (request) => {
