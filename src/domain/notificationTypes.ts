@@ -4,14 +4,17 @@
  * dikirim; aplikasi hanya membaca dan menandai sudah dibaca.
  */
 
-export type NotificationType =
-  | 'session_scheduled'
-  | 'session_opened'
-  | 'schedule_changed'
-  | 'leave_decided'
-  | 'fine_issued'
-  | 'payment_success'
-  | 'payment_failed';
+const TYPES = [
+  'session_scheduled',
+  'session_opened',
+  'schedule_changed',
+  'leave_decided',
+  'fine_issued',
+  'payment_success',
+  'payment_failed',
+] as const;
+
+export type NotificationType = (typeof TYPES)[number];
 
 export type InboxNotification = {
   id: string;
@@ -32,16 +35,6 @@ export type NotificationRoute =
   | { screen: 'StudentLeaveList' }
   | { screen: 'StudentFineDetail'; fineId: string }
   | { screen: 'StudentFineList' };
-
-const TYPES: readonly NotificationType[] = [
-  'session_scheduled',
-  'session_opened',
-  'schedule_changed',
-  'leave_decided',
-  'fine_issued',
-  'payment_success',
-  'payment_failed',
-];
 
 export function isNotificationType(value: unknown): value is NotificationType {
   return TYPES.includes(value as NotificationType);

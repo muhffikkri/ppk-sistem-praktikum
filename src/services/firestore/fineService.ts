@@ -9,40 +9,35 @@ import {
 
 import type { Fine, FineStatus } from '../../domain/types';
 import { db } from '../firebase';
-
-type TimestampLike = { toDate: () => Date };
-
-function asIso(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (value && typeof (value as TimestampLike).toDate === 'function') {
-    return (value as TimestampLike).toDate().toISOString();
-  }
-  return '';
-}
+import { asIso, asNullableString, asOptionalString } from './normalize';
 
 function normalizeFine(id: string, data: Record<string, unknown>): Fine {
   const status = data.status;
   const fineStatus: FineStatus =
     status === 'paid' || status === 'waived' ? status : 'unpaid';
+  const optional = {
+    classId: asOptionalString(data.classId),
+    courseName: asOptionalString(data.courseName),
+    groupName: asOptionalString(data.groupName),
+    labId: asOptionalString(data.labId),
+    lab: asOptionalString(data.lab),
+  };
+  const nullable = {
+    waivedReason: asNullableString(data.waivedReason),
+  };
   return {
     id,
     studentId: String(data.studentId ?? ''),
     sessionId: String(data.sessionId ?? ''),
     attendanceId: String(data.attendanceId ?? ''),
-    classId: typeof data.classId === 'string' ? data.classId : undefined,
-    courseName:
-      typeof data.courseName === 'string' ? data.courseName : undefined,
-    groupName: typeof data.groupName === 'string' ? data.groupName : undefined,
-    labId: typeof data.labId === 'string' ? data.labId : undefined,
-    lab: typeof data.lab === 'string' ? data.lab : undefined,
+    ...optional,
     amount: typeof data.amount === 'number' ? data.amount : 0,
     issuedAt: asIso(data.issuedAt),
     status: fineStatus,
     paidAt: asIso(data.paidAt) || null,
     waivedAt: asIso(data.waivedAt) || null,
-    waivedReason:
-      typeof data.waivedReason === 'string' ? data.waivedReason : null,
-  };
+    ...nullable,
+  } as Fine;
 }
 
 export function subscribeStudentFines(

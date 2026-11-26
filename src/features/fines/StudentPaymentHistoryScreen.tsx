@@ -11,6 +11,7 @@ import {
   Header,
   ListRow,
   LoadingState,
+  Screen,
   ScreenList,
   SectionHeader,
   StatusBadge,
@@ -58,39 +59,25 @@ export function StudentPaymentHistoryScreen({ navigation }: Props) {
 
   if (loading) {
     return (
-      <ScreenList
-        data={[]}
-        keyExtractor={() => ''}
-        renderItem={() => null}
-        header={
-          <>
-            <TopBar onBack={() => navigation.goBack()} />
-            <Header title="Riwayat pembayaran" description="Memuat..." />
-            <LoadingState label="Memuat riwayat pembayaran…" />
-          </>
-        }
-      />
+      <Screen>
+        <TopBar onBack={() => navigation.goBack()} />
+        <Header title="Riwayat pembayaran" description="Memuat..." />
+        <LoadingState label="Memuat riwayat pembayaran…" />
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <ScreenList
-        data={[]}
-        keyExtractor={() => ''}
-        renderItem={() => null}
-        header={
-          <>
-            <TopBar onBack={() => navigation.goBack()} />
-            <Header title="Riwayat pembayaran" />
-            <ErrorState
-              title="Gagal memuat riwayat"
-              message={error}
-              onRetry={doRetry}
-            />
-          </>
-        }
-      />
+      <Screen>
+        <TopBar onBack={() => navigation.goBack()} />
+        <Header title="Riwayat pembayaran" />
+        <ErrorState
+          title="Gagal memuat riwayat"
+          message={error}
+          onRetry={doRetry}
+        />
+      </Screen>
     );
   }
 
@@ -125,7 +112,9 @@ export function StudentPaymentHistoryScreen({ navigation }: Props) {
               tone={paymentStatusTone(item.status)}
             />
           }
-          onPress={() => navigation.navigate('StudentFineDetail', { fineId: item.fineId })}
+          onPress={() =>
+            navigation.navigate('StudentFineDetail', { fineId: item.fineId })
+          }
         />
       )}
     />

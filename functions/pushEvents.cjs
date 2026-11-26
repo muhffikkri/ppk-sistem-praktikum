@@ -124,9 +124,7 @@ function noticeContent(type, source = {}) {
       '. Buka aplikasi untuk detail.';
   } else if (type === 'payment_success') {
     body =
-      'Pembayaran denda ' +
-      (name || 'praktikum') +
-      ' berhasil diverifikasi.';
+      'Pembayaran denda ' + (name || 'praktikum') + ' berhasil diverifikasi.';
   } else if (type === 'payment_failed') {
     body =
       'Pembayaran denda ' +
@@ -167,9 +165,9 @@ function inboxEntries(eventId, notices, source, now = new Date()) {
         data: {
           type: notice.type,
           ...content,
-                      ...(notice.sessionId ? { sessionId: notice.sessionId } : {}),
-            ...(notice.leaveId ? { leaveId: notice.leaveId } : {}),
-            ...(notice.fineId ? { fineId: notice.fineId } : {}),
+          ...(notice.sessionId ? { sessionId: notice.sessionId } : {}),
+          ...(notice.leaveId ? { leaveId: notice.leaveId } : {}),
+          ...(notice.fineId ? { fineId: notice.fineId } : {}),
           createdAt: now.toISOString(),
           readAt: null,
         },
@@ -210,37 +208,24 @@ function fineCreatedEvents(fine, fineId) {
   return [{ type: 'fine_issued', fineId, recipients: [fine.studentId] }];
 }
 
-function paymentEvents(before, after, transactionId) {
+function paymentEvents(before, after) {
   if (
     !before ||
     !after ||
     before.status === after.status ||
     typeof after.studentId !== 'string' ||
     !after.studentId ||
-    after.studentId.includes('/')
+    after.studentId.includes('/') ||
+    !['success', 'failed'].includes(after.status)
   )
     return [];
-  if (after.status === 'success') {
-    return [
-      {
-        type: 'payment_success',
-        fineId: after.fineId,
-        transactionId,
-        recipients: [after.studentId],
-      },
-    ];
-  }
-  if (after.status === 'failed') {
-    return [
-      {
-        type: 'payment_failed',
-        fineId: after.fineId,
-        transactionId,
-        recipients: [after.studentId],
-      },
-    ];
-  }
-  return [];
+  return [
+    {
+      type: after.status === 'success' ? 'payment_success' : 'payment_failed',
+      fineId: after.fineId,
+      recipients: [after.studentId],
+    },
+  ];
 }
 
 module.exports = {

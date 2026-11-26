@@ -225,26 +225,38 @@ test('push message reuses inbox content and links the inbox entry', () => {
 });
 
 test('fine and payment events build notifications with fineId', () => {
-  const fine = { studentId: 'u1', status: 'unpaid', amount: 15000, courseName: 'RPL', groupName: 'A' };
+  const fine = {
+    studentId: 'u1',
+    status: 'unpaid',
+    amount: 15000,
+    courseName: 'RPL',
+    groupName: 'A',
+  };
   assert.deepEqual(fineCreatedEvents(fine, 'f1'), [
     { type: 'fine_issued', fineId: 'f1', recipients: ['u1'] },
   ]);
   assert.deepEqual(fineCreatedEvents({ ...fine, status: 'paid' }, 'f1'), []);
 
   const tx = { studentId: 'u1', fineId: 'f1', status: 'pending' };
-  assert.deepEqual(paymentEvents(tx, { ...tx, status: 'success' }, 'o1'), [
-    { type: 'payment_success', fineId: 'f1', transactionId: 'o1', recipients: ['u1'] },
+  assert.deepEqual(paymentEvents(tx, { ...tx, status: 'success' }), [
+    { type: 'payment_success', fineId: 'f1', recipients: ['u1'] },
   ]);
-  assert.deepEqual(paymentEvents(tx, { ...tx, status: 'failed' }, 'o1'), [
-    { type: 'payment_failed', fineId: 'f1', transactionId: 'o1', recipients: ['u1'] },
+  assert.deepEqual(paymentEvents(tx, { ...tx, status: 'failed' }), [
+    { type: 'payment_failed', fineId: 'f1', recipients: ['u1'] },
   ]);
+  assert.deepEqual(paymentEvents(tx, { ...tx, status: 'pending' }), []);
 
   const content = noticeContent('fine_issued', fine);
   assert.equal(content.title, 'Tagihan denda baru');
   assert.ok(content.body.includes('Rp'));
 
   const push = pushMessage(
-    { type: 'fine_issued', uid: 'u1', fineId: 'f1', sendUntil: Date.now() + 60000 },
+    {
+      type: 'fine_issued',
+      uid: 'u1',
+      fineId: 'f1',
+      sendUntil: Date.now() + 60000,
+    },
     'ExpoPushToken[t]',
   );
   assert.equal(push.data.fineId, 'f1');

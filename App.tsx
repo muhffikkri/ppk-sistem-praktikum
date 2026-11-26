@@ -39,14 +39,12 @@ function AppNavigation() {
         !navigation.getRootState()?.routeNames.includes(route.screen)
       )
         return false;
-      if (route.screen === 'StudentLeaveList') {
-        navigation.navigate('StudentLeaveList');
-      } else if (route.screen === 'StudentFineList') {
-        navigation.navigate('StudentFineList');
-      } else if (route.screen === 'StudentFineDetail') {
+      if ('fineId' in route) {
         navigation.navigate('StudentFineDetail', { fineId: route.fineId });
-      } else {
+      } else if ('sessionId' in route) {
         navigation.navigate(route.screen, { sessionId: route.sessionId });
+      } else {
+        navigation.navigate(route.screen);
       }
       if (target.notificationId) {
         void markNotificationRead(readyUid, target.notificationId).catch(

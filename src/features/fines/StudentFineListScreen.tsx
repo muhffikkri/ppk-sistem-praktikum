@@ -11,6 +11,7 @@ import {
   Header,
   ListRow,
   LoadingState,
+  Screen,
   ScreenList,
   SectionHeader,
   StatusBadge,
@@ -51,39 +52,25 @@ export function StudentFineListScreen({ navigation }: Props) {
 
   if (loading) {
     return (
-      <ScreenList
-        data={[]}
-        keyExtractor={() => ''}
-        renderItem={() => null}
-        header={
-          <>
-            <TopBar onBack={() => navigation.goBack()} />
-            <Header title="Tagihan denda" description="Memuat..." />
-            <LoadingState label="Memuat tagihan…" />
-          </>
-        }
-      />
+      <Screen>
+        <TopBar onBack={() => navigation.goBack()} />
+        <Header title="Tagihan denda" description="Memuat..." />
+        <LoadingState label="Memuat tagihan…" />
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <ScreenList
-        data={[]}
-        keyExtractor={() => ''}
-        renderItem={() => null}
-        header={
-          <>
-            <TopBar onBack={() => navigation.goBack()} />
-            <Header title="Tagihan denda" />
-            <ErrorState
-              title="Gagal memuat tagihan"
-              message={error}
-              onRetry={doRetry}
-            />
-          </>
-        }
-      />
+      <Screen>
+        <TopBar onBack={() => navigation.goBack()} />
+        <Header title="Tagihan denda" />
+        <ErrorState
+          title="Gagal memuat tagihan"
+          message={error}
+          onRetry={doRetry}
+        />
+      </Screen>
     );
   }
 

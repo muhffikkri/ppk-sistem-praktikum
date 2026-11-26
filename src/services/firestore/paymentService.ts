@@ -13,16 +13,7 @@ import type {
   PaymentTransactionStatus,
 } from '../../domain/types';
 import { db, functions } from '../firebase';
-
-type TimestampLike = { toDate: () => Date };
-
-function asIso(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (value && typeof (value as TimestampLike).toDate === 'function') {
-    return (value as TimestampLike).toDate().toISOString();
-  }
-  return '';
-}
+import { asIso, asNullableString, asOptionalString } from './normalize';
 
 function normalizePayment(
   id: string,
@@ -31,27 +22,27 @@ function normalizePayment(
   const status = data.status;
   const txStatus: PaymentTransactionStatus =
     status === 'success' || status === 'failed' ? status : 'pending';
+  const optional = {
+    sessionId: asOptionalString(data.sessionId),
+  };
+  const nullable = {
+    snapRedirectUrl: asNullableString(data.snapRedirectUrl),
+    midtransTransactionId: asNullableString(data.midtransTransactionId),
+    paymentType: asNullableString(data.paymentType),
+    failureReason: asNullableString(data.failureReason),
+  };
   return {
     id,
     fineId: String(data.fineId ?? ''),
     studentId: String(data.studentId ?? ''),
-    sessionId: typeof data.sessionId === 'string' ? data.sessionId : undefined,
+    ...optional,
     amount: typeof data.amount === 'number' ? data.amount : 0,
     status: txStatus,
     createdAt: asIso(data.createdAt),
     updatedAt: asIso(data.updatedAt),
     paidAt: asIso(data.paidAt) || null,
-    snapRedirectUrl:
-      typeof data.snapRedirectUrl === 'string' ? data.snapRedirectUrl : null,
-    midtransTransactionId:
-      typeof data.midtransTransactionId === 'string'
-        ? data.midtransTransactionId
-        : null,
-    paymentType:
-      typeof data.paymentType === 'string' ? data.paymentType : null,
-    failureReason:
-      typeof data.failureReason === 'string' ? data.failureReason : null,
-  };
+    ...nullable,
+  } as PaymentTransaction;
 }
 
 export function subscribeStudentPayments(

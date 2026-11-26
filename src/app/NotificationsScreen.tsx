@@ -41,14 +41,12 @@ export function NotificationsScreen({ navigation }: Props) {
     void markRead(notification.id);
     const route = notificationRoute(notification);
     if (!route) return;
-    if (route.screen === 'StudentLeaveList') {
-      navigation.navigate('StudentLeaveList');
-    } else if (route.screen === 'StudentFineList') {
-      navigation.navigate('StudentFineList');
-    } else if (route.screen === 'StudentFineDetail') {
+    if ('fineId' in route) {
       navigation.navigate('StudentFineDetail', { fineId: route.fineId });
-    } else {
+    } else if ('sessionId' in route) {
       navigation.navigate(route.screen, { sessionId: route.sessionId });
+    } else {
+      navigation.navigate(route.screen);
     }
   };
 

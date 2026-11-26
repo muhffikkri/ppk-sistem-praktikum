@@ -2,6 +2,22 @@ import type { AttendanceRecord } from '../../domain/types';
 
 type TimestampLike = { toDate: () => Date };
 
+export function asIso(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value && typeof (value as TimestampLike).toDate === 'function') {
+    return (value as TimestampLike).toDate().toISOString();
+  }
+  return '';
+}
+
+export function asOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+export function asNullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
 export function normalizeAttendanceRecord(
   id: string,
   data: Record<string, unknown>,

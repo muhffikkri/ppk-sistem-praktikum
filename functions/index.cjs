@@ -7,7 +7,11 @@ const {
   onDocumentUpdated,
 } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const {
+  onCall,
+  onRequest,
+  HttpsError,
+} = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 const {
@@ -27,7 +31,8 @@ const expoAccessToken = defineSecret('EXPO_PUSH_ACCESS_TOKEN');
 const midtransServerKey = defineSecret('MIDTRANS_SERVER_KEY');
 const minute = 60_000;
 const day = 24 * 60 * minute;
-const MIDTRANS_SNAP_URL = 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+const MIDTRANS_SNAP_URL =
+  'https://app.sandbox.midtrans.com/snap/v1/transactions';
 const MIDTRANS_STATUS_URL = 'https://api.sandbox.midtrans.com/v2';
 const tokenPattern = /^(Expo|Exponent)PushToken\[[A-Za-z0-9_-]+\]$/;
 
@@ -167,7 +172,7 @@ exports.notifyPaymentChanged = onDocumentUpdated(
     if (!event.data) return;
     const before = event.data.before.data();
     const after = event.data.after.data();
-    const notices = paymentEvents(before, after, event.params.orderId);
+    const notices = paymentEvents(before, after);
     if (!notices.length) return;
     let source = after;
     if (after.fineId) {
@@ -325,7 +330,12 @@ function midtransAuth() {
 
 function midtransSignature(orderId, statusCode, grossAmount, serverKey) {
   return createHash('sha512')
-    .update(String(orderId) + String(statusCode) + String(grossAmount) + String(serverKey))
+    .update(
+      String(orderId) +
+        String(statusCode) +
+        String(grossAmount) +
+        String(serverKey),
+    )
     .digest('hex');
 }
 
@@ -340,11 +350,14 @@ function mapMidtransStatus(payload) {
 }
 
 async function fetchMidtransStatus(orderId) {
-  const res = await fetch(MIDTRANS_STATUS_URL + '/' + encodeURIComponent(orderId) + '/status', {
-    method: 'GET',
-    headers: { Accept: 'application/json', Authorization: midtransAuth() },
-    signal: AbortSignal.timeout(15_000),
-  });
+  const res = await fetch(
+    MIDTRANS_STATUS_URL + '/' + encodeURIComponent(orderId) + '/status',
+    {
+      method: 'GET',
+      headers: { Accept: 'application/json', Authorization: midtransAuth() },
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
   if (!res.ok) throw new Error('Midtrans status HTTP_' + res.status);
   return res.json();
 }
@@ -380,7 +393,8 @@ async function createMidtransSnap(orderId, amount, fine, user) {
     signal: AbortSignal.timeout(15_000),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error_messages?.join(', ') || 'Midtrans Snap gagal');
+  if (!res.ok)
+    throw new Error(data.error_messages?.join(', ') || 'Midtrans Snap gagal');
   return data;
 }
 
@@ -390,7 +404,10 @@ exports.createFineCheckout = onCall(
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Harus login.');
 
-    const fineId = typeof request.data?.fineId === 'string' ? request.data.fineId.trim() : '';
+    const fineId =
+      typeof request.data?.fineId === 'string'
+        ? request.data.fineId.trim()
+        : '';
     if (!fineId) throw new HttpsError('invalid-argument', 'fineId wajib.');
 
     const fineRef = db.collection('fines').doc(fineId);
@@ -398,11 +415,18 @@ exports.createFineCheckout = onCall(
 
     const result = await db.runTransaction(async (tx) => {
       const fineSnap = await tx.get(fineRef);
-      if (!fineSnap.exists) throw new HttpsError('not-found', 'Tagihan tidak ditemukan.');
+      if (!fineSnap.exists)
+        throw new HttpsError('not-found', 'Tagihan tidak ditemukan.');
       const fine = { id: fineSnap.id, ...fineSnap.data() };
-      if (fine.studentId !== uid) throw new HttpsError('permission-denied', 'Bukan tagihan Anda.');
-      if (fine.status === 'paid') throw new HttpsError('failed-precondition', 'Tagihan sudah dibayar.');
-      if (fine.status === 'waived') throw new HttpsError('failed-precondition', 'Tagihan sudah dibebaskan.');
+      if (fine.studentId !== uid)
+        throw new HttpsError('permission-denied', 'Bukan tagihan Anda.');
+      if (fine.status === 'paid')
+        throw new HttpsError('failed-precondition', 'Tagihan sudah dibayar.');
+      if (fine.status === 'waived')
+        throw new HttpsError(
+          'failed-precondition',
+          'Tagihan sudah dibebaskan.',
+        );
 
       if (fine.pendingOrderId) {
         const pendingRef = txCol.doc(fine.pendingOrderId);
@@ -410,21 +434,26 @@ exports.createFineCheckout = onCall(
         if (pendingSnap.exists) {
           const pending = pendingSnap.data();
           if (pending.status === 'pending' && pending.snapRedirectUrl) {
-            return { orderId: pendingSnap.id, redirectUrl: pending.snapRedirectUrl, reused: true };
+            return {
+              orderId: pendingSnap.id,
+              redirectUrl: pending.snapRedirectUrl,
+              reused: true,
+            };
           }
         }
       }
 
-      const orderId = 'fine_' + fineId.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 60) + '_' + Date.now();
+      const orderId =
+        'fine_' +
+        fineId.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 60) +
+        '_' +
+        Date.now();
       const now = new Date().toISOString();
       const txRef = txCol.doc(orderId);
       tx.set(txRef, {
         fineId,
         studentId: uid,
         sessionId: fine.sessionId || null,
-        classId: fine.classId || null,
-        courseName: fine.courseName || null,
-        groupName: fine.groupName || null,
         amount: Math.round(fine.amount),
         status: 'pending',
         createdAt: now,
@@ -439,27 +468,42 @@ exports.createFineCheckout = onCall(
       return { orderId, amount: Math.round(fine.amount), fine };
     });
 
-    if (result.reused) return { ok: true, orderId: result.orderId, redirectUrl: result.redirectUrl };
+    if (result.reused)
+      return {
+        ok: true,
+        orderId: result.orderId,
+        redirectUrl: result.redirectUrl,
+      };
 
     try {
       const userSnap = await db.collection('users').doc(uid).get();
       const user = userSnap.exists ? userSnap.data() : {};
-      const snap = await createMidtransSnap(result.orderId, result.amount, result.fine, user);
+      const snap = await createMidtransSnap(
+        result.orderId,
+        result.amount,
+        result.fine,
+        user,
+      );
       const redirectUrl = snap.redirect_url || snap.redirectUrl;
-      await db.collection('payment_transactions').doc(result.orderId).update({
-        snapRedirectUrl: redirectUrl || null,
-        snapToken: snap.token || null,
-        updatedAt: new Date().toISOString(),
-      });
+      await db
+        .collection('payment_transactions')
+        .doc(result.orderId)
+        .update({
+          snapRedirectUrl: redirectUrl || null,
+          updatedAt: new Date().toISOString(),
+        });
       if (!redirectUrl) throw new Error('Redirect URL kosong');
       return { ok: true, orderId: result.orderId, redirectUrl };
     } catch (err) {
       logger.error('createFineCheckout snap error', err);
-      await db.collection('payment_transactions').doc(result.orderId).update({
-        status: 'failed',
-        failureReason: String(err.message || 'snap_error').slice(0, 200),
-        updatedAt: new Date().toISOString(),
-      });
+      await db
+        .collection('payment_transactions')
+        .doc(result.orderId)
+        .update({
+          status: 'failed',
+          failureReason: String(err.message || 'snap_error').slice(0, 200),
+          updatedAt: new Date().toISOString(),
+        });
       await db.collection('fines').doc(fineId).update({
         pendingOrderId: FieldValue.delete(),
         updatedAt: new Date().toISOString(),
@@ -472,7 +516,10 @@ exports.createFineCheckout = onCall(
 exports.midtransWebhook = onRequest(
   { secrets: [midtransServerKey], cors: false },
   async (req, res) => {
-    if (req.method !== 'POST') { res.status(405).send('Method Not Allowed'); return; }
+    if (req.method !== 'POST') {
+      res.status(405).send('Method Not Allowed');
+      return;
+    }
     const body = req.body || {};
     const orderId = String(body.order_id || '');
     const statusCode = String(body.status_code || '');
@@ -480,19 +527,29 @@ exports.midtransWebhook = onRequest(
     const signature = String(body.signature_key || '');
 
     if (!orderId || !statusCode || !grossAmount || !signature) {
-      res.status(400).send('bad request'); return;
+      res.status(400).send('bad request');
+      return;
     }
 
-    const expected = midtransSignature(orderId, statusCode, grossAmount, midtransServerKey.value());
+    const expected = midtransSignature(
+      orderId,
+      statusCode,
+      grossAmount,
+      midtransServerKey.value(),
+    );
     if (signature !== expected) {
       logger.warn('Invalid Midtrans signature', { orderId });
-      res.status(403).send('invalid signature'); return;
+      res.status(403).send('invalid signature');
+      return;
     }
 
     try {
       const official = await fetchMidtransStatus(orderId);
       const status = mapMidtransStatus(official);
-      const paidAt = official.settlement_time || official.transaction_time || new Date().toISOString();
+      const paidAt =
+        official.settlement_time ||
+        official.transaction_time ||
+        new Date().toISOString();
       const txRef = db.collection('payment_transactions').doc(orderId);
 
       await db.runTransaction(async (tx) => {
@@ -502,9 +559,15 @@ exports.midtransWebhook = onRequest(
         if (current.status === 'success') return; // never downgrade
         if (current.status === 'failed' && status === 'pending') return;
 
-        const amount = Math.round(Number(official.gross_amount || current.amount));
+        const amount = Math.round(
+          Number(official.gross_amount || current.amount),
+        );
         if (amount !== Math.round(Number(current.amount))) {
-          logger.warn('Midtrans amount mismatch', { orderId, expected: current.amount, got: amount });
+          logger.warn('Midtrans amount mismatch', {
+            orderId,
+            expected: current.amount,
+            got: amount,
+          });
           return;
         }
 
@@ -512,12 +575,15 @@ exports.midtransWebhook = onRequest(
         const update = {
           status,
           updatedAt: now,
-          midtransTransactionId: official.transaction_id || current.midtransTransactionId || null,
+          midtransTransactionId:
+            official.transaction_id || current.midtransTransactionId || null,
           paymentType: official.payment_type || current.paymentType || null,
-          grossAmountVerified: amount,
         };
         if (status === 'success') update.paidAt = paidAt;
-        if (status === 'failed') update.failureReason = String(official.transaction_status || 'failed');
+        if (status === 'failed')
+          update.failureReason = String(
+            official.transaction_status || 'failed',
+          );
         tx.update(txRef, update);
 
         const fineRef = db.collection('fines').doc(current.fineId);
@@ -526,10 +592,26 @@ exports.midtransWebhook = onRequest(
         const fine = fineSnap.data();
         if (fine.studentId !== current.studentId) return;
 
-        if (status === 'success' && fine.status !== 'paid' && fine.status !== 'waived') {
-          tx.update(fineRef, { status: 'paid', paidAt, pendingOrderId: FieldValue.delete(), updatedAt: now });
-        } else if (status === 'failed' && fine.pendingOrderId === orderId && fine.status === 'unpaid') {
-          tx.update(fineRef, { pendingOrderId: FieldValue.delete(), updatedAt: now });
+        if (
+          status === 'success' &&
+          fine.status !== 'paid' &&
+          fine.status !== 'waived'
+        ) {
+          tx.update(fineRef, {
+            status: 'paid',
+            paidAt,
+            pendingOrderId: FieldValue.delete(),
+            updatedAt: now,
+          });
+        } else if (
+          status === 'failed' &&
+          fine.pendingOrderId === orderId &&
+          fine.status === 'unpaid'
+        ) {
+          tx.update(fineRef, {
+            pendingOrderId: FieldValue.delete(),
+            updatedAt: now,
+          });
         }
       });
 
