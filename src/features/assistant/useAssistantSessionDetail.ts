@@ -35,10 +35,13 @@ export type AssistantSessionDetailViewModel = {
 };
 
 const failureMessages: Record<string, string> = {
-  session_not_found: 'Sesi tidak ditemukan pada data demo.',
+  session_not_found: 'Sesi tidak ditemukan.',
   invalid_status: 'Aksi tidak sesuai dengan status sesi saat ini.',
   outside_window:
     'Sesi hanya bisa dibuka mulai 15 menit sebelum jadwal sampai waktu selesai.',
+  active_session_conflict:
+    'Asprak sudah memiliki sesi terbuka. Tutup sesi tersebut sebelum membuka sesi ini.',
+  forbidden: 'Kamu bukan asisten pada sesi ini.',
   already_checked_in: 'Aksi tidak tersedia untuk sesi ini.',
 };
 
