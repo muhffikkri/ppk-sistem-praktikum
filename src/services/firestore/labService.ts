@@ -1,6 +1,6 @@
 /**
- * CRUD master laboratorium (koleksi Firestore `labs`) — Sprint 3 (SRS-3.1).
- * Baca: semua pengguna login (dipakai presensi & peta). Tulis: asisten.
+- CRUD master laboratorium (koleksi Firestore `labs`) — Sprint 3 (SRS-3.1) & SRS-4.01.
+- Baca: semua pengguna login (dipakai presensi & peta). Tulis: Aslab sesuai courseId.
  */
 import {
   addDoc,
@@ -39,7 +39,8 @@ function toFailure(e: unknown): AsyncFailure {
     return {
       ok: false,
       reason: 'forbidden',
-      message: 'Akses ditolak. Hanya asisten yang dapat mengelola lab.',
+      message:
+        'Akses ditolak. Hanya Aslab pada mata kuliah terkait yang dapat mengelola lab.',
     };
   }
   if (code === 'unavailable') {
@@ -68,10 +69,14 @@ function validationFailure(input: LabInput): AsyncFailure | null {
 
 function toPayload(input: LabInput) {
   const description = input.description?.trim();
+  const courseId = input.courseId?.trim() || null;
+  const courseCode = input.courseCode?.trim() || courseId;
   return {
     name: input.name.trim(),
     building: input.building.trim(),
     description: description ? description : null,
+    courseId,
+    courseCode,
     location: { latitude: input.latitude, longitude: input.longitude },
     radiusMeters: input.radiusMeters,
     isActive: input.isActive,
@@ -94,6 +99,8 @@ export function normalizeLab(id: string, data: Record<string, unknown>): Lab {
     name: String(data.name ?? ''),
     building: String(data.building ?? ''),
     description: typeof data.description === 'string' ? data.description : null,
+    courseId: typeof data.courseId === 'string' ? data.courseId : null,
+    courseCode: typeof data.courseCode === 'string' ? data.courseCode : null,
     location: {
       latitude: asNumber(location.latitude),
       longitude: asNumber(location.longitude),

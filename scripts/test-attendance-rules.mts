@@ -844,6 +844,110 @@ check(
 );
 await signOut(auth);
 
+// --- SRS-4.01: Cakupan Aslab per courseId & larangan self-assign lab_assistant ---
+await adminAuth.createUser({
+  uid: 'aslabA',
+  email: 'aslabA@rules.test',
+  password: PASSWORD,
+});
+await adminDb.doc('users/aslabA').set({
+  uid: 'aslabA',
+  role: 'lab_assistant',
+  displayName: 'Aslab A',
+  email: 'aslabA@rules.test',
+  managedCourseIds: ['MK-A'],
+  createdAt: lab.createdAt,
+});
+
+const labPayload = (courseId: string, name: string) => ({
+  name,
+  building: 'Gedung B',
+  description: null,
+  courseId,
+  courseCode: courseId,
+  location: { latitude: -7.05068, longitude: 110.43828 },
+  radiusMeters: 50,
+  isActive: true,
+  createdBy: 'aslabA',
+  createdAt: lab.createdAt,
+  updatedAt: lab.updatedAt,
+});
+
+await adminDb.doc('labs/lab-mk-a').set(labPayload('MK-A', 'Lab MK A'));
+await adminDb.doc('labs/lab-mk-b').set({
+  ...labPayload('MK-B', 'Lab MK B'),
+  createdBy: 'admin-seed',
+});
+
+await signInWithEmailAndPassword(auth, 'aslabA@rules.test', PASSWORD);
+check(
+  'aslab A buat lab pada mata kuliah terkelola (MK-A)',
+  await attempt(() =>
+    setDoc(doc(db, 'labs', 'lab-mk-a-new'), labPayload('MK-A', 'Lab MK A 2')),
+  ),
+  'allowed',
+);
+check(
+  'aslab A ubah lab pada mata kuliah terkelola (MK-A)',
+  await attempt(() =>
+    updateDoc(doc(db, 'labs', 'lab-mk-a'), { name: 'Lab MK A Updated' }),
+  ),
+  'allowed',
+);
+check(
+  'aslab A buat lab pada mata kuliah lain (MK-B) ditolak',
+  await attempt(() =>
+    setDoc(doc(db, 'labs', 'lab-mk-b-new'), labPayload('MK-B', 'Lab MK B 2')),
+  ),
+  'denied',
+);
+check(
+  'aslab A ubah lab pada mata kuliah lain (MK-B) ditolak',
+  await attempt(() =>
+    updateDoc(doc(db, 'labs', 'lab-mk-b'), { name: 'Lab MK B Hacked' }),
+  ),
+  'denied',
+);
+check(
+  'aslab A hapus lab pada mata kuliah lain (MK-B) ditolak',
+  await attempt(() => deleteDoc(doc(db, 'labs', 'lab-mk-b'))),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'asprak (assistant) ditolak membuat lab',
+  await attempt(() =>
+    setDoc(
+      doc(db, 'labs', 'lab-asprak-try'),
+      labPayload('MK-A', 'Lab Asprak'),
+    ),
+  ),
+  'denied',
+);
+check(
+  'asprak (assistant) ditolak mengubah lab',
+  await attempt(() =>
+    updateDoc(doc(db, 'labs', 'lab-mk-a'), { name: 'Lab Asprak Edit' }),
+  ),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'stranger@rules.test', PASSWORD);
+check(
+  'registrasi profil baru dengan role lab_assistant ditolak',
+  await attempt(() =>
+    setDoc(doc(db, 'users', 'stranger'), {
+      ...profile('stranger', 'stranger@rules.test', 'lab_assistant'),
+      managedCourseIds: ['MK-A'],
+    }),
+  ),
+  'denied',
+);
+await signOut(auth);
+
 console.log(
   failures ? `\n❌ ${failures} kasus gagal.` : '\n✅ Semua kasus lolos.',
 );
