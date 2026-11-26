@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../app/navigation';
+import { canRequestLeave } from '../../domain/leaveRules';
 import type { AiClassificationResult, Session } from '../../domain/types';
 import { formatDateTime } from '../../shared/format/date';
 import {
@@ -19,6 +20,7 @@ import {
   TopBar,
 } from '../../shared/ui';
 import { leaveFailure } from '../../services/firestore/leaveService';
+import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
 import { AiResult } from './components';
 import { useLeaveDependencies } from './LeaveProvider';
 import { useStudentLeaveViewModel } from './useStudentLeaveViewModel';
@@ -37,6 +39,7 @@ export function StudentLeaveRequestFormScreen(props: FormProps) {
 function LeaveRequestForm({ route, navigation }: FormProps) {
   const { service, user } = useLeaveDependencies();
   const vm = useStudentLeaveViewModel();
+  const { getAttendanceForSession } = useStudentAttendanceViewModel();
   const [session, setSession] = useState<Session | null>(null);
   const [reason, setReason] = useState('');
   const [prediction, setPrediction] = useState<AiClassificationResult | null>(
@@ -76,7 +79,7 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
     }
   }
   async function submit() {
-    if (!session) return;
+    if (!session || !canLeave) return;
     const result = await vm.submitLeaveRequest({ session, reason });
     if (result.ok) {
       setPrediction(result.data.aiPrediction);
@@ -85,6 +88,8 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
   }
   const existing = vm.getLeaveForSession(route.params.sessionId);
   const duplicate = existing && existing.status !== 'rejected';
+  const attendance = getAttendanceForSession(route.params.sessionId);
+  const canLeave = canRequestLeave(session ?? undefined, attendance, existing);
   const eligible =
     user?.role === 'student' && session?.participantIds?.includes(user.uid);
   const busy = previewing || vm.submitting;
@@ -137,6 +142,13 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
               message="Gunakan akun praktikan yang terdaftar pada sesi ini."
             />
           ) : null}
+          {attendance ? (
+            <Banner
+              tone="warning"
+              title="Kehadiran sudah tercatat"
+              message="Kamu sudah hadir pada sesi ini, jadi tidak perlu mengajukan izin."
+            />
+          ) : null}
           {saved ? (
             <Banner
               title="Izin berhasil dikirim"
@@ -170,7 +182,7 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
                 label="Pratinjau klasifikasi AI"
                 variant="outline"
                 loading={previewing}
-                disabled={busy || !eligible || !!duplicate || !reasonReady}
+                disabled={busy || !eligible || !canLeave || !reasonReady}
                 onPress={() => {
                   void preview();
                 }}
@@ -183,7 +195,7 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
                   vm.loading ||
                   !!vm.error ||
                   !eligible ||
-                  !!duplicate ||
+                  !canLeave ||
                   !reasonReady
                 }
                 onPress={() => {

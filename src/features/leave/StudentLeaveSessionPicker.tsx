@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { canSubmitLeave } from '../../domain/leaveRules';
+import { canRequestLeave } from '../../domain/leaveRules';
 import type { Session } from '../../domain/types';
 import { formatDateTime } from '../../shared/format/date';
 import { Banner, SelectField, spacing } from '../../shared/ui';
@@ -8,8 +8,10 @@ import {
   leaveFailure,
   requireRole,
 } from '../../services/firestore/leaveService';
+import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
 import { useLeaveDependencies } from './LeaveProvider';
 import { ListFeedback } from './components';
+import { useStudentLeaveViewModel } from './useStudentLeaveViewModel';
 
 // Picker sesi untuk form izin; sumber data sesi sama dengan jadwal praktikan (Firestore).
 export function StudentLeaveSessionPicker({
@@ -18,6 +20,8 @@ export function StudentLeaveSessionPicker({
   onSelect: (id: string) => void;
 }) {
   const { user, service } = useLeaveDependencies();
+  const { getAttendanceForSession } = useStudentAttendanceViewModel();
+  const { getLeaveForSession } = useStudentLeaveViewModel();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,8 +57,15 @@ export function StudentLeaveSessionPicker({
     };
   }, [user, service, revision]);
 
-  // Sesi yang sudah ditutup/selesai tidak bisa diajukan izin.
-  const eligible = sessions.filter((session) => canSubmitLeave(session));
+  // Sesi yang sudah selesai, sudah hadir, atau sudah punya izin aktif tidak
+  // bisa diajukan izin lagi.
+  const eligible = sessions.filter((session) =>
+    canRequestLeave(
+      session,
+      getAttendanceForSession(session.id),
+      getLeaveForSession(session.id),
+    ),
+  );
   return (
     <View style={{ gap: spacing.md }}>
       <ListFeedback
@@ -71,7 +82,7 @@ export function StudentLeaveSessionPicker({
         <Banner
           tone="warning"
           title="Belum ada sesi yang bisa diajukan izin"
-          message="Izin hanya tersedia untuk sesi yang belum selesai."
+          message="Izin hanya tersedia untuk sesi yang belum selesai, belum hadir, dan belum memiliki pengajuan aktif."
         />
       ) : null}
       {eligible.length > 0 ? (
