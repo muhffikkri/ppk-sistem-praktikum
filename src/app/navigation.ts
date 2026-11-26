@@ -14,7 +14,7 @@ export type RootStackParamList = {
   Home: undefined;
   StudentSchedule: undefined;
   StudentSessionDetail: { sessionId: string };
-  StudentCheckIn: { sessionId: string };
+  StudentCheckIn: { sessionId: string; qrToken?: string };
   StudentAttendanceHistory: undefined;
   StudentLeaveRequestForm: { sessionId: string };
   StudentLeaveList: undefined;

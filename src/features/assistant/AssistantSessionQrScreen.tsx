@@ -1,12 +1,15 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import { encodeSessionQr } from '../../domain/sessionQr';
 import {
+  Button,
   EmptyState,
   Header,
   InfoRow,
+  LoadingState,
   radius,
   Screen,
   spacing,
@@ -15,6 +18,10 @@ import {
   Text,
   TopBar,
 } from '../../shared/ui';
+import {
+  requestAttendanceQr,
+  type AttendanceQr,
+} from '../../services/firestore/attendanceQrService';
 import { SessionQrCode } from './components/SessionQrCode';
 import { formatTimeRange } from './formatters';
 import { useAssistantSessionDetail } from './useAssistantSessionDetail';
@@ -28,8 +35,33 @@ export function AssistantSessionQrScreen({ route, navigation }: Props) {
   const { session, attendees } = useAssistantSessionDetail(sessionId);
   const { width } = useWindowDimensions();
   const qrSize = Math.min(width - spacing.lg * 2, MAX_QR_SIZE);
+  const [qr, setQr] = useState<AttendanceQr | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const sessionOpen = session?.status === 'open';
 
-  if (!session || session.status !== 'open') {
+  useEffect(() => {
+    if (!sessionOpen) return;
+    let active = true;
+    const load = async () => {
+      const result = await requestAttendanceQr(sessionId);
+      if (!active) return;
+      if (result.ok) {
+        setQr(result.data);
+        setQrError(null);
+      } else {
+        setQrError(result.message);
+      }
+    };
+    void load();
+    const timer = setInterval(load, 15_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [sessionId, sessionOpen, reloadKey]);
+
+  if (!session || !sessionOpen) {
     return (
       <Screen withDock={false}>
         <TopBar onBack={() => navigation.goBack()} />
@@ -60,12 +92,29 @@ export function AssistantSessionQrScreen({ route, navigation }: Props) {
       />
 
       <View style={styles.qrWrap}>
-        <SessionQrCode value={encodeSessionQr(session.id)} size={qrSize} />
+        {qr ? (
+          <SessionQrCode value={encodeSessionQr(qr.token)} size={qrSize} />
+        ) : qrError ? (
+          <EmptyState
+            icon="refresh-outline"
+            title="Kode belum tersedia"
+            description={qrError}
+            action={
+              <Button
+                label="Coba lagi"
+                variant="outline"
+                onPress={() => setReloadKey((value) => value + 1)}
+              />
+            }
+          />
+        ) : (
+          <LoadingState label="Menyiapkan kode berputar…" />
+        )}
       </View>
 
       <Text variant="caption" tone="muted" style={styles.hint}>
-        Praktikan memindai kode ini dari tombol kamera, lalu presensi tetap
-        harus dilakukan dari dalam area lab.
+        Kode berubah tiap 30 detik. Praktikan wajib memindai kode ini, lalu
+        presensi tetap divalidasi dari dalam area lab.
       </Text>
 
       <StatRow>

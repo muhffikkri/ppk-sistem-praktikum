@@ -24,12 +24,19 @@ const {
   pushMessage,
 } = require('./pushEvents.cjs');
 const { LATE_CHECK_IN_MS, closeExpiredSession } = require('./sessionClose.cjs');
+const {
+  issueQrToken,
+  validateQrCheckIn,
+  verifyQrToken,
+  withinCheckInWindow,
+} = require('./attendanceQr.cjs');
 
 initializeApp();
 const db = getFirestore();
 const jobs = db.collection('push_delivery');
 const expoAccessToken = defineSecret('EXPO_PUSH_ACCESS_TOKEN');
 const midtransServerKey = defineSecret('MIDTRANS_SERVER_KEY');
+const attendanceQrSecret = defineSecret('ATTENDANCE_QR_SECRET');
 const minute = 60_000;
 const day = 24 * 60 * minute;
 const MIDTRANS_SNAP_URL =
@@ -457,6 +464,189 @@ exports.resolveStudentByEmail = onCall({ cors: true }, async (request) => {
     'Praktikan dengan email itu tidak ditemukan.',
   );
 });
+
+// QR presensi berputar tiap 30 detik. Klien tidak boleh menulis attendance;
+// submitQrCheckIn memverifikasi token dan geofence dengan Admin SDK.
+exports.issueAttendanceQr = onCall(
+  { secrets: [attendanceQrSecret], cors: true },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Harus login.');
+
+    const caller = await db.collection('users').doc(uid).get();
+    const role = caller.exists ? caller.data().role : null;
+    if (role !== 'assistant' && role !== 'lab_assistant')
+      throw new HttpsError(
+        'permission-denied',
+        'Hanya asisten sesi yang bisa menampilkan kode presensi.',
+      );
+
+    const sessionId =
+      typeof request.data?.sessionId === 'string'
+        ? request.data.sessionId.trim()
+        : '';
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(sessionId))
+      throw new HttpsError('invalid-argument', 'sessionId tidak valid.');
+
+    const snap = await db.collection('sessions').doc(sessionId).get();
+    if (!snap.exists)
+      throw new HttpsError('not-found', 'Sesi tidak ditemukan.');
+    const session = snap.data();
+    if (
+      !Array.isArray(session.assistantIds) ||
+      !session.assistantIds.includes(uid)
+    )
+      throw new HttpsError(
+        'permission-denied',
+        'Kamu bukan asisten pada sesi ini.',
+      );
+    if (session.status !== 'open')
+      throw new HttpsError('failed-precondition', 'Sesi tidak sedang dibuka.', {
+        reason: 'invalid_status',
+      });
+    if (!withinCheckInWindow(session))
+      throw new HttpsError(
+        'failed-precondition',
+        'Kode QR hanya tersedia dalam jendela presensi.',
+        { reason: 'outside_window' },
+      );
+
+    return issueQrToken(sessionId, attendanceQrSecret.value());
+  },
+);
+
+const qrFailureMessages = {
+  invalid_qr: 'Kode QR tidak valid atau sudah kedaluwarsa. Silakan scan ulang.',
+  session_not_found: 'Sesi tidak ditemukan.',
+  invalid_status: 'Sesi belum dibuka atau sudah ditutup.',
+  outside_window:
+    'Presensi hanya tersedia mulai 15 menit sebelum jadwal sampai 10 menit setelah sesi selesai.',
+  not_participant: 'Kamu tidak terdaftar pada kelas sesi ini.',
+  lab_not_linked: 'Sesi belum terhubung ke data lab.',
+  lab_inactive: 'Lab untuk sesi ini sedang tidak aktif.',
+  location_unavailable: 'Lokasi perangkat belum tersedia.',
+  inaccurate_location: 'Akurasi GPS terlalu rendah. Coba lagi di area lab.',
+  outside_geofence: 'Kamu berada di luar area laboratorium.',
+  leave_approved: 'Izin kamu sudah disetujui untuk sesi ini.',
+};
+
+function qrFailure(reason) {
+  return new HttpsError(
+    'failed-precondition',
+    qrFailureMessages[reason] ?? 'Presensi tidak dapat diverifikasi.',
+    { reason },
+  );
+}
+
+const finiteOrNull = (value) => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
+exports.submitQrCheckIn = onCall(
+  { secrets: [attendanceQrSecret], cors: true },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Harus login.');
+
+    const token =
+      typeof request.data?.token === 'string' ? request.data.token.trim() : '';
+    const signedSessionId = verifyQrToken(token, attendanceQrSecret.value());
+    if (!signedSessionId) throw qrFailure('invalid_qr');
+
+    const requestedSessionId =
+      typeof request.data?.sessionId === 'string'
+        ? request.data.sessionId.trim()
+        : '';
+    if (requestedSessionId && requestedSessionId !== signedSessionId)
+      throw qrFailure('invalid_qr');
+
+    const sessionSnap = await db
+      .collection('sessions')
+      .doc(signedSessionId)
+      .get();
+    if (!sessionSnap.exists) throw qrFailure('session_not_found');
+    const session = sessionSnap.data();
+
+    const profileSnap = await db.collection('users').doc(uid).get();
+    if (!profileSnap.exists || profileSnap.data().role !== 'student')
+      throw new HttpsError(
+        'permission-denied',
+        'Hanya praktikan yang bisa melakukan presensi.',
+      );
+
+    const leaveSnap = await db
+      .collection('leave_requests')
+      .doc(`${signedSessionId}_${uid}`)
+      .get();
+    if (leaveSnap.exists && leaveSnap.data().status === 'approved')
+      throw qrFailure('leave_approved');
+
+    let lab = null;
+    if (typeof session.labId === 'string' && session.labId) {
+      const labSnap = await db.collection('labs').doc(session.labId).get();
+      if (labSnap.exists) lab = { id: labSnap.id, ...labSnap.data() };
+    }
+
+    const rawLocation = request.data?.location ?? {};
+    const location = {
+      latitude: finiteOrNull(rawLocation.latitude),
+      longitude: finiteOrNull(rawLocation.longitude),
+      accuracyMeters: finiteOrNull(rawLocation.accuracyMeters),
+    };
+    const validation = validateQrCheckIn({
+      session,
+      lab,
+      location,
+      studentId: uid,
+    });
+    if (!validation.ok) throw qrFailure(validation.reason);
+
+    const attendanceId = `${signedSessionId}_${uid}`;
+    const profile = profileSnap.data();
+    const checkedInAt = new Date().toISOString();
+    const payload = {
+      id: attendanceId,
+      sessionId: signedSessionId,
+      classId: session.classId ?? '',
+      studentId: uid,
+      studentName: profile.displayName || '',
+      ...(profile.nim ? { studentNim: profile.nim } : {}),
+      checkedInAt,
+      deviceLocation: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracyMeters: location.accuracyMeters,
+      },
+      distanceMeters: validation.distanceMeters,
+    };
+
+    try {
+      await db.collection('attendance').doc(attendanceId).create(payload);
+    } catch (error) {
+      if (error?.code === 6) {
+        throw new HttpsError(
+          'already-exists',
+          'Kamu sudah presensi di sesi ini.',
+          {
+            reason: 'already_checked_in',
+          },
+        );
+      }
+      throw error;
+    }
+
+    return {
+      attendanceId,
+      checkedInAt,
+      distanceMeters: validation.distanceMeters,
+    };
+  },
+);
 
 exports.createFineCheckout = onCall(
   { secrets: [midtransServerKey], cors: true },

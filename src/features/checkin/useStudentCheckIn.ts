@@ -12,10 +12,9 @@ import type {
   AttendanceRecord,
   Session,
 } from '../../domain/types';
-import { checkInWithGeofence } from '../../services/firestore/geoAttendanceService';
+import { checkInWithQr } from '../../services/firestore/attendanceQrService';
 import { getLabById } from '../../services/firestore/labService';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
-import { useAuth } from '../../state';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
 
 export type StudentCheckInViewModel = {
@@ -35,8 +34,10 @@ export type StudentCheckInViewModel = {
   clearError: () => void;
 };
 
-export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
-  const { user } = useAuth();
+export function useStudentCheckIn(
+  sessionId: string,
+  qrToken?: string,
+): StudentCheckInViewModel {
   const {
     getSessionById,
     getAttendanceForSession,
@@ -121,15 +122,17 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   const performCheckIn = useCallback(async (): Promise<AsyncActionResult> => {
     setError(null);
 
-    if (!user) {
-      const msg = 'Pengguna belum terautentikasi.';
+    if (!qrToken) {
+      const msg = 'Presensi wajib memindai QR yang ditampilkan asisten.';
       setError(msg);
-      return { ok: false, reason: 'unauthenticated', message: msg };
+      reportError(msg);
+      return { ok: false, reason: 'qr_required', message: msg };
     }
 
     if (!session) {
       const msg = 'Sesi praktikum tidak ditemukan.';
       setError(msg);
+      reportError(msg);
       return { ok: false, reason: 'session_not_found', message: msg };
     }
 
@@ -152,12 +155,10 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
 
     setSubmitting(true);
     try {
-      const result = await checkInWithGeofence({
-        session,
-        student: user,
+      const result = await checkInWithQr({
+        sessionId,
+        token: qrToken,
         deviceFix: currentFix,
-        lab,
-        existingAttendance: attendance ? [attendance] : [],
       });
 
       if (!result.ok) {
@@ -172,7 +173,7 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
     } finally {
       setSubmitting(false);
     }
-  }, [attendance, deviceFix, lab, reportError, session, user]);
+  }, [deviceFix, qrToken, reportError, session, sessionId]);
 
   const isAlreadyCheckedIn = attendance !== undefined;
   const isOpen = Boolean(

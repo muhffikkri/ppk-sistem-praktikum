@@ -82,9 +82,12 @@ export function BarcodeScanScreen({ navigation }: Props) {
                     if (handled.current) return;
                     handled.current = true;
                     setScanned(true);
-                    const sessionId = parseSessionQr(data);
-                    if (sessionId) {
-                      navigation.replace('StudentCheckIn', { sessionId });
+                    const parsed = parseSessionQr(data);
+                    if (parsed) {
+                      navigation.replace('StudentCheckIn', {
+                        sessionId: parsed.sessionId,
+                        qrToken: parsed.token,
+                      });
                     } else {
                       setInvalid(true);
                     }

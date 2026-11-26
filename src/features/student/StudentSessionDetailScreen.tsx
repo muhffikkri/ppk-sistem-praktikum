@@ -134,12 +134,12 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
           <Button
             label={
               isOpen
-                ? 'Buka Presensi Lokasi'
+                ? 'Scan QR Presensi'
                 : `Sesi ${STATUS_LABEL[session.status] ?? session.status}`
             }
             variant="primary"
             disabled={!isOpen}
-            onPress={() => navigation.navigate('StudentCheckIn', { sessionId })}
+            onPress={() => navigation.navigate('BarcodeScan')}
           />
         ) : null}
         <Button

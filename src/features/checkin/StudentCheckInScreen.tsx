@@ -25,7 +25,7 @@ import { useStudentCheckIn } from './useStudentCheckIn';
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentCheckIn'>;
 
 export function StudentCheckInScreen({ route, navigation }: Props) {
-  const { sessionId } = route.params;
+  const { sessionId, qrToken } = route.params;
   const {
     session,
     lab,
@@ -40,7 +40,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
     refreshLocation,
     performCheckIn,
     clearError,
-  } = useStudentCheckIn(sessionId);
+  } = useStudentCheckIn(sessionId, qrToken);
 
   const [confirmModal, setConfirmModal] = useState(false);
   const [successBanner, setSuccessBanner] = useState(false);
@@ -61,6 +61,25 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         <EmptyState
           title="Sesi tidak ditemukan"
           description="Sesi praktikum tidak tersedia atau telah dihapus."
+        />
+      </Screen>
+    );
+  }
+
+  if (!qrToken) {
+    return (
+      <Screen withDock={false}>
+        <TopBar onBack={() => navigation.goBack()} />
+        <EmptyState
+          icon="qr-code-outline"
+          title="Scan QR dulu"
+          description="Presensi hanya tercatat setelah memindai kode berputar yang ditampilkan asisten."
+          action={
+            <Button
+              label="Scan QR Presensi"
+              onPress={() => navigation.replace('BarcodeScan')}
+            />
+          }
         />
       </Screen>
     );
