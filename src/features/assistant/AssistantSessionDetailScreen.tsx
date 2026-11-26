@@ -37,13 +37,16 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
     recap,
     canOpen,
     canClose,
+    canEdit,
+    canCancel,
     statusHint,
     feedback,
     openSession,
     closeSession,
+    cancelSession,
     dismissFeedback,
   } = useAssistantSessionDetail(sessionId);
-  const [sheet, setSheet] = useState<'open' | 'close' | null>(null);
+  const [sheet, setSheet] = useState<'open' | 'close' | 'cancel' | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (!session) {
@@ -65,8 +68,10 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
     try {
       if (sheet === 'open') {
         await openSession();
-      } else {
+      } else if (sheet === 'close') {
         await closeSession();
+      } else if (sheet === 'cancel') {
+        await cancelSession();
       }
     } finally {
       setSubmitting(false);
@@ -126,6 +131,12 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
         {session.closedAt ? (
           <InfoRow label="Ditutup" value={formatClock(session.closedAt)} />
         ) : null}
+        {session.cancelledAt ? (
+          <InfoRow
+            label="Dibatalkan"
+            value={formatClock(session.cancelledAt)}
+          />
+        ) : null}
       </View>
 
       <View style={styles.actions}>
@@ -150,6 +161,22 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
             onPress={() => setSheet('close')}
           />
         ) : null}
+        {canEdit ? (
+          <Button
+            label="Edit sesi"
+            variant="soft"
+            onPress={() =>
+              navigation.navigate('AssistantSessionForm', { sessionId })
+            }
+          />
+        ) : null}
+        {canCancel ? (
+          <Button
+            label="Batalkan sesi"
+            variant="destructive"
+            onPress={() => setSheet('cancel')}
+          />
+        ) : null}
         <Button
           label={`Lihat rekap kehadiran (${recap.summary.presentCount}/${recap.summary.total})`}
           variant="soft"
@@ -161,14 +188,28 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
 
       <ConfirmSheet
         visible={sheet !== null}
-        title={sheet === 'open' ? 'Buka sesi sekarang?' : 'Tutup sesi?'}
+        title={
+          sheet === 'open'
+            ? 'Buka sesi sekarang?'
+            : sheet === 'cancel'
+              ? 'Batalkan sesi?'
+              : 'Tutup sesi?'
+        }
         description={
           sheet === 'open'
             ? `${session.courseName} · ${session.groupName} · ${formatTimeRange(session.startsAt, session.endsAt)}. Praktikan dapat langsung melakukan presensi.`
-            : `Praktikan tidak bisa presensi lagi. Tercatat ${recap.summary.presentCount} dari ${recap.summary.total} peserta.`
+            : sheet === 'cancel'
+              ? 'Sesi tetap terlihat di jadwal praktikan dengan status dibatalkan dan tidak bisa dibuka.'
+              : `Praktikan tidak bisa presensi lagi. Tercatat ${recap.summary.presentCount} dari ${recap.summary.total} peserta.`
         }
-        tone={sheet === 'close' ? 'danger' : 'default'}
-        confirmLabel={sheet === 'open' ? 'Buka sesi' : 'Tutup sesi'}
+        tone={sheet === 'close' || sheet === 'cancel' ? 'danger' : 'default'}
+        confirmLabel={
+          sheet === 'open'
+            ? 'Buka sesi'
+            : sheet === 'cancel'
+              ? 'Batalkan sesi'
+              : 'Tutup sesi'
+        }
         loading={submitting}
         onConfirm={() => {
           void confirmAction();

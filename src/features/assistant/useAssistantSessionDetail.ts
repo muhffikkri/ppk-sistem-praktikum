@@ -13,7 +13,10 @@ export type AssistantFeedback =
   { kind: 'success'; message: string } | { kind: 'error'; message: string };
 
 type LastAction =
-  { type: 'opened' } | { type: 'closed' } | { type: 'failed'; reason: string };
+  | { type: 'opened' }
+  | { type: 'closed' }
+  | { type: 'cancelled' }
+  | { type: 'failed'; reason: string };
 
 export type AssistantSessionDetailViewModel = {
   session: Session | undefined;
@@ -21,10 +24,13 @@ export type AssistantSessionDetailViewModel = {
   recap: SessionRecapResult;
   canOpen: boolean;
   canClose: boolean;
+  canEdit: boolean;
+  canCancel: boolean;
   statusHint: string;
   feedback: AssistantFeedback | null;
   openSession: () => Promise<void>;
   closeSession: () => Promise<void>;
+  cancelSession: () => Promise<void>;
   dismissFeedback: () => void;
 };
 
@@ -44,6 +50,8 @@ function statusHintFor(session: Session | undefined): string {
       return 'Sesi sedang terbuka. Tutup sesi bila praktikum telah selesai.';
     case 'closed':
       return 'Sesi sudah ditutup. Buka kembali dalam jendela jadwal bila perlu.';
+    case 'cancelled':
+      return 'Sesi dibatalkan. Jadwal tetap terlihat oleh praktikan sebagai dibatalkan.';
     default:
       return '';
   }
@@ -67,6 +75,10 @@ function toFeedback(
       ? ` pukul ${formatClock(session.closedAt)}`
       : '';
     return { kind: 'success', message: `Sesi ditutup${time}.` };
+  }
+
+  if (action.type === 'cancelled') {
+    return { kind: 'success', message: 'Sesi dibatalkan.' };
   }
 
   return {
@@ -130,16 +142,30 @@ export function useAssistantSessionDetail(
     );
   };
 
+  const cancelSession = async () => {
+    const result = await viewModel.cancelSession(sessionId);
+    setLastAction(
+      result.ok
+        ? { type: 'cancelled' }
+        : { type: 'failed', reason: result.reason },
+    );
+  };
+
+  const isScheduled = session?.status === 'scheduled';
+
   return {
     session,
     attendees,
     recap,
-    canOpen: session?.status === 'scheduled' || session?.status === 'closed',
+    canOpen: isScheduled || session?.status === 'closed',
     canClose: session?.status === 'open',
+    canEdit: isScheduled,
+    canCancel: isScheduled,
     statusHint: statusHintFor(session),
     feedback: toFeedback(lastAction, session),
     openSession,
     closeSession,
+    cancelSession,
     dismissFeedback: () => setLastAction(null),
   };
 }
