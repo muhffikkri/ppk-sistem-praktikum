@@ -37,6 +37,8 @@ export type AssistantSessionDetailViewModel = {
 const failureMessages: Record<SessionActionFailure, string> = {
   session_not_found: 'Sesi tidak ditemukan pada data demo.',
   invalid_status: 'Aksi tidak sesuai dengan status sesi saat ini.',
+  outside_window:
+    'Sesi hanya bisa dibuka mulai 15 menit sebelum jadwal sampai waktu selesai.',
   already_checked_in: 'Aksi tidak tersedia untuk sesi ini.',
 };
 

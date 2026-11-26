@@ -46,6 +46,9 @@ export type Session = {
   assistantIds?: string[];
   startsAt: string; // ISO 8601 UTC
   endsAt: string; // ISO 8601 UTC
+  /** Epoch ms untuk perbandingan jendela di Firestore rules. */
+  startsAtMs?: number;
+  endsAtMs?: number;
   status: SessionStatus;
   openedAt: string | null; // ISO 8601 UTC
   closedAt: string | null; // ISO 8601 UTC
@@ -239,7 +242,10 @@ export type PaymentTransaction = {
 // --- Tipe transisi Sprint 1 yang masih dipakai domain rules & fixtures ---
 
 export type SessionActionFailure =
-  'session_not_found' | 'invalid_status' | 'already_checked_in';
+  | 'session_not_found'
+  | 'invalid_status'
+  | 'outside_window'
+  | 'already_checked_in';
 
 export type SessionActionResult =
   { ok: true } | { ok: false; reason: SessionActionFailure };

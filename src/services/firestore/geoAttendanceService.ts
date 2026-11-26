@@ -6,7 +6,10 @@
  */
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 
-import { checkInRule } from '../../domain/attendanceRules';
+import {
+  checkInFailureMessage,
+  checkInRule,
+} from '../../domain/attendanceRules';
 import { evaluateGeofence } from '../../domain/geofenceRules';
 import type {
   DeviceFix,
@@ -57,13 +60,11 @@ export async function checkInWithGeofence(
   );
 
   if (!validation.ok) {
-    const message =
-      validation.reason === 'invalid_status'
-        ? 'Sesi belum dibuka atau sudah ditutup.'
-        : validation.reason === 'already_checked_in'
-          ? 'Kamu sudah presensi di sesi ini.'
-          : 'Sesi tidak ditemukan.';
-    return { ok: false, reason: validation.reason, message };
+    return {
+      ok: false,
+      reason: validation.reason,
+      message: checkInFailureMessage(validation.reason),
+    };
   }
 
   // 2. Sesi wajib terhubung ke dokumen lab: rules memvalidasi radius dari labs/{labId}

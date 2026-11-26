@@ -8,7 +8,10 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
-import { checkInRule } from '../../domain/attendanceRules';
+import {
+  checkInFailureMessage,
+  checkInRule,
+} from '../../domain/attendanceRules';
 import {
   AsyncActionResult,
   AttendanceRecord,
@@ -125,13 +128,11 @@ export async function checkInStudent(input: {
   );
 
   if (!validation.ok) {
-    const message =
-      validation.reason === 'invalid_status'
-        ? 'Sesi belum dibuka atau sudah ditutup.'
-        : validation.reason === 'already_checked_in'
-          ? 'Kamu sudah presensi di sesi ini.'
-          : 'Sesi tidak ditemukan.';
-    return { ok: false, reason: validation.reason, message };
+    return {
+      ok: false,
+      reason: validation.reason,
+      message: checkInFailureMessage(validation.reason),
+    };
   }
 
   // ID deterministik = anti-duplikasi di sisi server: setDoc ke dokumen yang

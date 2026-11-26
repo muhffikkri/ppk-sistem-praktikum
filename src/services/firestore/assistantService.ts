@@ -346,8 +346,10 @@ export async function createSession(
       participantIds: classData.participantIds ?? [],
       assistantIds:
         classAssistantIds.length > 0 ? classAssistantIds : [actorUid],
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
+      startsAt: starts.toISOString(),
+      endsAt: ends.toISOString(),
+      startsAtMs: starts.getTime(),
+      endsAtMs: ends.getTime(),
       status: 'scheduled',
       openedAt: null,
       closedAt: null,
@@ -406,8 +408,10 @@ export async function updateSession(
 
     const payload: Record<string, unknown> = {
       classId: input.classId,
-      startsAt: input.startsAt,
-      endsAt: input.endsAt,
+      startsAt: starts.toISOString(),
+      endsAt: ends.toISOString(),
+      startsAtMs: starts.getTime(),
+      endsAtMs: ends.getTime(),
       updatedAt: new Date().toISOString(),
     };
     if (input.title) payload.title = input.title;
@@ -457,14 +461,17 @@ export async function openSession(
         reason: result.reason,
         message:
           result.reason === 'invalid_status'
-            ? 'Hanya sesi berstatus terjadwal yang bisa dibuka.'
-            : 'Sesi tidak ditemukan.',
+            ? 'Hanya sesi terjadwal atau yang baru ditutup yang bisa dibuka.'
+            : result.reason === 'outside_window'
+              ? 'Sesi hanya bisa dibuka mulai 15 menit sebelum jadwal sampai waktu selesai.'
+              : 'Sesi tidak ditemukan.',
       };
     }
 
     await updateDoc(sessionDoc, {
       status: result.updatedSession.status,
       openedAt: result.updatedSession.openedAt,
+      closedAt: null,
     });
     return { ok: true };
   } catch (e) {

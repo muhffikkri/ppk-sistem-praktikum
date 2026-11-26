@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { evaluateGeofence } from '../../domain/geofenceRules';
+import { isWithinCheckInWindow } from '../../domain/sessionRules';
 import type {
   DeviceFix,
   GeofenceCheckResult,
@@ -174,7 +175,9 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   }, [attendance, deviceFix, lab, reportError, session, user]);
 
   const isAlreadyCheckedIn = attendance !== undefined;
-  const isOpen = session?.status === 'open';
+  const isOpen = Boolean(
+    session && session.status === 'open' && isWithinCheckInWindow(session),
+  );
 
   return {
     session,
