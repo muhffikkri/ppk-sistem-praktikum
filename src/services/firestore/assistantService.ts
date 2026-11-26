@@ -15,12 +15,9 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { auth, db, functions } from '../firebase';
 import { groupBySession } from './batching';
+import { callableFailureReason } from './callableFailure';
 import { normalizeAttendanceRecord } from './normalize';
-import {
-  cancelSessionRule,
-  closeSessionRule,
-  openSessionRule,
-} from '../../domain/sessionRules';
+import { cancelSessionRule, closeSessionRule } from '../../domain/sessionRules';
 import {
   PracticalClass,
   Session,
@@ -459,39 +456,22 @@ export async function openSession(
   sessionId: string,
 ): Promise<AsyncActionResult> {
   try {
-    const sessionDoc = doc(db, 'sessions', sessionId);
-    const snap = await getDoc(sessionDoc);
-    if (!snap.exists()) {
-      return {
-        ok: false,
-        reason: 'session_not_found',
-        message: 'Sesi tidak ditemukan',
-      };
-    }
-
-    const session = { id: snap.id, ...(snap.data() ?? {}) } as Session;
-    const result = openSessionRule(session);
-
-    if (!result.ok) {
-      return {
-        ok: false,
-        reason: result.reason,
-        message:
-          result.reason === 'invalid_status'
-            ? 'Hanya sesi terjadwal atau yang baru ditutup yang bisa dibuka.'
-            : result.reason === 'outside_window'
-              ? 'Sesi hanya bisa dibuka mulai 15 menit sebelum jadwal sampai waktu selesai.'
-              : 'Sesi tidak ditemukan.',
-      };
-    }
-
-    await updateDoc(sessionDoc, {
-      status: result.updatedSession.status,
-      openedAt: result.updatedSession.openedAt,
-      closedAt: null,
-    });
+    // Rules tidak bisa memeriksa sesi open lain, jadi pembukaan sesi
+    // divalidasi atomik oleh callable openSession di server.
+    await httpsCallable(functions, 'openSession')({ sessionId });
     return { ok: true };
   } catch (e) {
+    const reason = callableFailureReason(e);
+    if (reason) {
+      return {
+        ok: false,
+        reason,
+        message:
+          e instanceof Error && e.message
+            ? e.message
+            : 'Sesi tidak dapat dibuka.',
+      };
+    }
     return toFailure(e);
   }
 }
