@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
 import { canSubmitLeave } from '../../domain/leaveRules';
 import type { Session } from '../../domain/types';
 import { formatDateTime } from '../../shared/format/date';
-import { Banner, SelectField, spacing } from '../../shared/ui';
+import { Banner, SelectField, Stack } from '../../shared/ui';
 import {
   leaveFailure,
   requireRole,
@@ -56,7 +55,7 @@ export function StudentLeaveSessionPicker({
   // Sesi yang sudah ditutup/selesai tidak bisa diajukan izin.
   const eligible = sessions.filter((session) => canSubmitLeave(session));
   return (
-    <View style={{ gap: spacing.md }}>
+    <Stack gap="md">
       <ListFeedback
         loading={loading}
         error={error}
@@ -87,6 +86,6 @@ export function StudentLeaveSessionPicker({
           onChange={onSelect}
         />
       ) : null}
-    </View>
+    </Stack>
   );
 }
