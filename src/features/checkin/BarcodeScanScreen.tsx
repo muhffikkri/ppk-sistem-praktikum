@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { isLeaveBlockingCheckIn } from '../../domain/leaveRules';
 import { parseSessionQr } from '../../domain/sessionQr';
 import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
 import {
@@ -18,6 +19,7 @@ import {
   Text,
   TopBar,
 } from '../../shared/ui';
+import { useStudentLeaveViewModel } from '../leave';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BarcodeScan'>;
 
@@ -28,8 +30,17 @@ export function BarcodeScanScreen({ navigation }: Props) {
   // ref drops those so only the first code navigates.
   const handled = useRef(false);
   const [invalid, setInvalid] = useState(false);
+  const [leaveBlocked, setLeaveBlocked] = useState(false);
+  const { getLeaveForSession } = useStudentLeaveViewModel();
   // Start the camera after the push animation so it does not stall it.
   const cameraReady = useTransitionReady();
+
+  const resetScanner = () => {
+    handled.current = false;
+    setInvalid(false);
+    setLeaveBlocked(false);
+    setScanned(false);
+  };
 
   if (!permission) {
     return (
@@ -83,13 +94,19 @@ export function BarcodeScanScreen({ navigation }: Props) {
                     handled.current = true;
                     setScanned(true);
                     const parsed = parseSessionQr(data);
-                    if (parsed) {
+                    if (!parsed) {
+                      setInvalid(true);
+                    } else if (
+                      isLeaveBlockingCheckIn(
+                        getLeaveForSession(parsed.sessionId),
+                      )
+                    ) {
+                      setLeaveBlocked(true);
+                    } else {
                       navigation.replace('StudentCheckIn', {
                         sessionId: parsed.sessionId,
                         qrToken: parsed.token,
                       });
-                    } else {
-                      setInvalid(true);
                     }
                   }
             }
@@ -103,15 +120,16 @@ export function BarcodeScanScreen({ navigation }: Props) {
             title="Bukan kode presensi"
             message="Pindai kode presensi yang ditampilkan asisten pada sesi yang sedang dibuka."
           />
-          <Button
-            label="Scan Lagi"
-            variant="outline"
-            onPress={() => {
-              handled.current = false;
-              setInvalid(false);
-              setScanned(false);
-            }}
+          <Button label="Scan Lagi" variant="outline" onPress={resetScanner} />
+        </View>
+      ) : leaveBlocked ? (
+        <View style={styles.result}>
+          <Banner
+            tone="warning"
+            title="Izin sudah disetujui"
+            message="Izin untuk sesi ini sudah disetujui, jadi presensi tidak diperlukan. Hubungi asisten bila status izin berubah."
           />
+          <Button label="Scan Lagi" variant="outline" onPress={resetScanner} />
         </View>
       ) : (
         <Text variant="caption" tone="muted" style={styles.hint}>

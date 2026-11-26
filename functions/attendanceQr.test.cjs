@@ -3,6 +3,7 @@ const { test } = require('node:test');
 
 const {
   QR_SLOT_MS,
+  isLeaveBlockingCheckIn,
   issueQrToken,
   validateQrCheckIn,
   verifyQrToken,
@@ -24,6 +25,14 @@ const session = {
   endsAtMs: now + 50 * 60_000,
 };
 const inside = { latitude: -7.05068, longitude: 110.43828, accuracyMeters: 15 };
+
+test('isLeaveBlockingCheckIn: hanya izin approved yang memblokir presensi', () => {
+  assert.equal(isLeaveBlockingCheckIn({ status: 'approved' }), true);
+  assert.equal(isLeaveBlockingCheckIn({ status: 'pending' }), false);
+  assert.equal(isLeaveBlockingCheckIn({ status: 'rejected' }), false);
+  assert.equal(isLeaveBlockingCheckIn(null), false);
+  assert.equal(isLeaveBlockingCheckIn(undefined), false);
+});
 
 test('QR token berputar per slot dan terverifikasi dengan secret yang sama', () => {
   const issued = issueQrToken('session-01', secret, now);
