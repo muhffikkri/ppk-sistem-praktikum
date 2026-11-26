@@ -43,6 +43,10 @@ export function NotificationsScreen({ navigation }: Props) {
     if (!route) return;
     if (route.screen === 'StudentLeaveList') {
       navigation.navigate('StudentLeaveList');
+    } else if (route.screen === 'StudentFineList') {
+      navigation.navigate('StudentFineList');
+    } else if (route.screen === 'StudentFineDetail') {
+      navigation.navigate('StudentFineDetail', { fineId: route.fineId });
     } else {
       navigation.navigate(route.screen, { sessionId: route.sessionId });
     }
@@ -76,7 +80,7 @@ export function NotificationsScreen({ navigation }: Props) {
           <EmptyState
             icon="notifications-off-outline"
             title="Belum ada notifikasi"
-            description="Jadwal baru, sesi yang dibuka, perubahan jadwal, dan keputusan izin akan muncul di sini."
+            description="Jadwal, keputusan izin, dan tagihan denda akan muncul di sini."
           />
         )
       ) : (

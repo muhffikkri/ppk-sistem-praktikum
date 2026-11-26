@@ -235,5 +235,19 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
+    // 6. Tagihan Denda (Sprint 4, P4 read; P2/backend write)
+    match /fines/{fineId} {
+      allow read: if isAssistant()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    // 7. Transaksi Pembayaran (Sprint 4, P4/backend only)
+    match /payment_transactions/{orderId} {
+      allow read: if isAssistant()
+        || (isStudent() && resource.data.studentId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
   }
 }

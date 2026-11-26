@@ -13,6 +13,9 @@ const icons: Record<NotificationType, IconName> = {
   session_opened: 'location-outline',
   schedule_changed: 'swap-horizontal-outline',
   leave_decided: 'document-text-outline',
+  fine_issued: 'receipt-outline',
+  payment_success: 'checkmark-circle-outline',
+  payment_failed: 'alert-circle-outline',
 };
 
 type Props = {
