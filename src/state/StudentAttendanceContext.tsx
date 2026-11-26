@@ -236,6 +236,10 @@ export function StudentAttendanceProvider({
     [enabled, user, submittingSessionId, sessionsById, attendanceHistory],
   );
 
+  const reportError = useCallback((message: string | null) => {
+    dispatch({ type: 'SET_ERROR', error: message });
+  }, []);
+
   const retry = useCallback(() => {
     if (enabled) setRetryCounter((c) => c + 1);
   }, [enabled]);
@@ -254,6 +258,7 @@ export function StudentAttendanceProvider({
       getSessionById,
       getAttendanceForSession,
       checkIn,
+      reportError,
       retry,
     }),
     [
@@ -263,6 +268,7 @@ export function StudentAttendanceProvider({
       getSessionById,
       getAttendanceForSession,
       checkIn,
+      reportError,
       retry,
     ],
   );

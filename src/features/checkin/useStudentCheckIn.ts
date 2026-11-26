@@ -39,6 +39,7 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
   const {
     getSessionById,
     getAttendanceForSession,
+    reportError,
     loading: sessionsLoading,
   } = useStudentAttendanceViewModel();
 
@@ -160,14 +161,17 @@ export function useStudentCheckIn(sessionId: string): StudentCheckInViewModel {
 
       if (!result.ok) {
         setError(result.message);
+        // Layar bisa sudah di-unmount; Home memakai error global ini.
+        reportError(result.message);
         return result;
       }
 
+      reportError(null);
       return { ok: true };
     } finally {
       setSubmitting(false);
     }
-  }, [attendance, deviceFix, lab, session, user]);
+  }, [attendance, deviceFix, lab, reportError, session, user]);
 
   const isAlreadyCheckedIn = attendance !== undefined;
   const isOpen = session?.status === 'open';

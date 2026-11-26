@@ -156,6 +156,7 @@ export type StudentAttendanceViewModel = {
   getSessionById: (sessionId: string) => Session | undefined;
   getAttendanceForSession: (sessionId: string) => AttendanceRecord | undefined;
   checkIn: (sessionId: string) => Promise<AsyncActionResult>;
+  reportError: (message: string | null) => void;
   retry: () => void;
 };
 

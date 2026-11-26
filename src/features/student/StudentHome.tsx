@@ -6,6 +6,7 @@ import { colors, radius, spacing, typography } from '../../theme/tokens';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   AppTopBar,
+  Banner,
   Button,
   Card,
   CardContent,
@@ -53,7 +54,7 @@ function isSameDay(a: string, b: Date) {
 
 export function StudentHome({ navigation }: { navigation: Nav }) {
   const { user } = useAuth();
-  const { sessions, attendanceHistory, loading, error, retry } =
+  const { sessions, attendanceHistory, loading, error, reportError, retry } =
     useStudentAttendanceViewModel();
 
   const topBar = (
@@ -89,7 +90,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
     );
   }
 
-  if (error) {
+  if (error && sessions.length === 0) {
     return (
       <Screen>
         {topBar}
@@ -136,6 +137,15 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
     <Screen>
       {topBar}
       {header}
+
+      {error ? (
+        <Banner
+          tone="danger"
+          title="Aksi presensi terkendala"
+          message={error}
+          onDismiss={() => reportError(null)}
+        />
+      ) : null}
 
       {hero ? (
         <Card variant="heroViolet" interactive={false}>
