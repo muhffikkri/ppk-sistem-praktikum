@@ -311,29 +311,37 @@ for (const testCase of cases) {
   const attendanceId = `${sid}_budi`;
   await adminDb.doc(`attendance/${attendanceId}`).delete();
 
-  await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
   const geofence = evaluateGeofence(testCase.fix, lab);
-  let result: 'allowed' | 'denied' = 'allowed';
+  const payload = {
+    id: attendanceId,
+    sessionId: sid,
+    classId: 'c1',
+    studentId: 'budi',
+    studentName: 'Budi',
+    ...(testCase.studentNim ? { studentNim: testCase.studentNim } : {}),
+    checkedInAt: new Date().toISOString(),
+    deviceLocation: {
+      latitude: testCase.fix.latitude,
+      longitude: testCase.fix.longitude,
+      accuracyMeters: testCase.fix.accuracyMeters ?? null,
+    },
+    distanceMeters: testCase.sentDistance ?? geofence.distanceMeters,
+  };
+
+  // Presensi kini hanya lewat callable; tulisan langsung klien selalu ditolak.
+  await signInWithEmailAndPassword(auth, 'budi@rules.test', PASSWORD);
+  let clientWrite: 'allowed' | 'denied' = 'allowed';
   try {
-    await setDoc(doc(db, 'attendance', attendanceId), {
-      id: attendanceId,
-      sessionId: sid,
-      classId: 'c1',
-      studentId: 'budi',
-      studentName: 'Budi',
-      ...(testCase.studentNim ? { studentNim: testCase.studentNim } : {}),
-      checkedInAt: new Date().toISOString(),
-      deviceLocation: {
-        latitude: testCase.fix.latitude,
-        longitude: testCase.fix.longitude,
-        accuracyMeters: testCase.fix.accuracyMeters ?? null,
-      },
-      distanceMeters: testCase.sentDistance ?? geofence.distanceMeters,
-    });
+    await setDoc(doc(db, 'attendance', attendanceId), payload);
   } catch {
-    result = 'denied';
+    clientWrite = 'denied';
   }
   await signOut(auth);
+
+  // Admin SDK mensimulasikan hasil callable yang valid.
+  if (testCase.expected === 'allowed') {
+    await adminDb.doc(`attendance/${attendanceId}`).set(payload);
+  }
 
   await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
   const roster = await getDocs(
@@ -346,10 +354,10 @@ for (const testCase of cases) {
   await signOut(auth);
 
   const expectedRoster = testCase.expected === 'allowed' ? 1 : 0;
-  const pass = result === testCase.expected && roster.size === expectedRoster;
+  const pass = clientWrite === 'denied' && roster.size === expectedRoster;
   if (!pass) failures += 1;
   console.log(
-    `${pass ? '✅' : '❌'} ${testCase.label}: server ${result} (harap ${testCase.expected}), rekap asisten ${roster.size}`,
+    `${pass ? '✅' : '❌'} ${testCase.label}: tulis klien ${clientWrite} (harap denied), rekap asisten ${roster.size}`,
   );
 }
 

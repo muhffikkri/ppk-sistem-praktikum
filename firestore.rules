@@ -250,39 +250,9 @@ service cloud.firestore {
       allow delete: if isAssistant();
     }
 
-    // Geofence presensi: sesi wajib terhubung ke labs/{labId}, perangkat wajib
-    // mengirim koordinat + jarak, dan keduanya harus konsisten dengan radius lab.
-    // Rules tidak punya cos(): 1° lintang ≈ 111.320 m, 1° bujur ≥ 110.000 m untuk
-    // lintang wilayah Indonesia (|lat| ≤ ~11°), jadi kotak batas ini tidak menolak
-    // posisi yang sah di dalam radius.
-    // Pembagi wajib float (111320.0): int / int di rules adalah pembagian bulat,
-    // sehingga 50 / 111320 = 0 dan semua presensi tertolak. Toleransi +1 m
-    // menutup selisih pembulatan jarak di aplikasi (Math.round).
-    function withinLabGeofence(data, session) {
-      return session.labId is string
-        && exists(/databases/$(database)/documents/labs/$(session.labId))
-        && labWithinRadius(
-          data,
-          get(/databases/$(database)/documents/labs/$(session.labId)).data
-        );
-    }
-
-    function labWithinRadius(data, lab) {
-      return data.deviceLocation.keys().hasOnly(['latitude', 'longitude', 'accuracyMeters'])
-        && data.deviceLocation.latitude is number
-        && data.deviceLocation.longitude is number
-        && (data.deviceLocation.get('accuracyMeters', null) == null
-          || data.deviceLocation.accuracyMeters <= 100)
-        && data.distanceMeters is number
-        && data.distanceMeters >= 0
-        && data.distanceMeters <= lab.radiusMeters
-        && math.abs(data.deviceLocation.latitude - lab.location.latitude)
-          <= (lab.radiusMeters + 1) / 111320.0
-        && math.abs(data.deviceLocation.longitude - lab.location.longitude)
-          <= (lab.radiusMeters + 1) / 110000.0;
-    }
-
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})
+    // Tulisan presensi hanya lewat callable submitQrCheckIn (Admin SDK), yang
+    // memverifikasi token QR berputar dan geofence. Klien tidak boleh menulis.
     match /attendance/{attendanceId} {
       // get dokumen milik sendiri boleh walau belum ada (cek duplikasi setelah permission-denied)
       allow get: if (isAssistant()
@@ -296,29 +266,7 @@ service cloud.firestore {
           in sessionData(resource.data.sessionId).assistantIds)
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
-      allow create: if isStudent()
-        && request.resource.data.keys().hasOnly([
-          'id', 'sessionId', 'classId', 'studentId', 'studentName', 'studentNim',
-          'checkedInAt', 'deviceLocation', 'distanceMeters'
-        ])
-        && validStudentNim(request.resource.data)
-        && request.resource.data.studentId == request.auth.uid
-        && attendanceId == (request.resource.data.sessionId + '_' + request.auth.uid)
-        && exists(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
-        && sessionData(request.resource.data.sessionId).status == 'open'
-        && request.auth.uid in sessionData(request.resource.data.sessionId).participantIds
-        && request.time.toMillis()
-          >= sessionData(request.resource.data.sessionId).startsAtMs - 15 * 60 * 1000
-        && request.time.toMillis()
-          <= sessionData(request.resource.data.sessionId).endsAtMs + 10 * 60 * 1000
-        && (!exists(/databases/$(database)/documents/leave_requests/$(attendanceId))
-          || get(/databases/$(database)/documents/leave_requests/$(attendanceId)).data.status != 'approved')
-        && request.resource.data.checkedInAt is string
-        && request.resource.data.studentName is string
-        && withinLabGeofence(
-          request.resource.data,
-          sessionData(request.resource.data.sessionId)
-        );
+      allow create: if false;
 
       allow update, delete: if false;
     }
