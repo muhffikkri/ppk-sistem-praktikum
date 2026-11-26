@@ -50,12 +50,16 @@ export type Session = {
   closedAt: string | null; // ISO 8601 UTC
   createdBy?: string;
   createdAt?: string; // ISO 8601 UTC
+  /** Durasi toleransi keterlambatan dalam menit (SRS-4.10, default 15 menit). */
+  toleranceMinutes?: number;
 };
 
 export type DemoStudent = {
   id: string;
   displayName: string;
 };
+
+export type PunctualityStatus = 'ontime' | 'late';
 
 export type AttendanceRecord = {
   id: string; // "{sessionId}_{studentId}" pada Sprint 2
@@ -64,6 +68,10 @@ export type AttendanceRecord = {
   studentId: string;
   studentName: string;
   checkedInAt: string; // ISO 8601 UTC
+  /** Klasifikasi ketepatan waktu berdasarkan batas toleransi sesi (SRS-4.10). */
+  punctuality?: PunctualityStatus;
+  /** Jumlah menit keterlambatan (0 jika tepat waktu). */
+  minutesLate?: number;
 };
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';

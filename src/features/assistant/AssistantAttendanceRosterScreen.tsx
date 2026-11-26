@@ -63,8 +63,16 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         participantIds: session?.participantIds ?? [],
         attendees,
         leaves: sessionLeaves,
+        sessionStartsAt: session?.startsAt,
+        toleranceMinutes: session?.toleranceMinutes,
       }),
-    [session?.participantIds, attendees, sessionLeaves],
+    [
+      session?.participantIds,
+      session?.startsAt,
+      session?.toleranceMinutes,
+      attendees,
+      sessionLeaves,
+    ],
   );
 
   const filterOptions = useMemo<SegmentedOption<FilterType>[]>(
@@ -113,7 +121,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
               tone={sessionStatusTone[session.status]}
             />
             <Text variant="bodyStrong">
-              {recap.summary.presentCount} hadir · {recap.summary.excusedCount} izin · {recap.summary.absentCount} belum hadir
+              {recap.summary.ontimeCount} tepat waktu · {recap.summary.lateCount} terlambat · {recap.summary.excusedCount} izin · {recap.summary.absentCount} belum hadir
             </Text>
           </View>
           <View style={styles.filterBlock}>
@@ -137,23 +145,30 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
       renderItem={({ item: record }: { item: SessionRosterEntry }) => {
         const isPresent = record.status === 'present';
         const isExcused = record.status === 'excused';
+        const isLate = isPresent && record.punctuality === 'late';
 
-        const badgeTone: BadgeTone = isPresent
-          ? 'lime'
-          : isExcused
-            ? 'lavender'
-            : 'neutral';
+        const badgeTone: BadgeTone = isLate
+          ? 'pink'
+          : isPresent
+            ? 'lime'
+            : isExcused
+              ? 'lavender'
+              : 'neutral';
 
-        const badgeLabel = isPresent
-          ? 'Hadir'
-          : isExcused
-            ? 'Izin'
-            : 'Belum hadir';
+        const badgeLabel = isLate
+          ? record.minutesLate
+            ? `Terlambat (${record.minutesLate}m)`
+            : 'Terlambat'
+          : isPresent
+            ? 'Tepat waktu'
+            : isExcused
+              ? 'Izin'
+              : 'Belum hadir';
 
-        const avatarTone: AvatarTone = isPresent
-          ? 'lime'
-          : isExcused
-            ? 'pink'
+        const avatarTone: AvatarTone = isLate
+          ? 'pink'
+          : isPresent
+            ? 'lime'
             : 'lavender';
 
         const meta = isExcused

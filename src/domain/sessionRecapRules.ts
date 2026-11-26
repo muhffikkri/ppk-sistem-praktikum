@@ -1,6 +1,11 @@
+import {
+  evaluateAttendancePunctuality,
+  DEFAULT_TOLERANCE_MINUTES,
+} from './lateToleranceRules';
 import type {
   AttendanceRecord,
   LeaveRequest,
+  PunctualityStatus,
   Session,
 } from './types';
 
@@ -11,6 +16,8 @@ export type SessionRosterEntry = {
   studentName: string;
   status: StudentAttendanceStatus;
   checkedInAt?: string;
+  punctuality?: PunctualityStatus;
+  minutesLate?: number;
   leaveStatus?: 'pending' | 'approved' | 'rejected';
   leaveReason?: string;
 };
@@ -18,6 +25,8 @@ export type SessionRosterEntry = {
 export type SessionRosterSummary = {
   total: number;
   presentCount: number;
+  ontimeCount: number;
+  lateCount: number;
   excusedCount: number;
   absentCount: number;
 };
@@ -79,17 +88,26 @@ export function determineParticipantStatus(
 }
 
 /**
- * Membangun rekap kehadiran menyeluruh untuk satu sesi (SRS-4.09).
+ * Membangun rekap kehadiran menyeluruh untuk satu sesi (SRS-4.09 & SRS-4.10).
  * Menggabungkan seluruh ID praktikan yang terdaftar pada sesi, catatan presensi yang masuk,
- * dan permohonan izin yang disetujui.
+ * permohonan izin yang disetujui, dan penilaian ketepatan waktu (ontime vs late).
  */
 export function buildSessionRosterRecap(params: {
   participantIds: string[];
   attendees: AttendanceRecord[];
   leaves: LeaveRequest[];
   studentNamesById?: Record<string, string>;
+  sessionStartsAt?: string;
+  toleranceMinutes?: number;
 }): SessionRecapResult {
-  const { participantIds, attendees, leaves, studentNamesById = {} } = params;
+  const {
+    participantIds,
+    attendees,
+    leaves,
+    studentNamesById = {},
+    sessionStartsAt,
+    toleranceMinutes = DEFAULT_TOLERANCE_MINUTES,
+  } = params;
 
   // Himpun seluruh ID peserta dari roster sesi + peserta yang hadir bila ada di luar roster awal
   const allStudentIds = Array.from(
@@ -108,11 +126,25 @@ export function buildSessionRosterRecap(params: {
 
     const { status } = determineParticipantStatus(studentId, attendees, leaves);
 
+    let punctuality: PunctualityStatus | undefined;
+    let minutesLate: number | undefined;
+
+    if (status === 'present' && attendee?.checkedInAt && sessionStartsAt) {
+      const punctualityEval = evaluateAttendancePunctuality(
+        { startsAt: sessionStartsAt, toleranceMinutes },
+        attendee.checkedInAt,
+      );
+      punctuality = punctualityEval.status;
+      minutesLate = punctualityEval.minutesLate;
+    }
+
     return {
       studentId,
       studentName,
       status,
       checkedInAt: attendee?.checkedInAt,
+      punctuality,
+      minutesLate,
       leaveStatus: leave?.status,
       leaveReason: leave?.reason,
     };
@@ -137,6 +169,8 @@ export function buildSessionRosterRecap(params: {
   });
 
   const presentCount = entries.filter((e) => e.status === 'present').length;
+  const ontimeCount = entries.filter((e) => e.punctuality === 'ontime').length;
+  const lateCount = entries.filter((e) => e.punctuality === 'late').length;
   const excusedCount = entries.filter((e) => e.status === 'excused').length;
   const absentCount = entries.filter((e) => e.status === 'absent').length;
 
@@ -145,6 +179,8 @@ export function buildSessionRosterRecap(params: {
     summary: {
       total: entries.length,
       presentCount,
+      ontimeCount,
+      lateCount,
       excusedCount,
       absentCount,
     },

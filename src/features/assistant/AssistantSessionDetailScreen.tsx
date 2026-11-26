@@ -114,6 +114,10 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
           label="Waktu"
           value={formatTimeRange(session.startsAt, session.endsAt)}
         />
+        <InfoRow
+          label="Toleransi"
+          value={`${session.toleranceMinutes ?? 15} menit`}
+        />
         {session.openedAt ? (
           <InfoRow label="Dibuka" value={formatClock(session.openedAt)} />
         ) : null}

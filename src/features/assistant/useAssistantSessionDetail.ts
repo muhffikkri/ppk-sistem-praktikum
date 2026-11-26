@@ -98,6 +98,8 @@ export function useAssistantSessionDetail(
     participantIds: session?.participantIds ?? [],
     attendees,
     leaves: sessionLeaves,
+    sessionStartsAt: session?.startsAt,
+    toleranceMinutes: session?.toleranceMinutes,
   });
 
   const openSession = async () => {
