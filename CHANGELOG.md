@@ -2,6 +2,10 @@
 
 Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletakkan paling atas.
 
+## [Unreleased]
+
+- **UX feedback & empty/error state**: banner feedback otomatis hilang setelah 6 detik atau saat tab/screen berubah, `ErrorState` menjadi blok full-page dengan hint dan retry, serta empty state beranda praktikan kini punya CTA jadwal.
+
 ## [1.2.0] - 2026-11-11
 
 ### Implementasi Sprint 2 — Data Dinamis dengan Firebase
