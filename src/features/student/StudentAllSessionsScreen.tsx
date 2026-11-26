@@ -28,18 +28,21 @@ const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'open', label: 'Terbuka' },
   { value: 'scheduled', label: 'Terjadwal' },
   { value: 'closed', label: 'Tertutup' },
+  { value: 'cancelled', label: 'Dibatalkan' },
 ];
 
 const STATUS_LABEL: Record<Session['status'], string> = {
   open: 'Terbuka',
   scheduled: 'Terjadwal',
   closed: 'Tertutup',
+  cancelled: 'Dibatalkan',
 };
 
 const STATUS_TONE: Record<Session['status'], BadgeTone> = {
   open: 'violet',
   scheduled: 'lime',
   closed: 'neutral',
+  cancelled: 'danger',
 };
 
 export function StudentAllSessionsScreen({ navigation }: Props) {

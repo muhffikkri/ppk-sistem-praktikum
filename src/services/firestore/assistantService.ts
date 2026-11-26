@@ -10,12 +10,16 @@ import {
   onSnapshot,
   writeBatch,
   updateDoc,
-  deleteDoc,
+  deleteField,
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { groupBySession } from './batching';
 import { normalizeAttendanceRecord } from './normalize';
-import { closeSessionRule, openSessionRule } from '../../domain/sessionRules';
+import {
+  cancelSessionRule,
+  closeSessionRule,
+  openSessionRule,
+} from '../../domain/sessionRules';
 import {
   PracticalClass,
   Session,
@@ -406,6 +410,19 @@ export async function updateSession(
       };
     }
 
+    // Kelas bisa diganti saat edit: samakan nama, peserta, dan asisten.
+    const classDoc = doc(db, 'classes', input.classId);
+    const classSnap = await getDoc(classDoc);
+    if (!classSnap.exists()) {
+      return {
+        ok: false,
+        reason: 'class_not_found',
+        message: 'Kelas tujuan tidak ditemukan',
+      };
+    }
+    const classData = classSnap.data() as Partial<PracticalClass>;
+    const sameClass = snap.data()?.classId === input.classId;
+
     const payload: Record<string, unknown> = {
       classId: input.classId,
       startsAt: starts.toISOString(),
@@ -413,10 +430,16 @@ export async function updateSession(
       startsAtMs: starts.getTime(),
       endsAtMs: ends.getTime(),
       updatedAt: new Date().toISOString(),
+      title: input.title || deleteField(),
+      lab: input.lab || deleteField(),
+      labId: input.labId || deleteField(),
     };
-    if (input.title) payload.title = input.title;
-    if (input.lab) payload.lab = input.lab;
-    if (input.labId) payload.labId = input.labId;
+    if (!sameClass) {
+      payload.courseName = classData.courseName ?? '';
+      payload.groupName = classData.groupName ?? '';
+      payload.participantIds = classData.participantIds ?? [];
+      payload.assistantIds = classData.assistantIds ?? [];
+    }
 
     await updateDoc(sessionDoc, payload);
     return { ok: true };
@@ -425,11 +448,30 @@ export async function updateSession(
   }
 }
 
-export async function deleteSession(
+export async function cancelSession(
   sessionId: string,
 ): Promise<AsyncActionResult> {
   try {
-    await deleteDoc(doc(db, 'sessions', sessionId));
+    const sessionDoc = doc(db, 'sessions', sessionId);
+    const snap = await getDoc(sessionDoc);
+    const session = snap.exists()
+      ? ({ id: snap.id, ...(snap.data() ?? {}) } as Session)
+      : undefined;
+    const result = cancelSessionRule(session);
+    if (!result.ok) {
+      return {
+        ok: false,
+        reason: result.reason,
+        message:
+          result.reason === 'invalid_status'
+            ? 'Hanya sesi terjadwal yang bisa dibatalkan.'
+            : 'Sesi tidak ditemukan.',
+      };
+    }
+    await updateDoc(sessionDoc, {
+      status: result.updatedSession.status,
+      cancelledAt: result.updatedSession.cancelledAt,
+    });
     return { ok: true };
   } catch (e) {
     return toFailure(e);

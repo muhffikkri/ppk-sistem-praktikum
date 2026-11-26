@@ -101,3 +101,26 @@ export function closeSessionRule(
 
   return { ok: true, updatedSession };
 }
+
+/**
+ * Aturan domain untuk membatalkan sesi.
+ * - Hanya sesi 'scheduled' yang bisa dibatalkan.
+ * - Status menjadi 'cancelled' dan cancelledAt diisi; peserta tetap melihat jadwalnya.
+ */
+export function cancelSessionRule(
+  session: Session | undefined,
+  nowIso: string = new Date().toISOString(),
+): SessionTransitionResult {
+  if (!session) {
+    return { ok: false, reason: 'session_not_found' };
+  }
+
+  if (session.status !== 'scheduled') {
+    return { ok: false, reason: 'invalid_status' };
+  }
+
+  return {
+    ok: true,
+    updatedSession: { ...session, status: 'cancelled', cancelledAt: nowIso },
+  };
+}

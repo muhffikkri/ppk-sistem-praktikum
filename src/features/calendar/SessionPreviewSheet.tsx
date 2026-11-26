@@ -8,6 +8,7 @@ const STATUS_LABEL: Record<Session['status'], string> = {
   open: 'Terbuka',
   scheduled: 'Terjadwal',
   closed: 'Tertutup',
+  cancelled: 'Dibatalkan',
 };
 
 type Props = {

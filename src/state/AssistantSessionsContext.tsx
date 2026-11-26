@@ -18,7 +18,7 @@ import {
   removeParticipant,
   createSession,
   updateSession,
-  deleteSession,
+  cancelSession,
   openSession,
   closeSession,
   subscribeClasses,
@@ -77,7 +77,7 @@ export type AssistantSessionsViewModel = {
     sessionId: string,
     input: SessionInput,
   ) => Promise<AsyncActionResult>;
-  deleteSession: (sessionId: string) => Promise<AsyncActionResult>;
+  cancelSession: (sessionId: string) => Promise<AsyncActionResult>;
   addParticipantByEmail: (
     classId: string,
     email: string,
@@ -402,8 +402,8 @@ export const AssistantSessionsProvider = ({
         enabled
           ? updateSession(sessionId, input)
           : Promise.resolve(forbidden()),
-      deleteSession: (sessionId: string) =>
-        enabled ? deleteSession(sessionId) : Promise.resolve(forbidden()),
+      cancelSession: (sessionId: string) =>
+        enabled ? cancelSession(sessionId) : Promise.resolve(forbidden()),
       addParticipantByEmail: (classId: string, email: string) =>
         enabled
           ? addParticipantByEmail(classId, email)

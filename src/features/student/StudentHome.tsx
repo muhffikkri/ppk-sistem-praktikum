@@ -120,7 +120,10 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
     ? attendanceHistory.find((r) => r.sessionId === hero.id)
     : undefined;
   const upcoming = byStart
-    .filter((s) => s.status !== 'closed' && s.id !== hero?.id)
+    .filter(
+      (s) =>
+        s.status !== 'closed' && s.status !== 'cancelled' && s.id !== hero?.id,
+    )
     .slice(0, WEEK_ROWS);
 
   const openDetail = (sessionId: string) =>

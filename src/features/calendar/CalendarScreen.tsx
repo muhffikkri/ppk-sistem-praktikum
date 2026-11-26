@@ -35,11 +35,13 @@ const STATUS_LABEL = {
   open: 'Terbuka',
   scheduled: 'Terjadwal',
   closed: 'Tertutup',
+  cancelled: 'Dibatalkan',
 } as const;
 const STATUS_TONE: Record<Session['status'], BadgeTone> = {
   open: 'violet',
   scheduled: 'lime',
   closed: 'neutral',
+  cancelled: 'danger',
 };
 
 export function CalendarScreen({ navigation }: Props) {

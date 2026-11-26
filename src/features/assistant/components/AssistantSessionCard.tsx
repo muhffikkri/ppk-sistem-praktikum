@@ -12,12 +12,14 @@ export const sessionStatusLabel: Record<Session['status'], string> = {
   scheduled: 'Terjadwal',
   open: 'Terbuka',
   closed: 'Tertutup',
+  cancelled: 'Dibatalkan',
 };
 
 export const sessionStatusTone: Record<Session['status'], BadgeTone> = {
   scheduled: 'lavender',
   open: 'success',
   closed: 'neutral',
+  cancelled: 'danger',
 };
 
 export function AssistantSessionCard({

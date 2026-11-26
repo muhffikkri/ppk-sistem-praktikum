@@ -22,6 +22,7 @@ const SECTIONS: { status: Session['status']; title: string }[] = [
   { status: 'open', title: 'Sedang dibuka' },
   { status: 'scheduled', title: 'Terjadwal' },
   { status: 'closed', title: 'Selesai' },
+  { status: 'cancelled', title: 'Dibatalkan' },
 ];
 
 export function AssistantScheduleScreen({ navigation }: Props) {

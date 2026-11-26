@@ -21,18 +21,25 @@ import { formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentSchedule'>;
 
-const STATUS_ORDER: Session['status'][] = ['open', 'scheduled', 'closed'];
+const STATUS_ORDER: Session['status'][] = [
+  'open',
+  'scheduled',
+  'closed',
+  'cancelled',
+];
 
 const STATUS_LABEL: Record<Session['status'], string> = {
   open: 'Terbuka',
   scheduled: 'Terjadwal',
   closed: 'Tertutup',
+  cancelled: 'Dibatalkan',
 };
 
 const STATUS_TONE: Record<Session['status'], BadgeTone> = {
   open: 'violet',
   scheduled: 'lime',
   closed: 'neutral',
+  cancelled: 'danger',
 };
 
 export function StudentScheduleScreen({ navigation }: Props) {

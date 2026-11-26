@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   CHECK_IN_EARLY_MS,
   CHECK_IN_LATE_MS,
+  cancelSessionRule,
   isWithinCheckInWindow,
   openSessionRule,
 } from './sessionRules';
@@ -78,5 +79,27 @@ test('isWithinCheckInWindow: toleransi 10 menit setelah selesai', () => {
       Date.parse(session.endsAt) + CHECK_IN_LATE_MS + 1,
     ),
     false,
+  );
+});
+
+test('cancelSessionRule: hanya sesi scheduled yang bisa dibatalkan', () => {
+  const cancelled = cancelSessionRule(session, '2026-10-21T07:00:00.000Z');
+  assert.equal(cancelled.ok, true);
+  if (cancelled.ok) {
+    assert.equal(cancelled.updatedSession.status, 'cancelled');
+    assert.equal(
+      cancelled.updatedSession.cancelledAt,
+      '2026-10-21T07:00:00.000Z',
+    );
+  }
+  assert.equal(
+    cancelSessionRule({ ...session, status: 'open' }).ok,
+    false,
+    'sesi open tidak bisa dibatalkan lewat aksi ini',
+  );
+  assert.equal(
+    openSessionRule({ ...session, status: 'cancelled' }).ok,
+    false,
+    'sesi cancelled tidak bisa dibuka',
   );
 });

@@ -61,7 +61,7 @@ export function computeLabActivities(
     const labSessions = sessions.filter((s) => isSessionForLab(s, lab));
 
     // 1. Cari sesi yang sedang berlangsung
-    // Prioritas: status === 'open', atau startsAt <= now <= endsAt & status !== 'closed'
+    // Prioritas: status === 'open', lalu sesi aktif yang tidak closed/cancelled
     let currentSession: LabSessionInfo | null = null;
     const openSession = labSessions.find((s) => s.status === 'open');
 
@@ -69,7 +69,7 @@ export function computeLabActivities(
       currentSession = toLabSessionInfo(openSession);
     } else {
       const activeByTime = labSessions.find((s) => {
-        if (s.status === 'closed') return false;
+        if (s.status === 'closed' || s.status === 'cancelled') return false;
         const start = new Date(s.startsAt).getTime();
         const end = new Date(s.endsAt).getTime();
         return nowTime >= start && nowTime <= end;
@@ -84,7 +84,7 @@ export function computeLabActivities(
     const upcomingSessions = labSessions
       .filter((s) => {
         if (currentSession && s.id === currentSession.id) return false;
-        if (s.status === 'closed') return false;
+        if (s.status === 'closed' || s.status === 'cancelled') return false;
         const start = new Date(s.startsAt).getTime();
         return start > nowTime || s.status === 'scheduled';
       })

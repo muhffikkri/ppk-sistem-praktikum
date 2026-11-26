@@ -5,7 +5,8 @@ export function canSubmitLeave(
   session: Session | undefined,
   nowMs: number = Date.now(),
 ): boolean {
-  if (!session || session.status === 'closed') return false;
+  if (!session || session.status === 'closed' || session.status === 'cancelled')
+    return false;
   const ends = session.endsAtMs ?? Date.parse(session.endsAt);
   return Number.isFinite(ends) && nowMs <= ends;
 }

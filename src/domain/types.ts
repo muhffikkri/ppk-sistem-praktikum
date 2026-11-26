@@ -30,7 +30,7 @@ export type PracticalClass = {
 
 export type DemoRole = UserRole;
 
-export type SessionStatus = 'scheduled' | 'open' | 'closed';
+export type SessionStatus = 'scheduled' | 'open' | 'closed' | 'cancelled';
 
 export type Session = {
   id: string;
@@ -52,6 +52,7 @@ export type Session = {
   status: SessionStatus;
   openedAt: string | null; // ISO 8601 UTC
   closedAt: string | null; // ISO 8601 UTC
+  cancelledAt?: string | null; // ISO 8601 UTC
   createdBy?: string;
   createdAt?: string; // ISO 8601 UTC
 };
