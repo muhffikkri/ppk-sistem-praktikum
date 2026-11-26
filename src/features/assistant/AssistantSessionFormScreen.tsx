@@ -7,12 +7,11 @@ import {
   Banner,
   Button,
   DateTimeField,
-  Header,
   Screen,
   SelectField,
   spacing,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import { useLabManagement } from '../labs';
@@ -118,8 +117,7 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header title={isEditing ? 'Edit sesi' : 'Buat sesi'} />
+      <BackButton onPress={() => navigation.goBack()} />
 
       <View style={styles.form}>
         {isEditing && !editable ? (

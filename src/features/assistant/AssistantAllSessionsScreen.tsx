@@ -4,8 +4,8 @@ import { useState } from 'react';
 import type { RootStackParamList } from '../../app/navigation';
 import type { Session } from '../../domain/types';
 import {
+  BackButton,
   EmptyState,
-  Header,
   ScreenList,
   SegmentedControl,
 } from '../../shared/ui';
@@ -39,10 +39,7 @@ export function AssistantAllSessionsScreen({ navigation }: Props) {
       keyExtractor={(session) => session.id}
       header={
         <>
-          <Header
-            title="Semua sesi"
-            description={`${sessions.length} sesi tercatat`}
-          />
+          <BackButton onPress={() => navigation.goBack()} />
           <SegmentedControl
             options={FILTERS}
             value={filter}

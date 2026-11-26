@@ -8,7 +8,6 @@ import {
   Banner,
   Button,
   ConfirmSheet,
-  Header,
   IconButton,
   ListRow,
   Screen,
@@ -16,7 +15,7 @@ import {
   spacing,
   Text,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 
@@ -107,8 +106,7 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header title={classId ? 'Edit kelas' : 'Buat kelas'} />
+      <BackButton onPress={() => navigation.goBack()} />
 
       <View style={styles.form}>
         <TextField

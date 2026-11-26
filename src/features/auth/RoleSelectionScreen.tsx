@@ -14,11 +14,10 @@ import {
   CardContent,
   CardOverline,
   colors,
-  Header,
   Screen,
   spacing,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 
@@ -92,11 +91,7 @@ export function RoleSelectionScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar title="Peran" onBack={() => navigation.goBack()} />
-      <Header
-        title="Pilih peran Anda"
-        description="Praktikan adalah peran default. Asisten hanya tersedia jika Anda mendapat undangan."
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {!isFirebaseConfigured ? (
         <Banner

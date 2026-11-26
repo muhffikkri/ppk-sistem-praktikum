@@ -8,14 +8,13 @@ import { useAuth } from '../../state';
 import {
   EmptyState,
   ErrorState,
-  Header,
   ListRow,
   LoadingState,
   Screen,
   ScreenList,
   SectionHeader,
   StatusBadge,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import {
   formatRupiah,
@@ -60,8 +59,8 @@ export function StudentPaymentHistoryScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
-        <TopBar onBack={() => navigation.goBack()} />
-        <Header title="Riwayat pembayaran" description="Memuat..." />
+        <BackButton onPress={() => navigation.goBack()} />
+
         <LoadingState label="Memuat riwayat pembayaran…" />
       </Screen>
     );
@@ -70,8 +69,8 @@ export function StudentPaymentHistoryScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
-        <TopBar onBack={() => navigation.goBack()} />
-        <Header title="Riwayat pembayaran" />
+        <BackButton onPress={() => navigation.goBack()} />
+
         <ErrorState
           title="Gagal memuat riwayat"
           message={error}
@@ -87,11 +86,7 @@ export function StudentPaymentHistoryScreen({ navigation }: Props) {
       keyExtractor={(item) => item.id}
       header={
         <>
-          <TopBar onBack={() => navigation.goBack()} />
-          <Header
-            title="Riwayat pembayaran"
-            description={`${items.length} transaksi`}
-          />
+          <BackButton onPress={() => navigation.goBack()} />
         </>
       }
       sectionHeader={<SectionHeader title="Semua transaksi" />}

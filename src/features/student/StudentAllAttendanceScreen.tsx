@@ -6,14 +6,13 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  Header,
   LoadingState,
   Screen,
   ScreenList,
   SectionHeader,
   SegmentedControl,
-  TopBar,
-  type SegmentedOption,
+  BackButton,
+  SegmentedOption,
 } from '../../shared/ui';
 import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
@@ -44,7 +43,7 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
-        <TopBar title="Lab Informatika" onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <LoadingState label="Memuat presensi…" />
       </Screen>
     );
@@ -53,7 +52,7 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
-        <TopBar title="Lab Informatika" onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <ErrorState
           title="Gagal memuat presensi"
           message={error}
@@ -102,12 +101,8 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
       keyExtractor={(record) => record.id}
       header={
         <>
-          <TopBar title="Lab Informatika" onBack={() => navigation.goBack()} />
-          <Header
-            title="Semua"
-            accent="presensi"
-            description="Daftar presensi yang kamu catat"
-          />
+          <BackButton onPress={() => navigation.goBack()} />
+
           <AttendanceSummary
             metrics={[
               {

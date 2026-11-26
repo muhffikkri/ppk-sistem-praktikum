@@ -37,6 +37,7 @@ export function RootTopBar({ subtitle, trailing }: Props) {
         <>
           <IconButton
             icon="map-outline"
+            variant="circle"
             accessibilityLabel="Peta Laboratorium"
             onPress={() => navigation.navigate('LabMaps')}
           />
@@ -45,6 +46,7 @@ export function RootTopBar({ subtitle, trailing }: Props) {
           />
           <IconButton
             icon="person-outline"
+            variant="circle"
             accessibilityLabel="Profil"
             onPress={() => navigation.navigate('Profile')}
           />

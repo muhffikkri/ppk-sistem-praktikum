@@ -8,12 +8,11 @@ import { isFirebaseConfigured } from '../../services/firebase';
 import {
   Banner,
   Button,
-  Header,
   IconButton,
   Screen,
   spacing,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { AuthSwitchLink } from './AuthSwitchLink';
@@ -97,12 +96,7 @@ export function RegisterScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar title="Daftar" onBack={leaveScreen} />
-
-      <Header
-        title="Buat akun"
-        description="Akun baru dibuat sebagai praktikan. Peran asisten diberikan lewat undangan pengelola."
-      />
+      <BackButton onPress={leaveScreen} />
 
       {!isFirebaseConfigured ? (
         <Banner

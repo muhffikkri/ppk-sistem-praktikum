@@ -2,7 +2,14 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 
 import { normalizeNim, NIM_INVALID } from '../domain/nim';
-import { Banner, Button, Screen, Stack, TextField, TopBar } from '../shared/ui';
+import {
+  Banner,
+  Button,
+  Screen,
+  Stack,
+  TextField,
+  BackButton,
+} from '../shared/ui';
 import { useAuth } from '../state';
 import type { RootStackParamList } from './navigation';
 
@@ -46,7 +53,7 @@ export function ProfileEditScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <TopBar title="Edit profil" onBack={() => navigation.goBack()} />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {errorMessage ? (
         <Banner

@@ -1,3 +1,4 @@
+export { BackButton, type BackButtonProps } from './BackButton';
 export {
   Avatar,
   initialsOf,
@@ -41,7 +42,6 @@ export { StatCard, StatRow, type StatCardProps } from './StatCard';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';
 export { Text, type TextProps, type TextTone, type TextVariant } from './Text';
 export { TextField, type TextFieldProps } from './TextField';
-export { TopBar, type TopBarProps } from './TopBar';
 export {
   colors,
   token,

@@ -7,12 +7,11 @@ import { isFirebaseConfigured } from '../../services/firebase';
 import {
   Banner,
   Button,
-  Header,
   IconButton,
   Screen,
   spacing,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { AuthSwitchLink } from './AuthSwitchLink';
@@ -82,14 +81,12 @@ export function LoginScreen({ navigation }: Props) {
     navigation.goBack();
   };
 
+  // `username` + `current-password` is the credential pair RN TextInput maps
+  // to iOS Keychain / Android Autofill; `textContentType` is intentionally
+  // omitted because it takes precedence over cross-platform `autoComplete`.
   return (
     <Screen withDock={false}>
-      <TopBar title="Masuk" onBack={handleBack} />
-
-      <Header
-        title="Masuk ke akun"
-        description="Gunakan email dan password akun praktikan atau asisten."
-      />
+      <BackButton onPress={handleBack} />
 
       {!isFirebaseConfigured ? (
         <Banner
@@ -111,9 +108,9 @@ export function LoginScreen({ navigation }: Props) {
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
-          autoComplete="email"
-          textContentType="emailAddress"
+          autoComplete="username"
           importantForAutofill="yes"
+          returnKeyType="next"
           editable={!submitting}
           error={emailError}
         />
@@ -130,8 +127,8 @@ export function LoginScreen({ navigation }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="current-password"
-          textContentType="password"
           importantForAutofill="yes"
+          returnKeyType="done"
           editable={!submitting}
           error={passwordError}
           rightAccessory={

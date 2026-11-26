@@ -281,7 +281,7 @@ export function AppNavigator() {
   const actorRole = useActorRole();
 
   const navigation = useNavigation() as unknown as {
-    navigate: (name: string | keyof RootStackParamList) => void;
+    navigate: (name: string | keyof RootStackParamList, params?: any) => void;
     dispatch: (action: ReturnType<typeof StackActions.popTo>) => void;
     addListener: (event: 'state', cb: (e: any) => void) => () => void;
     getState: () => { index?: number; routes: { name: string }[] } | undefined;
@@ -608,7 +608,9 @@ export function AppNavigator() {
                         glyph: 'camera',
                         label: 'Scan presensi',
                         onPress: () => {
-                          navigation.navigate('BarcodeScan');
+                          navigation.navigate('BarcodeScan', {
+                            fromDock: true,
+                          });
                         },
                       }
                     : undefined

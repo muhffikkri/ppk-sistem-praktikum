@@ -6,15 +6,14 @@ import type { Session } from '../../domain/types';
 import {
   EmptyState,
   ErrorState,
-  Header,
   ListRow,
   LoadingState,
   Screen,
   ScreenList,
   SegmentedControl,
   StatusBadge,
-  TopBar,
-  type BadgeTone,
+  BackButton,
+  BadgeTone,
 } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state';
 import { formatSessionDate, formatTimeRange } from './formatters';
@@ -60,7 +59,7 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
-        <TopBar title="Semua sesi" onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <LoadingState label="Memuat sesi…" />
       </Screen>
     );
@@ -69,7 +68,7 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
-        <TopBar title="Semua sesi" onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <ErrorState title="Gagal memuat sesi" message={error} onRetry={retry} />
       </Screen>
     );
@@ -81,11 +80,8 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
       keyExtractor={(session) => session.id}
       header={
         <>
-          <TopBar onBack={() => navigation.goBack()} />
-          <Header
-            title="Semua sesi"
-            description={`${sorted.length} sesi praktikum terdaftar`}
-          />
+          <BackButton onPress={() => navigation.goBack()} />
+
           <SegmentedControl
             options={FILTER_OPTIONS}
             value={filter}

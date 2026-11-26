@@ -10,14 +10,13 @@ import {
   Button,
   Card,
   CardContent,
-  Header,
   InfoRow,
   LoadingState,
   Screen,
   spacing,
   Text,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { leaveFailure } from '../../services/firestore/leaveService';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
@@ -97,10 +96,7 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
 
   return (
     <Screen>
-      <TopBar
-        title={session ? undefined : 'Ajukan izin'}
-        onBack={() => navigation.goBack()}
-      />
+      <BackButton onPress={() => navigation.goBack()} />
       {loading ? <LoadingState label="Memuat sesi…" /> : null}
       {error || vm.error ? (
         <>
@@ -126,7 +122,6 @@ function LeaveRequestForm({ route, navigation }: FormProps) {
       ) : null}
       {session ? (
         <>
-          <Header title={session.courseName} description={session.groupName} />
           <Card interactive={false}>
             <CardContent>
               <InfoRow

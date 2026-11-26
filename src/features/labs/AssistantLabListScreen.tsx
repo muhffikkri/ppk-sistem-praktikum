@@ -7,13 +7,12 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  Header,
   ListRow,
   LoadingState,
   Screen,
   spacing,
   StatusBadge,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { canManageLabMaster } from '../../domain/asprakScope';
@@ -33,7 +32,7 @@ export function AssistantLabListScreen({ navigation }: Props) {
   if (loading && labs.length === 0) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={goBack} />
+        <BackButton onPress={goBack} />
         <LoadingState label="Memuat laboratorium…" />
       </Screen>
     );
@@ -42,7 +41,7 @@ export function AssistantLabListScreen({ navigation }: Props) {
   if (error && labs.length === 0) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={goBack} />
+        <BackButton onPress={goBack} />
         <ErrorState
           title="Gagal memuat laboratorium"
           message={error}
@@ -52,15 +51,9 @@ export function AssistantLabListScreen({ navigation }: Props) {
     );
   }
 
-  const activeCount = labs.filter((lab) => lab.isActive).length;
-
   return (
     <Screen withDock={false}>
-      <TopBar onBack={goBack} />
-      <Header
-        title="Lokasi lab"
-        description={`${labs.length} laboratorium · ${activeCount} aktif`}
-      />
+      <BackButton onPress={goBack} />
 
       {!isLabManager && (
         <Banner

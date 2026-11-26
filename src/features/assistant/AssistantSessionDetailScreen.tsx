@@ -8,20 +8,14 @@ import {
   Button,
   ConfirmSheet,
   EmptyState,
-  Header,
   InfoRow,
   Screen,
   spacing,
   StatCard,
   StatRow,
-  StatusBadge,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
-import {
-  sessionStatusLabel,
-  sessionStatusTone,
-} from './components/AssistantSessionCard';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 import { useAssistantSessionDetail } from './useAssistantSessionDetail';
 
@@ -52,7 +46,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           icon="alert-circle-outline"
           title="Sesi tidak ditemukan"
@@ -81,16 +75,7 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar
-        onBack={() => navigation.goBack()}
-        trailing={
-          <StatusBadge
-            label={sessionStatusLabel[session.status]}
-            tone={sessionStatusTone[session.status]}
-          />
-        }
-      />
-      <Header title={session.courseName} description={session.groupName} />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {feedback ? (
         <Banner

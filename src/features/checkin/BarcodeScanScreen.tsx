@@ -8,6 +8,7 @@ import { isLeaveBlockingCheckIn } from '../../domain/leaveRules';
 import { parseSessionQr } from '../../domain/sessionQr';
 import { useTransitionReady } from '../../shared/navigation/useTransitionReady';
 import {
+  BackButton,
   Banner,
   Button,
   colors,
@@ -17,13 +18,21 @@ import {
   Screen,
   spacing,
   Text,
-  TopBar,
 } from '../../shared/ui';
+import { RootTopBar } from '../shell/RootTopBar';
 import { useStudentLeaveViewModel } from '../leave';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BarcodeScan'>;
 
-export function BarcodeScanScreen({ navigation }: Props) {
+export function BarcodeScanScreen({ navigation, route }: Props) {
+  // The navbar FAB treats the scanner as a main page (root top bar). The same
+  // screen opened from a session detail is a pushed page: back button only.
+  const fromDock = route.params?.fromDock === true;
+  const chrome = fromDock ? (
+    <RootTopBar />
+  ) : (
+    <BackButton onPress={() => navigation.goBack()} />
+  );
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   // The camera can report several frames before `scanned` re-renders; the
@@ -45,7 +54,7 @@ export function BarcodeScanScreen({ navigation }: Props) {
   if (!permission) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        {chrome}
         <LoadingState label="Memeriksa izin kamera…" />
       </Screen>
     );
@@ -54,11 +63,13 @@ export function BarcodeScanScreen({ navigation }: Props) {
   if (!permission.granted) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
-        <Header
-          title="Scan Presensi"
-          description="Kamera diperlukan untuk memindai kode presensi dari asisten."
-        />
+        {chrome}
+        {fromDock ? (
+          <Header
+            title="Scan Presensi"
+            description="Kamera diperlukan untuk memindai kode presensi dari asisten."
+          />
+        ) : null}
         <EmptyState
           title="Izin kamera belum diberikan"
           description="Izinkan akses kamera agar bisa memindai kode presensi."
@@ -76,11 +87,13 @@ export function BarcodeScanScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false} scroll={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Scan Presensi"
-        description="Arahkan kamera ke kode presensi yang ditampilkan asisten."
-      />
+      {chrome}
+      {fromDock ? (
+        <Header
+          title="Scan Presensi"
+          description="Arahkan kamera ke kode presensi yang ditampilkan asisten."
+        />
+      ) : null}
       <View style={styles.cameraWrap}>
         {cameraReady ? (
           <CameraView

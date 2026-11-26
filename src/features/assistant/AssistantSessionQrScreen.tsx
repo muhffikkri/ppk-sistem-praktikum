@@ -7,7 +7,6 @@ import { encodeSessionQr } from '../../domain/sessionQr';
 import {
   Button,
   EmptyState,
-  Header,
   InfoRow,
   LoadingState,
   radius,
@@ -16,7 +15,7 @@ import {
   StatCard,
   StatRow,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import {
   requestAttendanceQr,
@@ -64,7 +63,7 @@ export function AssistantSessionQrScreen({ route, navigation }: Props) {
   if (!session || !sessionOpen) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           icon="lock-closed-outline"
           title={session ? 'Sesi tidak sedang dibuka' : 'Sesi tidak ditemukan'}
@@ -85,11 +84,7 @@ export function AssistantSessionQrScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Kode presensi"
-        description={`${session.courseName} · ${session.groupName}`}
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       <View style={styles.qrWrap}>
         {qr ? (

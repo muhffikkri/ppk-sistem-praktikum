@@ -12,13 +12,12 @@ import {
   Card,
   CardContent,
   EmptyState,
-  Header,
   LoadingState,
   Screen,
   SectionHeader,
   spacing,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
 import { useStudentLeaveViewModel } from '../leave';
@@ -44,7 +43,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   if (loading && !session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <LoadingState label="Memuat detail sesi…" />
       </Screen>
     );
@@ -53,7 +52,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           title="Sesi tidak ditemukan"
           description="Sesi praktikum tidak tersedia atau telah dihapus."
@@ -70,11 +69,7 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Detail Sesi"
-        description={`${session.courseName} — ${session.groupName}`}
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       <View style={styles.section}>
         <SectionHeader title="Informasi Sesi" />

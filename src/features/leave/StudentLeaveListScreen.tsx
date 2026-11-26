@@ -2,11 +2,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../app/navigation';
 import {
   EmptyState,
-  Header,
   Screen,
   SectionHeader,
   Stack,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { ListFeedback, RequestCard } from './components';
 import { StudentLeaveSessionPicker } from './StudentLeaveSessionPicker';
@@ -18,11 +17,8 @@ export function StudentLeaveListScreen({
   const vm = useStudentLeaveViewModel();
   return (
     <Screen>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Izin saya"
-        description="Ajukan izin per sesi dan pantau statusnya."
-      />
+      <BackButton onPress={() => navigation.goBack()} />
+
       <StudentLeaveSessionPicker
         onSelect={(sessionId) =>
           navigation.navigate('StudentLeaveRequestForm', { sessionId })

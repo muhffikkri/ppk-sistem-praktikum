@@ -8,11 +8,10 @@ import {
   Banner,
   Button,
   ConfirmSheet,
-  Header,
   Screen,
   spacing,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { ListFeedback, RequestCard, aiCategoryLabels } from './components';
 import { useAssistantLeaveViewModel } from './useAssistantLeaveViewModel';
@@ -75,11 +74,8 @@ export function AssistantLeaveReviewListScreen({ navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Pemeriksaan izin"
-        description="Prediksi AI hanya pendukung; keputusan ada pada asisten."
-      />
+      <BackButton onPress={() => navigation.goBack()} />
+
       <ListFeedback {...vm} empty={vm.leaveRequests.length === 0} />
       {feedback ? (
         <Banner

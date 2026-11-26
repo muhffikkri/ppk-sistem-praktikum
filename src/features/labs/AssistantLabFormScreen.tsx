@@ -17,7 +17,6 @@ import {
   Button,
   ConfirmSheet,
   ErrorState,
-  Header,
   LoadingState,
   Screen,
   SectionHeader,
@@ -25,7 +24,7 @@ import {
   spacing,
   Text,
   TextField,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { colors, radius as tokenRadius } from '../../theme/tokens';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
@@ -52,7 +51,7 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
   if (labId && !existing) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         {loading ? (
           <LoadingState label="Memuat laboratorium…" />
         ) : (
@@ -171,11 +170,7 @@ function LabForm({
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={onDone} />
-      <Header
-        title={labId ? 'Edit lab' : 'Tambah lab'}
-        description="Koordinat dan radius dipakai untuk validasi lokasi presensi."
-      />
+      <BackButton onPress={onDone} />
 
       <View style={styles.form}>
         <TextField

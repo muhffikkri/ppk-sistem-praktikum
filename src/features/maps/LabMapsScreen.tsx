@@ -9,7 +9,7 @@ import MapView, { Circle, Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
-import { AppTopBar } from '../../shared/ui/AppTopBar';
+import { BackButton } from '../../shared/ui/BackButton';
 import { Banner } from '../../shared/ui/Banner';
 import { Button } from '../../shared/ui/Button';
 import { IconButton } from '../../shared/ui/IconButton';
@@ -113,19 +113,7 @@ export function LabMapsScreen({ navigation }: Props) {
   };
 
   const topBar = (
-    <AppTopBar
-      logoIcon="map-outline"
-      title="Peta Laboratorium"
-      subtitle="Informatika · Real-time"
-      onBack={() => navigation.goBack()}
-      trailing={
-        <IconButton
-          icon="refresh-outline"
-          accessibilityLabel="Perbarui posisi GPS"
-          onPress={refreshLocation}
-        />
-      }
-    />
+    <BackButton label="Tutup peta" onPress={() => navigation.goBack()} />
   );
 
   if (loading) {

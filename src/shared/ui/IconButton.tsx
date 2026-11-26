@@ -2,12 +2,12 @@ import type { ComponentProps } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, type PressableProps, StyleSheet, View } from 'react-native';
 
-import { colors, radius, ripple, typography } from '../../theme/tokens';
+import { colors, radius, ripple, shadow, typography } from '../../theme/tokens';
 import { Text } from './Text';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
-type IconButtonVariant = 'ghost' | 'soft' | 'outline';
+export type IconButtonVariant = 'ghost' | 'soft' | 'outline' | 'circle';
 
 export type IconButtonProps = Omit<
   PressableProps,
@@ -32,6 +32,7 @@ const iconColor: Record<IconButtonVariant, string> = {
   ghost: colors.ink,
   soft: colors.violet,
   outline: colors.ink,
+  circle: colors.ink,
 };
 
 /** Sticker sheet Section 02 "Loading and Icon States": 40×40 icon control. */
@@ -87,6 +88,15 @@ const styles = StyleSheet.create({
   softPressed: { backgroundColor: colors.lavenderSubtle },
   outline: { backgroundColor: colors.panel, borderColor: colors.border },
   outlinePressed: { backgroundColor: colors.surface },
+  // Round shortcut used only by the root top bar (HTML reference: w-10 h-10
+  // rounded-full bg-white border-slate-200 shadow-sm).
+  circle: {
+    borderRadius: radius.full,
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+    ...shadow.card,
+  },
+  circlePressed: { backgroundColor: colors.surface },
   disabled: { opacity: 0.5 },
   badge: {
     position: 'absolute',

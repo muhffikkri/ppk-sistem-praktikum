@@ -11,10 +11,9 @@ import {
   usePermissionContext,
 } from '../features/permissions';
 import {
-  AppTopBar,
+  BackButton,
   EmptyState,
   ErrorState,
-  IconButton,
   LoadingState,
   Screen,
   SectionHeader,
@@ -52,17 +51,7 @@ export function NotificationsScreen({ navigation }: Props) {
 
   return (
     <Screen withDock>
-      <AppTopBar
-        logoIcon="notifications-outline"
-        title="Notifikasi"
-        trailing={
-          <IconButton
-            icon="close"
-            accessibilityLabel="Tutup"
-            onPress={() => navigation.goBack()}
-          />
-        }
-      />
+      <BackButton label="Tutup" onPress={() => navigation.goBack()} />
 
       {/* Status izin hanya muncul bila perangkat belum siap menerima push. */}
       {permission.registration !== 'registered' ? (

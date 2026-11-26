@@ -10,26 +10,20 @@ import {
 import {
   Avatar,
   Banner,
-  type AvatarTone,
+  AvatarTone,
   EmptyState,
-  Header,
   Screen,
   ScreenList,
   SectionHeader,
   SegmentedControl,
-  StatusBadge,
-  TopBar,
-  type BadgeTone,
-  type SegmentedOption,
+  BackButton,
+  BadgeTone,
+  SegmentedOption,
 } from '../../shared/ui';
 import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
 import { useAssistantSessionsViewModel } from '../../state';
-import {
-  sessionStatusLabel,
-  sessionStatusTone,
-} from './components/AssistantSessionCard';
-import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
+import { formatClock } from './formatters';
 import { useSessionRosterRecap } from './useAssistantSessionDetail';
 
 type Props = NativeStackScreenProps<
@@ -98,7 +92,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           icon="alert-circle-outline"
           title="Sesi tidak ditemukan"
@@ -125,19 +119,8 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
       keyExtractor={(record: SessionRosterEntry) => record.studentId}
       header={
         <>
-          <TopBar onBack={() => navigation.goBack()} />
-          <Header
-            eyebrow="LabPresensi · Asprak"
-            title="Rekap"
-            accent="kehadiran"
-            description={`${session.courseName} · ${session.groupName} · ${formatSessionDate(session.startsAt)} · ${formatTimeRange(session.startsAt, session.endsAt)}`}
-            trailing={
-              <StatusBadge
-                label={sessionStatusLabel[session.status]}
-                tone={sessionStatusTone[session.status]}
-              />
-            }
-          />
+          <BackButton onPress={() => navigation.goBack()} />
+
           {error ? (
             <Banner
               tone="danger"

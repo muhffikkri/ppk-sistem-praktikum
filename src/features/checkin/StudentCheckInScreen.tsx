@@ -11,13 +11,12 @@ import {
   CardContent,
   ConfirmSheet,
   EmptyState,
-  Header,
   LoadingState,
   Screen,
   SectionHeader,
   spacing,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { GeofenceStatusCard } from './GeofenceStatusCard';
 import { useStudentCheckIn } from './useStudentCheckIn';
@@ -49,7 +48,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   if (loading && !session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <LoadingState label="Memuat sesi praktikum…" />
       </Screen>
     );
@@ -58,7 +57,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           title="Sesi tidak ditemukan"
           description="Sesi praktikum tidak tersedia atau telah dihapus."
@@ -70,7 +69,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   if (!qrToken) {
     return (
       <Screen withDock={false}>
-        <TopBar onBack={() => navigation.goBack()} />
+        <BackButton onPress={() => navigation.goBack()} />
         <EmptyState
           icon="qr-code-outline"
           title="Scan QR dulu"
@@ -104,11 +103,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
 
   return (
     <Screen withDock={false}>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Presensi Lokasi"
-        description={`${session.courseName} — ${session.groupName}`}
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {error ? (
         <Banner

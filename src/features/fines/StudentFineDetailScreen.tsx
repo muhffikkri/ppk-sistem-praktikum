@@ -13,14 +13,13 @@ import {
   Card,
   CardContent,
   ErrorState,
-  Header,
   InfoRow,
   LoadingState,
   Screen,
   Stack,
   StatusBadge,
   Text,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { fineStatusLabel, fineStatusTone, formatRupiah } from './fineFormat';
 import { formatSessionDate } from '../student/formatters';
@@ -79,11 +78,7 @@ export function StudentFineDetailScreen({ navigation, route }: Props) {
 
   return (
     <Screen>
-      <TopBar onBack={() => navigation.goBack()} />
-      <Header
-        title="Detail tagihan"
-        description="Informasi denda keterlambatan"
-      />
+      <BackButton onPress={() => navigation.goBack()} />
 
       {loading ? <LoadingState label="Memuat detail tagihan…" /> : null}
 

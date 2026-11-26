@@ -8,14 +8,13 @@ import { useAuth } from '../../state';
 import {
   EmptyState,
   ErrorState,
-  Header,
   ListRow,
   LoadingState,
   Screen,
   ScreenList,
   SectionHeader,
   StatusBadge,
-  TopBar,
+  BackButton,
 } from '../../shared/ui';
 import { fineStatusLabel, fineStatusTone, formatRupiah } from './fineFormat';
 import { formatSessionDate } from '../student/formatters';
@@ -53,8 +52,8 @@ export function StudentFineListScreen({ navigation }: Props) {
   if (loading) {
     return (
       <Screen>
-        <TopBar onBack={() => navigation.goBack()} />
-        <Header title="Tagihan denda" description="Memuat..." />
+        <BackButton onPress={() => navigation.goBack()} />
+
         <LoadingState label="Memuat tagihan…" />
       </Screen>
     );
@@ -63,8 +62,8 @@ export function StudentFineListScreen({ navigation }: Props) {
   if (error) {
     return (
       <Screen>
-        <TopBar onBack={() => navigation.goBack()} />
-        <Header title="Tagihan denda" />
+        <BackButton onPress={() => navigation.goBack()} />
+
         <ErrorState
           title="Gagal memuat tagihan"
           message={error}
@@ -80,11 +79,7 @@ export function StudentFineListScreen({ navigation }: Props) {
       keyExtractor={(item) => item.id}
       header={
         <>
-          <TopBar onBack={() => navigation.goBack()} />
-          <Header
-            title="Tagihan denda"
-            description={`${fines.length} tagihan`}
-          />
+          <BackButton onPress={() => navigation.goBack()} />
         </>
       }
       sectionHeader={<SectionHeader title="Daftar tagihan" />}

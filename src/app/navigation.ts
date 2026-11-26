@@ -40,7 +40,8 @@ export type RootStackParamList = {
   ProfileEdit: undefined;
   Notifications: undefined;
   LabMaps: undefined;
-  BarcodeScan: undefined;
+  /** `fromDock` marks the navbar FAB entry, which keeps the root top bar. */
+  BarcodeScan: { fromDock?: boolean } | undefined;
 };
 
 export const POVLABEL: Record<ActorRole, string> = {
