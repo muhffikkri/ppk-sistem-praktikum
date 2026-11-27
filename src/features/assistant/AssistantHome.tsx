@@ -53,6 +53,17 @@ const QUICK_TONE: Record<QuickTone, { bg: string; fg: string }> = {
   neutral: { bg: colors.surface, fg: colors.inkMuted },
 };
 
+/** "A" -> "Kelas A", tanpa menggandakan "Kelas" pada data yang sudah lengkap. */
+function classLabel(groupName: string): string {
+  const name = groupName.trim();
+  if (!name) return 'Belum ditentukan';
+  if (/^kelas\b/i.test(name)) return name;
+  if (/^kelompok\b/i.test(name)) {
+    return `Kelas ${name.replace(/^kelompok\s+/i, '')}`;
+  }
+  return `Kelas ${name}`;
+}
+
 function HeroHighlight({
   icon,
   label,
@@ -334,14 +345,16 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
               <Text variant="title" tone="onDark" numberOfLines={2}>
                 {active.courseName}
               </Text>
-              <Text variant="caption" tone="onDarkMuted" numberOfLines={1}>
-                {active.groupName}
-              </Text>
               <View style={styles.heroHighlights}>
                 <HeroHighlight
                   icon="book-outline"
                   label="Pertemuan"
                   value={active.title ?? active.groupName}
+                />
+                <HeroHighlight
+                  icon="people-outline"
+                  label="Kelas"
+                  value={classLabel(active.groupName)}
                 />
                 <HeroHighlight
                   icon="time-outline"
