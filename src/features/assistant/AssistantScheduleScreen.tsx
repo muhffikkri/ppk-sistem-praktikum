@@ -21,7 +21,7 @@ import {
   type SegmentedOption,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
-import { useAssistantLeaveViewModel } from '../leave';
+import { useAssistantLeaveViewModel } from '../leave/useAssistantLeaveViewModel';
 import { RootTopBar } from '../shell/RootTopBar';
 import { formatSessionDate, formatTimeRange } from '../student/formatters';
 

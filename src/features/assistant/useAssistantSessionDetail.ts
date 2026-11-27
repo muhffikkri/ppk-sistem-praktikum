@@ -7,7 +7,7 @@ import {
 } from '../../domain/sessionRecapRules';
 import type { AttendanceRecord, Session } from '../../domain/types';
 import { useAssistantSessionsViewModel } from '../../state';
-import { useAssistantLeaveViewModel } from '../leave';
+import { useAssistantLeaveViewModel } from '../leave/useAssistantLeaveViewModel';
 import { formatClock } from './formatters';
 
 export type AssistantFeedback =

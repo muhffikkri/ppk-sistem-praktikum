@@ -17,43 +17,11 @@ import {
   RegisterScreen,
   RoleSelectionScreen,
 } from '../features/auth';
-import {
-  AssistantAllAttendanceScreen,
-  AssistantAllSessionsScreen,
-  AssistantAttendanceRosterScreen,
-  AssistantClassFormScreen,
-  AssistantClassListScreen,
-  AssistantScheduleScreen,
-  AssistantSessionDetailScreen,
-  AssistantSessionFormScreen,
-  AssistantSessionQrScreen,
-} from '../features/assistant';
-import {
-  StudentAllAttendanceScreen,
-  StudentAllSessionsScreen,
-  StudentAttendanceHistoryScreen,
-  StudentScheduleScreen,
-  StudentSessionDetailScreen,
-} from '../features/student';
-import { BarcodeScanScreen, StudentCheckInScreen } from '../features/checkin';
-import {
-  AslabLabDistributionScreen,
-  AslabLabImportScreen,
-  AssistantLabFormScreen,
-  AssistantLabListScreen,
-} from '../features/labs';
-import {
-  AssistantLeaveReviewListScreen,
-  LeaveProvider,
-  StudentLeaveListScreen,
-  StudentLeaveRequestFormScreen,
-} from '../features/leave';
-import {
-  StudentFineDetailScreen,
-  StudentFineListScreen,
-  StudentPaymentHistoryScreen,
-} from '../features/fines';
-import { LabMapsScreen } from '../features/maps';
+import { AssistantAllAttendanceScreen } from '../features/assistant/AssistantAllAttendanceScreen';
+import { AssistantScheduleScreen } from '../features/assistant/AssistantScheduleScreen';
+import { StudentAttendanceHistoryScreen } from '../features/student/StudentAttendanceHistoryScreen';
+import { StudentScheduleScreen } from '../features/student/StudentScheduleScreen';
+import { LeaveProvider } from '../features/leave/LeaveProvider';
 
 import { isAssistantRole } from '../domain/asprakScope';
 import { db } from '../services/firebase';
@@ -68,11 +36,9 @@ import {
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
 import { StudentAttendanceProvider } from '../state/StudentAttendanceContext';
 
-import { CalendarScreen } from './CalendarScreen';
 import { HomeScreen } from './HomeScreen';
+import { lazyScreen } from './lazyScreen';
 import type { RootStackParamList } from './navigation';
-import { NotificationsScreen } from './NotificationsScreen';
-import { ProfileEditScreen } from './ProfileEditScreen';
 import { ProfileScreen } from './ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -224,6 +190,139 @@ function ProfileHeaderButton() {
 }
 
 const renderProfileHeaderButton = () => <ProfileHeaderButton />;
+
+// Layar push dimuat saat dibuka. Dock (Home, Schedule, Attendance, Profile)
+// sengaja tetap eager karena langsung tampil saat tab aktif.
+const StudentSessionDetailScreen = lazyScreen<'StudentSessionDetail'>(
+  () => import('../features/student/StudentSessionDetailScreen'),
+  'StudentSessionDetailScreen',
+  'Memuat detail sesi…',
+);
+const StudentCheckInScreen = lazyScreen<'StudentCheckIn'>(
+  () => import('../features/checkin/StudentCheckInScreen'),
+  'StudentCheckInScreen',
+  'Memuat sesi praktikum…',
+);
+const StudentAllSessionsScreen = lazyScreen<'StudentAllSessions'>(
+  () => import('../features/student/StudentAllSessionsScreen'),
+  'StudentAllSessionsScreen',
+  'Memuat sesi…',
+);
+const StudentAllAttendanceScreen = lazyScreen<'StudentAllAttendance'>(
+  () => import('../features/student/StudentAllAttendanceScreen'),
+  'StudentAllAttendanceScreen',
+  'Memuat presensi…',
+);
+const StudentLeaveRequestFormScreen = lazyScreen<'StudentLeaveRequestForm'>(
+  () => import('../features/leave/StudentLeaveRequestFormScreen'),
+  'StudentLeaveRequestFormScreen',
+  'Memuat formulir izin…',
+);
+const StudentLeaveListScreen = lazyScreen<'StudentLeaveList'>(
+  () => import('../features/leave/StudentLeaveListScreen'),
+  'StudentLeaveListScreen',
+  'Memuat pengajuan izin…',
+);
+const StudentFineListScreen = lazyScreen<'StudentFineList'>(
+  () => import('../features/fines/StudentFineListScreen'),
+  'StudentFineListScreen',
+  'Memuat tagihan…',
+);
+const StudentFineDetailScreen = lazyScreen<'StudentFineDetail'>(
+  () => import('../features/fines/StudentFineDetailScreen'),
+  'StudentFineDetailScreen',
+  'Memuat detail tagihan…',
+);
+const StudentPaymentHistoryScreen = lazyScreen<'StudentPaymentHistory'>(
+  () => import('../features/fines/StudentPaymentHistoryScreen'),
+  'StudentPaymentHistoryScreen',
+  'Memuat riwayat pembayaran…',
+);
+const AssistantSessionDetailScreen = lazyScreen<'AssistantSessionDetail'>(
+  () => import('../features/assistant/AssistantSessionDetailScreen'),
+  'AssistantSessionDetailScreen',
+  'Memuat detail sesi…',
+);
+const AssistantSessionQrScreen = lazyScreen<'AssistantSessionQr'>(
+  () => import('../features/assistant/AssistantSessionQrScreen'),
+  'AssistantSessionQrScreen',
+  'Menyiapkan kode berputar…',
+);
+const AssistantAttendanceRosterScreen = lazyScreen<'AssistantAttendanceRoster'>(
+  () => import('../features/assistant/AssistantAttendanceRosterScreen'),
+  'AssistantAttendanceRosterScreen',
+  'Memuat rekap presensi…',
+);
+const AssistantAllSessionsScreen = lazyScreen<'AssistantAllSessions'>(
+  () => import('../features/assistant/AssistantAllSessionsScreen'),
+  'AssistantAllSessionsScreen',
+  'Memuat sesi…',
+);
+const AssistantClassListScreen = lazyScreen<'AssistantClassList'>(
+  () => import('../features/assistant/AssistantClassListScreen'),
+  'AssistantClassListScreen',
+  'Memuat kelas…',
+);
+const AssistantClassFormScreen = lazyScreen<'AssistantClassForm'>(
+  () => import('../features/assistant/AssistantClassFormScreen'),
+  'AssistantClassFormScreen',
+  'Memuat formulir kelas…',
+);
+const AssistantSessionFormScreen = lazyScreen<'AssistantSessionForm'>(
+  () => import('../features/assistant/AssistantSessionFormScreen'),
+  'AssistantSessionFormScreen',
+  'Memuat formulir sesi…',
+);
+const AssistantLeaveReviewListScreen = lazyScreen<'AssistantLeaveReviewList'>(
+  () => import('../features/leave/AssistantLeaveReviewListScreen'),
+  'AssistantLeaveReviewListScreen',
+  'Memuat pengajuan izin…',
+);
+const AssistantLabListScreen = lazyScreen<'AssistantLabList'>(
+  () => import('../features/labs/AssistantLabListScreen'),
+  'AssistantLabListScreen',
+  'Memuat laboratorium…',
+);
+const AssistantLabFormScreen = lazyScreen<'AssistantLabForm'>(
+  () => import('../features/labs/AssistantLabFormScreen'),
+  'AssistantLabFormScreen',
+  'Memuat laboratorium…',
+);
+const AslabLabDistributionScreen = lazyScreen<'AslabLabDistribution'>(
+  () => import('../features/labs/AslabLabDistributionScreen'),
+  'AslabLabDistributionScreen',
+  'Memuat laboratorium…',
+);
+const AslabLabImportScreen = lazyScreen<'AslabLabImport'>(
+  () => import('../features/labs/AslabLabImportScreen'),
+  'AslabLabImportScreen',
+  'Memuat laboratorium…',
+);
+const CalendarScreen = lazyScreen<'Calendar'>(
+  () => import('./CalendarScreen'),
+  'CalendarScreen',
+  'Memuat kalender…',
+);
+const ProfileEditScreen = lazyScreen<'ProfileEdit'>(
+  () => import('./ProfileEditScreen'),
+  'ProfileEditScreen',
+  'Memuat profil…',
+);
+const NotificationsScreen = lazyScreen<'Notifications'>(
+  () => import('./NotificationsScreen'),
+  'NotificationsScreen',
+  'Memuat notifikasi…',
+);
+const LabMapsScreen = lazyScreen<'LabMaps'>(
+  () => import('../features/maps/LabMapsScreen'),
+  'LabMapsScreen',
+  'Memuat peta laboratorium…',
+);
+const BarcodeScanScreen = lazyScreen<'BarcodeScan'>(
+  () => import('../features/checkin/BarcodeScanScreen'),
+  'BarcodeScanScreen',
+  'Menyiapkan pemindai…',
+);
 
 const STACK_SCREEN_OPTIONS: NativeStackNavigationOptions = {
   headerStyle: { backgroundColor: colors.panel },

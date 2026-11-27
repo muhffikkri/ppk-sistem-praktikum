@@ -375,6 +375,13 @@ judul `bodyStrong`, deskripsi `body` (max 240px).
 (kumpulan dengan `count`), dan `SkeletonGroup` (pengumuman `progressbar`
 untuk pembaca layar). Skeleton tidak interaktif dan tidak memakai teks
 karangan. Shimmer berhenti saat data tiba (komponen di-unmount).
+
+**Lazy screen**: layar push (detail/form/pengaturan) diimpor lewat
+`lazyScreen()` saat pertama dibuka; fallback-nya `Screen` + `SkeletonList`
+plus `BackButton` agar navigasi tetap responsif saat chunk dimuat. Empat
+halaman dock dan layar auth tetap eager. Impor hook dari file modulnya
+langsung (bukan barrel fitur) agar barrel tidak menarik layar lain ke
+bundle awal. Dock sendiri tetap memasang tab aktif + tetangga saja.
 `ErrorState`: blok `surface` dashed-border dengan aksen danger (ikon 48,
 judul `bodyStrong`, pesan dari service, `hint` singkat, `Button` primer
 "Coba lagi", serta `secondaryAction` opsional). Bedakan jelas:

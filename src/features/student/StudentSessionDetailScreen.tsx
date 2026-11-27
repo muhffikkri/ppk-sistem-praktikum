@@ -20,7 +20,7 @@ import {
   BackButton,
 } from '../../shared/ui';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
-import { useStudentLeaveViewModel } from '../leave';
+import { useStudentLeaveViewModel } from '../leave/useStudentLeaveViewModel';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentSessionDetail'>;

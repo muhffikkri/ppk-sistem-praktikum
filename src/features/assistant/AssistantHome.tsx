@@ -30,7 +30,7 @@ import { useTransientFeedback } from '../../shared/navigation/useTransientFeedba
 import { useAssistantSessionsViewModel, useAuth } from '../../state';
 import { SessionAttendancePreviewCard } from '../attendance/SessionAttendancePreviewCard';
 import { buildSessionAttendanceGroup } from '../attendance/sessionAttendanceGroups';
-import { useAssistantLeaveViewModel } from '../leave';
+import { useAssistantLeaveViewModel } from '../leave/useAssistantLeaveViewModel';
 import { RootTopBar } from '../shell/RootTopBar';
 import { formatTimeRange } from '../student/formatters';
 import {

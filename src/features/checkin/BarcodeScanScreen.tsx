@@ -20,7 +20,7 @@ import {
   Text,
 } from '../../shared/ui';
 import { RootTopBar } from '../shell/RootTopBar';
-import { useStudentLeaveViewModel } from '../leave';
+import { useStudentLeaveViewModel } from '../leave/useStudentLeaveViewModel';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BarcodeScan'>;
 
