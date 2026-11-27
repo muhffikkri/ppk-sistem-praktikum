@@ -1,28 +1,32 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import { formatHourMinute, formatTimeRange } from '../../shared/format/date';
 import {
+  BackButton,
   Banner,
   Button,
-  Card,
-  CardContent,
   ConfirmSheet,
   EmptyState,
-  LoadingState,
   Screen,
   SectionHeader,
+  SkeletonList,
   spacing,
+  StatusBadge,
   Text,
-  BackButton,
 } from '../../shared/ui';
 import { GeofenceStatusCard } from './GeofenceStatusCard';
 import { useStudentCheckIn } from './useStudentCheckIn';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StudentCheckIn'>;
 
+/**
+ * Presensi setelah scan QR (#55). Pengguna datang untuk satu tugas, jadi
+ * layar dibuka dengan ringkasan sesi satu baris, lalu langsung status lokasi
+ * dan tombol presensi. Detail lengkap tetap ada di layar detail sesi.
+ */
 export function StudentCheckInScreen({ route, navigation }: Props) {
   const { sessionId, qrToken } = route.params;
   const {
@@ -44,12 +48,13 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
 
   const [confirmModal, setConfirmModal] = useState(false);
   const [successBanner, setSuccessBanner] = useState(false);
+  const back = <BackButton onPress={() => navigation.goBack()} />;
 
   if (loading && !session) {
     return (
       <Screen withDock={false}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <LoadingState label="Memuat sesi praktikum…" />
+        {back}
+        <SkeletonList variant="card" count={2} label="Memuat sesi praktikum…" />
       </Screen>
     );
   }
@@ -57,7 +62,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   if (!session) {
     return (
       <Screen withDock={false}>
-        <BackButton onPress={() => navigation.goBack()} />
+        {back}
         <EmptyState
           title="Sesi tidak ditemukan"
           description="Sesi praktikum tidak tersedia atau telah dihapus."
@@ -69,7 +74,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   if (!qrToken) {
     return (
       <Screen withDock={false}>
-        <BackButton onPress={() => navigation.goBack()} />
+        {back}
         <EmptyState
           icon="qr-code-outline"
           title="Scan QR dulu"
@@ -88,9 +93,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
   const handleConfirmSubmit = async () => {
     setConfirmModal(false);
     const result = await performCheckIn();
-    if (result.ok) {
-      setSuccessBanner(true);
-    }
+    if (result.ok) setSuccessBanner(true);
   };
 
   const checkedIn = isAlreadyCheckedIn || successBanner;
@@ -100,25 +103,49 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
     !leaveApproved &&
     !loading &&
     geofence?.status === 'inside';
+  const labLabel = lab
+    ? `${lab.name} · ${lab.building}`
+    : (session.lab ?? 'Lab belum ditentukan');
+
+  const helper = checkedIn
+    ? null
+    : !isOpen
+      ? {
+          tone: 'muted' as const,
+          text: 'Presensi hanya bisa dilakukan saat sesi dibuka asisten.',
+        }
+      : geofence?.status !== 'inside'
+        ? {
+            tone: 'danger' as const,
+            text: 'Dekati laboratorium hingga berada dalam radius untuk mengaktifkan tombol presensi.',
+          }
+        : null;
 
   return (
     <Screen withDock={false}>
-      <BackButton onPress={() => navigation.goBack()} />
+      {back}
+
+      <View style={styles.summary}>
+        <View style={styles.summaryText}>
+          <Text variant="title" numberOfLines={2}>
+            {session.courseName}
+          </Text>
+          <Text variant="caption" tone="muted" numberOfLines={2}>
+            {`${session.groupName} · ${formatTimeRange(session.startsAt, session.endsAt)} · ${labLabel}`}
+          </Text>
+        </View>
+        <StatusBadge
+          label={isOpen ? 'Terbuka' : 'Tertutup'}
+          tone={isOpen ? 'success' : 'neutral'}
+        />
+      </View>
 
       {error ? (
         <Banner
           tone="danger"
-          title="Presensi Terkendala"
+          title="Presensi terkendala"
           message={error}
           onDismiss={clearError}
-        />
-      ) : null}
-
-      {error ? (
-        <Button
-          label="Scan ulang QR"
-          variant="outline"
-          onPress={() => navigation.replace('BarcodeScan')}
         />
       ) : null}
 
@@ -133,7 +160,7 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
       {checkedIn ? (
         <Banner
           tone="success"
-          title="Presensi Berhasil"
+          title="Presensi berhasil"
           message={
             attendance?.checkedInAt
               ? `Tercatat pada ${formatHourMinute(new Date(attendance.checkedInAt))}.`
@@ -142,60 +169,10 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         />
       ) : null}
 
-      {/* Informasi Sesi */}
-      <View style={styles.section}>
-        <SectionHeader title="Detail Sesi" />
-        <Card interactive={false}>
-          <CardContent>
-            <View style={styles.detailGrid}>
-              <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">
-                  Mata Kuliah
-                </Text>
-                <Text variant="captionStrong">{session.courseName}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">
-                  Kelas & Jadwal
-                </Text>
-                <Text variant="captionStrong">
-                  {session.groupName} •{' '}
-                  {formatTimeRange(session.startsAt, session.endsAt)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">
-                  Laboratorium
-                </Text>
-                <Text variant="captionStrong">
-                  {lab
-                    ? `${lab.name} (${lab.building})`
-                    : (session.lab ?? 'Tidak ditentukan')}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text variant="caption" tone="muted">
-                  Status Sesi
-                </Text>
-                <Text
-                  variant="captionStrong"
-                  tone={isOpen ? 'violet' : 'muted'}
-                >
-                  {isOpen
-                    ? 'Dibuka (Presensi Aktif)'
-                    : `Ditutup (${session.status})`}
-                </Text>
-              </View>
-            </View>
-          </CardContent>
-        </Card>
-      </View>
-
-      {/* Status Geofence */}
       <View style={styles.section}>
         <SectionHeader
-          title="Status Lokasi & Geofence"
-          actionLabel={checkingLocation ? 'Memeriksa…' : 'Periksa Lokasi'}
+          title="Lokasi kamu"
+          actionLabel={checkingLocation ? 'Memeriksa…' : 'Periksa ulang'}
           onAction={refreshLocation}
         />
         <GeofenceStatusCard
@@ -204,12 +181,12 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
         />
       </View>
 
-      {/* Aksi Presensi */}
-      <View style={styles.actionSection}>
+      <View style={styles.actions}>
         {checkedIn ? (
           <Button
-            label="✓ Anda Sudah Hadir"
+            label="Sudah hadir"
             variant="outline"
+            icon="checkmark-circle-outline"
             disabled
             onPress={() => {}}
           />
@@ -217,10 +194,10 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           <Button
             label={
               submitting
-                ? 'Memproses Presensi…'
+                ? 'Memproses presensi…'
                 : leaveApproved
-                  ? 'Izin Disetujui'
-                  : 'Presensi Sekarang'
+                  ? 'Izin disetujui'
+                  : 'Presensi sekarang'
             }
             variant="primary"
             loading={submitting}
@@ -229,26 +206,26 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
           />
         )}
 
-        {!checkedIn && !isOpen && (
-          <Text variant="caption" tone="muted" style={styles.helperText}>
-            Presensi hanya dapat dilakukan saat sesi praktikum dalam status
-            dibuka.
+        {helper ? (
+          <Text variant="caption" tone={helper.tone} style={styles.helper}>
+            {helper.text}
           </Text>
-        )}
+        ) : null}
 
-        {!checkedIn && isOpen && geofence?.status !== 'inside' && (
-          <Text variant="caption" tone="danger" style={styles.helperText}>
-            Dekati lokasi laboratorium hingga berada dalam batas radius untuk
-            mengaktifkan tombol presensi.
-          </Text>
-        )}
+        {error ? (
+          <Button
+            label="Scan ulang QR"
+            variant="outline"
+            onPress={() => navigation.replace('BarcodeScan')}
+          />
+        ) : null}
       </View>
 
       <ConfirmSheet
         visible={confirmModal}
-        title="Konfirmasi Presensi"
+        title="Konfirmasi presensi"
         description={`Anda akan melakukan presensi untuk ${session.courseName} di ${lab?.name ?? 'laboratorium'}.`}
-        confirmLabel="Ya, Presensi"
+        confirmLabel="Ya, presensi"
         cancelLabel="Batal"
         loading={submitting}
         onConfirm={handleConfirmSubmit}
@@ -259,24 +236,13 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  section: {
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  detailGrid: {
-    gap: spacing.sm,
-  },
-  infoRow: {
+  summary: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  actionSection: {
-    marginTop: spacing.xl,
+    alignItems: 'flex-start',
     gap: spacing.sm,
   },
-  helperText: {
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
-  },
+  summaryText: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  section: { gap: spacing.sm },
+  actions: { gap: spacing.sm },
+  helper: { textAlign: 'center', paddingHorizontal: spacing.md },
 });
