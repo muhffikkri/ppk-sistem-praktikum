@@ -17,7 +17,7 @@ import { checkInWithQr } from '../../services/firestore/attendanceQrService';
 import { getLabById } from '../../services/firestore/labService';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
 import { useStudentAttendanceViewModel } from '../../state/StudentAttendanceContext';
-import { useStudentLeaveViewModel } from '../leave';
+import { useStudentLeaveViewModel } from '../leave/useStudentLeaveViewModel';
 
 export type StudentCheckInViewModel = {
   session: Session | undefined;

@@ -1,7 +1,7 @@
 /**
  * Inbox notifikasi (Sprint 3): `users/{uid}/notifications/{id}`.
- * Dokumen ditulis server (worker / Cloud Functions) setiap kali push
- * dikirim; aplikasi hanya membaca dan menandai sudah dibaca.
+ * Dokumen ditulis worker Node.js setiap kali push dikirim; aplikasi hanya
+ * membaca dan menandai sudah dibaca.
  */
 
 const TYPES = [

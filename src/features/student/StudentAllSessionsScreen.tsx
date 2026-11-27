@@ -7,10 +7,10 @@ import {
   EmptyState,
   ErrorState,
   ListRow,
-  LoadingState,
   Screen,
   ScreenList,
   SegmentedControl,
+  SkeletonList,
   StatusBadge,
   BackButton,
   BadgeTone,
@@ -60,7 +60,7 @@ export function StudentAllSessionsScreen({ navigation }: Props) {
     return (
       <Screen>
         <BackButton onPress={() => navigation.goBack()} />
-        <LoadingState label="Memuat sesi…" />
+        <SkeletonList variant="row" count={5} label="Memuat sesi…" />
       </Screen>
     );
   }

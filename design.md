@@ -174,7 +174,12 @@ sebagai ikon.
 | ---------- | ------------------------------------------------------ |
 | `subtle`   | `0 4px 20px -2px rgba(23,20,31,.05)`                  |
 | `elevated` | `0 12px 32px -4px rgba(22,21,34,.08)`  (soft, tanpa glow) |
+| `pressed`  | `0 2px 10px rgba(0,0,0,.04), elevation 2` (saat ditekan) |
 | `card`     | `0 2px 10px rgba(0,0,0,.02), 0 0 1px rgba(0,0,0,.06)` |
+
+Bayangan saat ditekan hanya memperkuat `card`/`elevated` lewat
+`usePressShadow`; kontur tetap mengikuti `borderRadius` elemen
+(`Card` 3xl, `Button` 2xl, `IconButton` circle full), bukan kotak pembungkus.
 
 ### Type scale (px)
 
@@ -284,9 +289,11 @@ muted). `dark` mengganti semua baris ke `onPrimary` / `onInkMuted`.
 
 ### SectionHeader
 
-`overline` muted di kiri + aksi teks kecil opsional di kanan
-(`captionStrong` violet, mis. "Lihat semua"). Dipakai antar section,
-bukan di setiap kartu.
+`label` muted di kiri + aksi teks kecil opsional di kanan
+(`captionStrong` violet, mis. "Lihat semua"). Untuk pengurutan, pakai
+`sortLabel`/`onSort`: tombol ikon `swap-vertical-outline` (`IconButton`
+ghost) tanpa teks, dengan `accessibilityLabel` yang menyebut urutan
+saat ini. Dipakai antar section, bukan di setiap kartu.
 
 ### Form controls — Section 03
 
@@ -357,8 +364,24 @@ kecil outline.
 Empty state: blok `surface` **dashed border**, ikon panel 48 di tengah,
 judul `bodyStrong`, deskripsi `body` (max 240px).
 
-`LoadingState`: satu-satunya blok loading — spinner violet + label
-body muted (default "Memuat…"), di tengah.
+`LoadingState`: blok loading untuk aksi/izin dan keadaan tanpa layout
+(list kosong, izin kamera) — spinner violet + label body muted
+(default "Memuat…"), di tengah.
+
+**Skeleton** dipakai untuk pemuatan data yang sudah punya layout tetap:
+`Skeleton` (blok/item dengan shimmer `borderSubtle` ↔ `lavender`,
+900ms, reverse, hormati `useReducedMotion`), `SkeletonItem`
+(`row`/`card`/`hero`, mengikuti bentuk primitif aslinya), `SkeletonList`
+(kumpulan dengan `count`), dan `SkeletonGroup` (pengumuman `progressbar`
+untuk pembaca layar). Skeleton tidak interaktif dan tidak memakai teks
+karangan. Shimmer berhenti saat data tiba (komponen di-unmount).
+
+**Lazy screen**: layar push (detail/form/pengaturan) diimpor lewat
+`lazyScreen()` saat pertama dibuka; fallback-nya `Screen` + `SkeletonList`
+plus `BackButton` agar navigasi tetap responsif saat chunk dimuat. Empat
+halaman dock dan layar auth tetap eager. Impor hook dari file modulnya
+langsung (bukan barrel fitur) agar barrel tidak menarik layar lain ke
+bundle awal. Dock sendiri tetap memasang tab aktif + tetangga saja.
 `ErrorState`: blok `surface` dashed-border dengan aksen danger (ikon 48,
 judul `bodyStrong`, pesan dari service, `hint` singkat, `Button` primer
 "Coba lagi", serta `secondaryAction` opsional). Bedakan jelas:
@@ -372,6 +395,12 @@ auth. `contentStyle` hanya untuk layout kolom, mis.
 `{ flexGrow: 1, justifyContent: 'space-between' }` agar tombol menempel
 di bawah pada HP tinggi tetapi tetap bisa discroll di HP pendek
 (contoh: `LandingScreen`).
+
+`ScreenList` memakai layout yang sama untuk daftar panjang. Baris diungkap
+bertahap per `pageSize` (default 10) saat pengguna mendekati akhir list;
+`SkeletonItem` muncul sebagai footer selama batch berikutnya disiapkan.
+Virtualisasi FlatList (`initialNumToRender`, `maxToRenderPerBatch`,
+`windowSize`) tetap berlaku, jadi hanya baris dekat viewport yang mount.
 
 ### Guard otomatis
 
@@ -460,8 +489,14 @@ src/
 - **Detail sesi:** `BackButton` saja di atas, lalu `Banner` (feedback) +
   `Card` berisi info row + aksi (`Button`). Praktikan: status presensi +
   waktu. Asisten: jumlah hadir + buka/tutup. Tanpa `Header`/top bar.
-- **Rekap asisten:** summary row (badge + hitung) + `Card` berisi
-  daftar kehadiran (attendance rows).
+- **Beranda asisten:** cuplikan 2 sesi Jadwal dan 2 sesi Presensi; tombol
+  "Lihat semua" membuka `AssistantAllSessions` / `AssistantAllAttendance`,
+  kartu sesi membuka detail/rekap yang lengkap. Hero sesi aktif menyorot
+  topik (`session.title`) seperti highlight knowledge pada praktikan.
+- **Rekap asisten:** summary metrik + filter, lalu riwayat per sesi —
+  satu `SessionAttendancePreviewCard` per sesi berisi ringkasan tepat
+  waktu/terlambat dan cuplikan 2–3 praktikan hadir. Kartu dibuka untuk
+  rekap lengkap (`AssistantAttendanceRoster`) yang berisi attendance rows.
 - **Riwayat praktikan:** daftar catatan presensi, status + waktu.
 
 ## Status & feedback
@@ -505,8 +540,8 @@ Sebelum menambah/mengubah UI:
       bukan literal baru.
 - [ ] Gunakan primitif `shared/ui` (Text, Button, IconButton, BackButton,
       AppTopBar/RootTopBar, Header, SectionHeader, TextField, ListRow,
-      Avatar, Card, StatusBadge, Banner, LoadingState, ErrorState,
-      Screen, EmptyState) — buat primitif baru hanya jika belum ada.
+      Avatar, Card, StatusBadge, Banner, LoadingState, SkeletonList,
+      ErrorState, Screen, EmptyState) — buat primitif baru hanya jika belum ada.
 - [ ] Chrome: root/navbar → `RootTopBar`; pushed/back → `BackButton` only.
       Jangan memakai `TopBar` lama atau native header.
 - [ ] Form login memakai hint autofill kredensial (`username` +

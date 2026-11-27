@@ -4,6 +4,7 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+- **Backend notifikasi (Node.js)**: semua trigger push, penulisan inbox, antrean `push_delivery`, retry, dan receipt pindah ke worker [`ppk-notification-server`](https://github.com/muhffikkri/ppk-notification-server) lewat Expo Push Service (tanpa FCM SDK). Cloud Functions hanya menyisakan callable, webhook Midtrans, dan scheduler penutup sesi; `EXPO_PUSH_ACCESS_TOKEN` tidak dipakai di Functions. Helper `functions/pushEvents.cjs` beserta tesnya dihapus karena tidak dipakai lagi.
 - **UX feedback & empty/error state**: banner feedback otomatis hilang setelah 6 detik atau saat tab/screen berubah, `ErrorState` menjadi blok full-page dengan hint dan retry, serta empty state beranda praktikan kini punya CTA jadwal.
 - **Konsistensi style UI**: primitif `Stack` untuk gap/direction, style dinamis QR/geofence dihitung di luar JSX, guard ESLint `no-inline-styles` + `no-restricted-syntax`, serta dokumentasi aturan inline style di `design.md` dan `docs/README.md`.
 

@@ -15,7 +15,7 @@ import {
   Header,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
-import { useLabManagement } from '../labs';
+import { useLabManagement } from '../labs/useLabManagement';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSessionForm'>;
 

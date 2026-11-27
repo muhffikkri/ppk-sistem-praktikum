@@ -9,9 +9,9 @@ import {
   EmptyState,
   ErrorState,
   ListRow,
-  LoadingState,
   Screen,
   ScreenList,
+  SkeletonList,
   SectionHeader,
   StatusBadge,
   BackButton,
@@ -54,7 +54,7 @@ export function StudentFineListScreen({ navigation }: Props) {
       <Screen>
         <BackButton onPress={() => navigation.goBack()} />
 
-        <LoadingState label="Memuat tagihan…" />
+        <SkeletonList variant="row" count={5} label="Memuat tagihan…" />
       </Screen>
     );
   }

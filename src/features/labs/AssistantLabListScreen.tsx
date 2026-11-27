@@ -9,8 +9,8 @@ import {
   EmptyState,
   ErrorState,
   ListRow,
-  LoadingState,
   Screen,
+  SkeletonList,
   spacing,
   StatusBadge,
   BackButton,
@@ -54,7 +54,7 @@ export function AssistantLabListScreen({ navigation }: Props) {
     return (
       <Screen withDock={false}>
         <BackButton onPress={goBack} />
-        <LoadingState label="Memuat laboratorium…" />
+        <SkeletonList variant="row" count={5} label="Memuat laboratorium…" />
       </Screen>
     );
   }

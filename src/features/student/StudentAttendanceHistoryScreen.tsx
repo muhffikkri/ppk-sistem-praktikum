@@ -8,9 +8,9 @@ import {
   ErrorState,
   Header,
   IconButton,
-  LoadingState,
   Screen,
   ScreenList,
+  SkeletonList,
   SectionHeader,
   SegmentedControl,
   type SegmentedOption,
@@ -49,7 +49,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
     return (
       <Screen>
         <RootTopBar />
-        <LoadingState label="Memuat riwayat…" />
+        <SkeletonList variant="row" count={5} label="Memuat riwayat…" />
       </Screen>
     );
   }
@@ -168,8 +168,8 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
       sectionHeader={
         <SectionHeader
           title="Semua presensi"
-          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
-          onAction={() => setNewestFirst((value) => !value)}
+          sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onSort={() => setNewestFirst((value) => !value)}
         />
       }
       empty={

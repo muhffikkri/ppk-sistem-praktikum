@@ -12,7 +12,11 @@ import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import type { IconName } from './IconButton';
 import { androidClip, rippleOnDark, rippleOnLight } from './ripple';
 import { Text, type TextTone } from './Text';
-import { AnimatedPressable, usePressFeedback } from './usePressFeedback';
+import {
+  AnimatedPressable,
+  usePressFeedback,
+  usePressShadow,
+} from './usePressFeedback';
 
 type ButtonVariant =
   | 'primary' // violet solid
@@ -98,6 +102,7 @@ export function Button({
         }
       : {},
   );
+  const pressShadowStyle = usePressShadow(progress, shadow.card);
 
   return (
     <AnimatedPressable
@@ -115,6 +120,7 @@ export function Button({
         styles[variant],
         disabled && styles.disabled,
         fillStyle,
+        pressShadowStyle,
         scaleStyle,
       ]}
       {...pressableProps}

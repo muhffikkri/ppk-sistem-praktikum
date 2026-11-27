@@ -37,6 +37,17 @@ export {
   type SegmentedOption,
 } from './SegmentedControl';
 export { SectionHeader, type SectionHeaderProps } from './SectionHeader';
+export {
+  Skeleton,
+  SkeletonGroup,
+  SkeletonItem,
+  SkeletonList,
+  type SkeletonGroupProps,
+  type SkeletonItemProps,
+  type SkeletonListProps,
+  type SkeletonProps,
+  type SkeletonVariant,
+} from './Skeleton';
 export { Stack, type StackGap, type StackProps } from './Stack';
 export { StatCard, StatRow, type StatCardProps } from './StatCard';
 export { StatusBadge, LegacyStatusBadge, type BadgeTone } from './StatusBadge';

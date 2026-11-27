@@ -12,16 +12,16 @@ import {
   EmptyState,
   ErrorState,
   Header,
-  LoadingState,
   Screen,
   SegmentedControl,
+  SkeletonList,
   StatusBadge,
   Text,
   type BadgeTone,
   type SegmentedOption,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
-import { useAssistantLeaveViewModel } from '../leave';
+import { useAssistantLeaveViewModel } from '../leave/useAssistantLeaveViewModel';
 import { RootTopBar } from '../shell/RootTopBar';
 import { formatSessionDate, formatTimeRange } from '../student/formatters';
 
@@ -175,7 +175,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
     return (
       <Screen>
         <RootTopBar />
-        <LoadingState label="Memuat jadwal…" />
+        <SkeletonList variant="card" count={4} label="Memuat jadwal…" />
       </Screen>
     );
   }

@@ -6,9 +6,9 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  LoadingState,
   Screen,
   ScreenList,
+  SkeletonList,
   SectionHeader,
   SegmentedControl,
   BackButton,
@@ -44,7 +44,7 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
     return (
       <Screen>
         <BackButton onPress={() => navigation.goBack()} />
-        <LoadingState label="Memuat presensi…" />
+        <SkeletonList variant="row" count={5} label="Memuat presensi…" />
       </Screen>
     );
   }
@@ -153,8 +153,8 @@ export function StudentAllAttendanceScreen({ navigation }: Props) {
       sectionHeader={
         <SectionHeader
           title="Semua presensi"
-          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
-          onAction={() => setNewestFirst((value) => !value)}
+          sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onSort={() => setNewestFirst((value) => !value)}
         />
       }
       empty={

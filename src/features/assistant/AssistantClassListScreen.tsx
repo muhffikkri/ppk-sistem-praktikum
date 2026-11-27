@@ -7,8 +7,8 @@ import {
   EmptyState,
   ErrorState,
   ListRow,
-  LoadingState,
   Screen,
+  SkeletonList,
   spacing,
   BackButton,
   Header,
@@ -27,7 +27,7 @@ export function AssistantClassListScreen({ navigation }: Props) {
     return (
       <Screen withDock={false}>
         <BackButton onPress={goBack} />
-        <LoadingState label="Memuat kelas…" />
+        <SkeletonList variant="row" count={5} label="Memuat kelas…" />
       </Screen>
     );
   }

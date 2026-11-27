@@ -14,8 +14,8 @@ import {
   BackButton,
   EmptyState,
   ErrorState,
-  LoadingState,
   Screen,
+  SkeletonList,
   SectionHeader,
   spacing,
 } from '../shared/ui';
@@ -61,7 +61,7 @@ export function NotificationsScreen({ navigation }: Props) {
       {error ? <ErrorState message={error} onRetry={retry} /> : null}
 
       {loading ? (
-        <LoadingState label="Memuat notifikasi…" />
+        <SkeletonList variant="row" count={4} label="Memuat notifikasi…" />
       ) : notifications.length === 0 ? (
         error ? null : (
           <EmptyState

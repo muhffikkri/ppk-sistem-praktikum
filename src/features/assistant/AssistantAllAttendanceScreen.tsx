@@ -3,29 +3,26 @@ import { useState } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
-  Avatar,
   EmptyState,
   ErrorState,
   Header,
   IconButton,
-  LoadingState,
   Screen,
   ScreenList,
+  SkeletonList,
   SectionHeader,
   SegmentedControl,
-  type AvatarTone,
   type SegmentedOption,
 } from '../../shared/ui';
-import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
+import { SessionAttendancePreviewCard } from '../attendance/SessionAttendancePreviewCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
+import { isCurrentMonth } from '../attendance/punctuality';
 import {
-  isCurrentMonth,
-  punctualityCounts,
-  punctualityOf,
-} from '../attendance/punctuality';
+  buildSessionAttendanceGroup,
+  type SessionAttendanceGroup,
+} from '../attendance/sessionAttendanceGroups';
 import { useAssistantSessionsViewModel } from '../../state';
 import { RootTopBar } from '../shell/RootTopBar';
-import { formatClock, formatSessionDate } from './formatters';
 
 type Props = NativeStackScreenProps<
   RootStackParamList,
@@ -40,6 +37,15 @@ const FILTERS: SegmentedOption<Filter>[] = [
   { value: 'month', label: 'Bulan ini' },
 ];
 
+const matchesFilter = (
+  group: SessionAttendanceGroup,
+  filter: Filter,
+): boolean => {
+  if (filter === 'all') return true;
+  if (filter === 'month') return isCurrentMonth(group.session.startsAt);
+  return filter === 'onTime' ? group.onTime > 0 : group.late > 0;
+};
+
 export function AssistantAllAttendanceScreen({ navigation }: Props) {
   const { sessions, getAttendanceForSession, loading, error, retry } =
     useAssistantSessionsViewModel();
@@ -50,7 +56,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
     return (
       <Screen>
         <RootTopBar />
-        <LoadingState label="Memuat rekap presensi…" />
+        <SkeletonList variant="card" count={4} label="Memuat rekap presensi…" />
       </Screen>
     );
   }
@@ -68,55 +74,36 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
     );
   }
 
-  // Semua catatan presensi dari setiap sesi, dengan sesi yang bersangkutan.
-  const records = sessions.flatMap((session) =>
-    getAttendanceForSession(session.id).map((record) => ({
-      ...record,
-      session,
-    })),
-  );
-  const counts = punctualityCounts(records, (record) => record.session);
-  const total = records.length;
-  const attendedSessions = new Set(records.map((record) => record.sessionId))
-    .size;
-  const monthCount = records.filter((record) =>
-    isCurrentMonth(record.checkedInAt),
-  ).length;
+  // Satu kartu per sesi: rekap lengkap dibuka saat kartu ditekan.
+  const groups = sessions
+    .map((session) =>
+      buildSessionAttendanceGroup(session, getAttendanceForSession(session.id)),
+    )
+    .filter((group) => group.records.length > 0);
 
-  const sorted = [...records].sort((a, b) => {
-    const diff = Date.parse(b.checkedInAt) - Date.parse(a.checkedInAt);
+  const sorted = [...groups].sort((a, b) => {
+    const diff =
+      Date.parse(b.session.startsAt) - Date.parse(a.session.startsAt);
     return newestFirst ? diff : -diff;
   });
+  const visible = sorted.filter((group) => matchesFilter(group, filter));
 
-  const options: SegmentedOption<Filter>[] = FILTERS.map((option) => ({
+  const options = FILTERS.map((option) => ({
     ...option,
-    label:
-      option.value === 'all'
-        ? `Semua (${total})`
-        : option.value === 'onTime'
-          ? `Tepat waktu (${counts.onTime})`
-          : option.value === 'late'
-            ? `Terlambat (${counts.late})`
-            : `Bulan ini (${monthCount})`,
+    label: `${option.label} (${groups.filter((group) => matchesFilter(group, option.value)).length})`,
   }));
-
-  const visible = sorted.filter((record) => {
-    if (filter === 'all') return true;
-    if (filter === 'month') return isCurrentMonth(record.checkedInAt);
-    return punctualityOf(record, record.session) === filter;
-  });
 
   return (
     <ScreenList
       data={visible}
-      keyExtractor={(record) => record.id}
+      keyExtractor={(group) => group.session.id}
       header={
         <>
           <RootTopBar />
           <Header
             title="Rekap"
             accent="presensi"
-            description="Semua catatan hadir dari sesi Anda"
+            description="Riwayat sesi dan kehadiran praktikan"
             trailing={
               <IconButton
                 icon="calendar-outline"
@@ -139,27 +126,10 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
                 label: 'Persentase',
                 value:
                   sessions.length > 0
-                    ? `${Math.round((attendedSessions / sessions.length) * 100)}%`
+                    ? `${Math.round((groups.length / sessions.length) * 100)}%`
                     : '-',
                 caption: 'Sesi dengan catatan presensi',
                 captionTone: 'violet',
-              },
-            ]}
-            breakdown={[
-              {
-                key: 'onTime',
-                label: 'Tepat waktu',
-                value: counts.onTime,
-              },
-              {
-                key: 'late',
-                label: 'Terlambat',
-                value: counts.late,
-              },
-              {
-                key: 'unknown',
-                label: 'Tanpa jadwal',
-                value: counts.unknown,
               },
             ]}
           />
@@ -167,16 +137,16 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
             options={options}
             value={filter}
             onChange={setFilter}
-            accessibilityLabel="Filter catatan presensi"
+            accessibilityLabel="Filter riwayat presensi"
             scrollable
           />
         </>
       }
       sectionHeader={
         <SectionHeader
-          title="Terbaru"
-          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
-          onAction={() => setNewestFirst((value) => !value)}
+          title="Riwayat sesi"
+          sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onSort={() => setNewestFirst((value) => !value)}
         />
       }
       empty={
@@ -186,45 +156,20 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
           description="Catatan kehadiran akan muncul setelah praktikan presensi."
         />
       }
-      renderItem={({ item: record }) => {
-        const punctual = punctualityOf(record, record.session);
-        const avatarTone: AvatarTone =
-          punctual === 'onTime'
-            ? 'lime'
-            : punctual === 'late'
-              ? 'pink'
-              : 'lavender';
-        return (
-          <AttendanceRecordCard
-            leading={<Avatar name={record.studentName} tone={avatarTone} />}
-            title={record.studentName}
-            meta={`${record.session.courseName} · ${formatSessionDate(record.session.startsAt)}`}
-            detail={record.session.lab ?? record.session.groupName}
-            detailIcon="location-outline"
-            status={{
-              label:
-                punctual === 'late'
-                  ? 'Terlambat'
-                  : punctual === 'onTime'
-                    ? 'Tepat waktu'
-                    : 'Tanpa jadwal',
-              tone:
-                punctual === 'late'
-                  ? 'pink'
-                  : punctual === 'onTime'
-                    ? 'success'
-                    : 'neutral',
-            }}
-            time={formatClock(record.checkedInAt)}
-            timeLabel="Hadir"
-            onPress={() =>
-              navigation.navigate('AssistantAttendanceRoster', {
-                sessionId: record.sessionId,
-              })
-            }
-          />
-        );
-      }}
+      renderItem={({ item: group }) => (
+        <SessionAttendancePreviewCard
+          session={group.session}
+          presentCount={group.records.length}
+          onTimeCount={group.onTime}
+          lateCount={group.late}
+          attendees={group.preview}
+          onPress={() =>
+            navigation.navigate('AssistantAttendanceRoster', {
+              sessionId: group.session.id,
+            })
+          }
+        />
+      )}
     />
   );
 }

@@ -14,6 +14,7 @@ import {
   EmptyState,
   Screen,
   ScreenList,
+  SkeletonList,
   SectionHeader,
   SegmentedControl,
   BackButton,
@@ -62,7 +63,7 @@ const STATUS_PRESENTATION: Record<StudentAttendanceStatus, StatusPresentation> =
 
 export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
-  const { error } = useAssistantSessionsViewModel();
+  const { error, loading } = useAssistantSessionsViewModel();
   const { session, recap } = useSessionRosterRecap(sessionId);
 
   const [filter, setFilter] = useState<FilterType>('all');
@@ -94,11 +95,19 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
     return (
       <Screen withDock={false}>
         <BackButton onPress={() => navigation.goBack()} />
-        <EmptyState
-          icon="alert-circle-outline"
-          title="Sesi tidak ditemukan"
-          description="Rekap tidak dapat ditampilkan karena sesi tidak tersedia."
-        />
+        {loading && !error ? (
+          <SkeletonList
+            variant="row"
+            count={5}
+            label="Memuat rekap presensi…"
+          />
+        ) : (
+          <EmptyState
+            icon="alert-circle-outline"
+            title="Sesi tidak ditemukan"
+            description="Rekap tidak dapat ditampilkan karena sesi tidak tersedia."
+          />
+        )}
       </Screen>
     );
   }
@@ -192,8 +201,8 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
       sectionHeader={
         <SectionHeader
           title="Daftar kehadiran"
-          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
-          onAction={() => setNewestFirst((value) => !value)}
+          sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onSort={() => setNewestFirst((value) => !value)}
         />
       }
       empty={
