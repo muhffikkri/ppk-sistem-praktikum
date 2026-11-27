@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
-import { formatHourMinute } from '../../shared/format/date';
+import { formatHourMinute, formatTimeRange } from '../../shared/format/date';
 import {
   Banner,
   Button,
@@ -159,8 +159,8 @@ export function StudentCheckInScreen({ route, navigation }: Props) {
                   Kelas & Jadwal
                 </Text>
                 <Text variant="captionStrong">
-                  {session.groupName} • {session.startsAt.slice(11, 16)}–
-                  {session.endsAt.slice(11, 16)}
+                  {session.groupName} •{' '}
+                  {formatTimeRange(session.startsAt, session.endsAt)}
                 </Text>
               </View>
               <View style={styles.infoRow}>
