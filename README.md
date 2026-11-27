@@ -124,7 +124,7 @@ Update hanya diterima build yang `runtimeVersion` dan channel-nya cocok. Perubah
 
 ## Firebase: rules, functions, dan Maps (Sprint 3)
 
-Presensi wajib memindai QR berputar (token HMAC `{sessionId}.{slot 30 detik}.{signature}`) yang dibuat asisten lewat callable `issueAttendanceQr`. `submitQrCheckIn` memverifikasi token, jendela sesi, kepesertaan, izin, dan geofence di server; klien tidak bisa menulis dokumen `attendance` langsung. Rules dan Cloud Functions baru berlaku setelah di-deploy:
+Presensi wajib memindai QR berputar (token HMAC `{sessionId}.{slot 30 detik}.{signature}`) yang dibuat asisten lewat callable `issueAttendanceQr`. `submitQrCheckIn` memverifikasi token, jendela sesi, kepesertaan, izin, dan geofence di server; klien tidak bisa menulis dokumen `attendance` langsung. Rules dan Cloud Functions (callable, webhook, dan scheduler) baru berlaku setelah di-deploy:
 
 ```bash
 firebase deploy --only firestore:rules --project project-praktikum-sprint
@@ -133,7 +133,7 @@ firebase deploy --only functions --project project-praktikum-sprint
 
 Sebelum deploy rules, jalankan `npm run test:rules` (butuh Java). Tes ini menyalakan Firestore + Auth emulator lalu mencoba presensi dari dalam radius, di luar radius, dan dengan jarak dipalsukan.
 
-Push notification membutuhkan secret `EXPO_PUSH_ACCESS_TOKEN` (`firebase functions:secrets:set EXPO_PUSH_ACCESS_TOKEN`). QR presensi membutuhkan secret `ATTENDANCE_QR_SECRET`; generate nilai acak dan simpan dengan `firebase functions:secrets:set ATTENDANCE_QR_SECRET` sebelum deploy functions. Nilai secret tidak boleh disimpan di repo.
+Push notification **tidak lagi memakai FCM SDK atau trigger Cloud Functions**. Worker Node.js (Node.js 22) yang berjalan di luar Firebase membaca perubahan Firestore, menulis inbox, lalu mengirim lewat Expo Push Service; token akses Expo dibaca dari environment worker (`EXPO_PUSH_ACCESS_TOKEN`), bukan dari Secret Manager Functions. Kode pembentuk pesan dan inbox tetap ada di `functions/pushEvents.cjs` supaya isi notifikasi identik. QR presensi membutuhkan secret `ATTENDANCE_QR_SECRET`; generate nilai acak dan simpan dengan `firebase functions:secrets:set ATTENDANCE_QR_SECRET` sebelum deploy functions. Nilai secret tidak boleh disimpan di repo.
 
 ### Inbox notifikasi
 
@@ -146,7 +146,7 @@ Setiap push juga disimpan ke `users/{uid}/notifications/{id}` dan tampil di laya
 | Jam/lab sesi berubah (`schedule_changed`) | Peserta sesi | Detail sesi |
 | Izin disetujui/ditolak (`leave_decided`) | Praktikan pengaju | Daftar izin |
 
-Worker Node.js (pengganti Cloud Functions tanpa Blaze) cukup memakai ulang `functions/pushEvents.cjs`:
+Worker Node.js (runtime Node.js 22, pengganti trigger push Cloud Functions tanpa Blaze) cukup memakai ulang `functions/pushEvents.cjs`. Cloud Functions sekarang hanya menyediakan callable yang dipanggil klien, webhook Midtrans, dan scheduler penutup sesi; antrean `push_delivery`, retry, serta pengecekan receipt ditangani worker:
 
 ```js
 const { sessionEvents, inboxEntries, pushMessage } = require('./functions/pushEvents.cjs');

@@ -4,6 +4,7 @@ Perubahan penting pada dokumen dan produk dicatat di sini. Entri terbaru diletak
 
 ## [Unreleased]
 
+- **Backend notifikasi (Node.js)**: trigger Firestore, antrean `push_delivery`, pengirim Expo, dan scheduler retry/receipt dihapus dari Cloud Functions. Push kini dijalankan worker Node.js 22 lewat Expo Push Service (tanpa FCM SDK); `functions/pushEvents.cjs` tetap dipakai bersama worker agar isi inbox sama. Secret `EXPO_PUSH_ACCESS_TOKEN` pindah ke environment worker. Callable QR/check-in, sesi, lab, dan pembayaran masih tetap di Cloud Functions.
 - **UX feedback & empty/error state**: banner feedback otomatis hilang setelah 6 detik atau saat tab/screen berubah, `ErrorState` menjadi blok full-page dengan hint dan retry, serta empty state beranda praktikan kini punya CTA jadwal.
 - **Konsistensi style UI**: primitif `Stack` untuk gap/direction, style dinamis QR/geofence dihitung di luar JSX, guard ESLint `no-inline-styles` + `no-restricted-syntax`, serta dokumentasi aturan inline style di `design.md` dan `docs/README.md`.
 

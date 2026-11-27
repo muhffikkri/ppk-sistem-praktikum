@@ -152,7 +152,7 @@ function inboxId(eventId, type, uid) {
 
 /**
  * Dokumen `users/{uid}/notifications/{id}` untuk setiap penerima event.
- * Dipakai Cloud Functions maupun worker Node.js agar isi inbox sama.
+ * Dipakai worker Node.js agar isi inbox sama dengan pesan push-nya.
  */
 function inboxEntries(eventId, notices, source, now = new Date()) {
   const entries = [];
