@@ -18,6 +18,7 @@ import { groupBySession } from './batching';
 import { callableFailureReason } from './callableFailure';
 import { normalizeAttendanceRecord } from './normalize';
 import { cancelSessionRule, closeSessionRule } from '../../domain/sessionRules';
+import { DEFAULT_TOLERANCE_MINUTES } from '../../domain/lateToleranceRules';
 import {
   PracticalClass,
   Session,
@@ -34,6 +35,21 @@ import {
 const classesCol = collection(db, 'classes');
 const sessionsCol = collection(db, 'sessions');
 const attendanceCol = collection(db, 'attendance');
+
+type LabSessionRoster = {
+  participantIds: string[];
+  assistantIds: string[];
+  toleranceMinutes: number;
+  courseCode: string;
+};
+
+async function loadLabSessionRoster(labId: string, classId: string) {
+  const getRoster = httpsCallable<
+    { labId: string; classId: string },
+    LabSessionRoster
+  >(functions, 'getLabSessionRoster');
+  return (await getRoster({ labId, classId })).data;
+}
 
 type AsyncFailure = { ok: false; reason: string; message: string };
 
@@ -315,13 +331,19 @@ export async function createSession(
 
     const classData = classSnap.data() as Partial<PracticalClass>;
     const classAssistantIds = classData.assistantIds ?? [];
+    const roster = input.labId
+      ? await loadLabSessionRoster(input.labId, input.classId)
+      : null;
     const payload: Record<string, unknown> = {
       classId: input.classId,
+      courseCode: classData.courseCode ?? '',
       courseName: classData.courseName ?? '',
       groupName: classData.groupName ?? '',
-      participantIds: classData.participantIds ?? [],
+      participantIds: roster?.participantIds ?? classData.participantIds ?? [],
       assistantIds:
-        classAssistantIds.length > 0 ? classAssistantIds : [actorUid],
+        roster?.assistantIds ??
+        (classAssistantIds.length > 0 ? classAssistantIds : [actorUid]),
+      toleranceMinutes: roster?.toleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES,
       startsAt: starts.toISOString(),
       endsAt: ends.toISOString(),
       startsAtMs: starts.getTime(),
@@ -394,6 +416,11 @@ export async function updateSession(
     }
     const classData = classSnap.data() as Partial<PracticalClass>;
     const sameClass = snap.data()?.classId === input.classId;
+    const sameLab = (snap.data()?.labId ?? '') === (input.labId ?? '');
+    const roster =
+      (!sameClass || !sameLab) && input.labId
+        ? await loadLabSessionRoster(input.labId, input.classId)
+        : null;
 
     const payload: Record<string, unknown> = {
       classId: input.classId,
@@ -407,10 +434,19 @@ export async function updateSession(
       labId: input.labId || deleteField(),
     };
     if (!sameClass) {
+      payload.courseCode = classData.courseCode ?? '';
       payload.courseName = classData.courseName ?? '';
       payload.groupName = classData.groupName ?? '';
-      payload.participantIds = classData.participantIds ?? [];
-      payload.assistantIds = classData.assistantIds ?? [];
+    }
+    if (!sameClass || !sameLab) {
+      payload.participantIds =
+        roster?.participantIds ?? classData.participantIds ?? [];
+      payload.assistantIds =
+        roster?.assistantIds ?? classData.assistantIds ?? [];
+    }
+    if (!sameLab) {
+      payload.toleranceMinutes =
+        roster?.toleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES;
     }
 
     await updateDoc(sessionDoc, payload);

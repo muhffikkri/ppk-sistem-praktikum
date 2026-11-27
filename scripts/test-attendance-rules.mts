@@ -8,9 +8,13 @@
  * mencoba presensi praktikan dari berbagai posisi dan memastikan asisten
  * melihat hasilnya lewat query yang sama seperti aplikasi.
  */
+import assert from 'node:assert/strict';
 import { initializeApp as initAdmin } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
-import { getFirestore as getAdminDb } from 'firebase-admin/firestore';
+import {
+  FieldValue,
+  getFirestore as getAdminDb,
+} from 'firebase-admin/firestore';
 import { initializeApp } from 'firebase/app';
 import {
   connectAuthEmulator,
@@ -36,6 +40,7 @@ import {
 
 import { evaluateGeofence } from '../src/domain/geofenceRules';
 import type { DeviceFix, Lab } from '../src/domain/geoTypes';
+import { createLabAdministration } from '../functions/labAdministration.cjs';
 
 if (
   !process.env.FIRESTORE_EMULATOR_HOST ||
@@ -960,6 +965,261 @@ check(
   'denied',
 );
 await signOut(auth);
+
+// Backend lab handlers against the same isolated Firestore emulator.
+class LabTestError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly details?: unknown,
+  ) {
+    super(message);
+  }
+}
+
+const labAdmin = createLabAdministration({
+  db: adminDb,
+  auth: adminAuth,
+  FieldValue,
+  HttpsError: LabTestError,
+});
+const asAslab = (data: object) => ({ auth: { uid: 'aslabA' }, data });
+const testLabInput = {
+  name: 'Template Lab',
+  building: 'E',
+  latitude: -7.05,
+  longitude: 110.43,
+  radiusMeters: 55,
+  isActive: true,
+};
+await assert.rejects(
+  labAdmin.importLab(asAslab({ courseId: 'MK-B', input: testLabInput })),
+  { code: 'permission-denied' },
+);
+const csvTarget = await labAdmin.importLab(
+  asAslab({ courseId: 'MK-A', input: testLabInput }),
+);
+assert.deepEqual(
+  await labAdmin.importLab(asAslab({ courseId: 'MK-A', input: testLabInput })),
+  csvTarget,
+);
+await adminDb.doc('labs/lab-mk-a').update({ lateToleranceMinutes: 0 });
+await adminDb.doc('users/budi').update({ nim: '24060124120001' });
+const scheduled = {
+  classId: 'lab-group-a',
+  courseCode: 'MK-A',
+  participantIds: [],
+  assistantIds: ['asisten'],
+  startsAt: '2026-01-01T08:00:00.000Z',
+  status: 'scheduled',
+};
+await adminDb.doc('classes/lab-group-a').set({
+  labId: 'lab-mk-a',
+  courseCode: 'MK-A',
+  participantIds: [],
+  assistantIds: ['asisten'],
+});
+await Promise.all([
+  adminDb
+    .doc('sessions/lab-source-scheduled')
+    .set({ ...scheduled, labId: 'lab-mk-a' }),
+  adminDb
+    .doc('sessions/lab-target-scheduled')
+    .set({ ...scheduled, labId: csvTarget.labId }),
+  adminDb.doc('sessions/lab-source-history').set({
+    ...scheduled,
+    status: 'closed',
+    labId: 'lab-mk-a',
+    participantIds: ['budi'],
+  }),
+]);
+await assert.rejects(
+  labAdmin.changeLabAssignment({
+    auth: { uid: 'asisten' },
+    data: {
+      action: 'participant',
+      identifier: 'budi@rules.test',
+      labId: 'lab-mk-a',
+    },
+  }),
+  { code: 'permission-denied' },
+);
+await assert.rejects(
+  labAdmin.changeLabAssignment(
+    asAslab({
+      action: 'assistant',
+      identifier: 'budi@rules.test',
+      labId: 'lab-mk-a',
+    }),
+  ),
+  { code: 'not-found' },
+);
+await assert.rejects(
+  labAdmin.changeLabAssignment(
+    asAslab({
+      action: 'participant',
+      identifier: 'budi@rules.test',
+      labId: 'lab-mk-b',
+    }),
+  ),
+  { code: 'permission-denied' },
+);
+await labAdmin.changeLabAssignment(
+  asAslab({
+    action: 'participant',
+    identifier: '24060124120001',
+    labId: 'lab-mk-a',
+  }),
+);
+await labAdmin.changeLabAssignment(
+  asAslab({
+    action: 'participant',
+    identifier: 'budi@rules.test',
+    labId: 'lab-mk-a',
+  }),
+);
+assert.deepEqual(
+  (await adminDb.doc('sessions/lab-source-scheduled').get()).get(
+    'participantIds',
+  ),
+  ['budi'],
+);
+const originalRoster = await labAdmin.getLabSessionRoster({
+  auth: { uid: 'asisten' },
+  data: { labId: 'lab-mk-a', classId: 'lab-group-a' },
+});
+assert.equal(originalRoster.toleranceMinutes, 0);
+await labAdmin.changeLabAssignment(
+  asAslab({
+    action: 'assistant',
+    identifier: 'asistenB@rules.test',
+    labId: csvTarget.labId,
+  }),
+);
+await labAdmin.changeLabAssignment(
+  asAslab({
+    action: 'move',
+    identifier: 'budi@rules.test',
+    fromLabId: 'lab-mk-a',
+    labId: csvTarget.labId,
+  }),
+);
+const sourceSession = await adminDb.doc('sessions/lab-source-scheduled').get();
+const targetSession = await adminDb.doc('sessions/lab-target-scheduled').get();
+assert.deepEqual(sourceSession.get('participantIds'), []);
+assert.deepEqual(targetSession.get('participantIds'), ['budi']);
+assert.deepEqual(targetSession.get('assistantIds'), ['asisten', 'asistenB']);
+assert.equal(sourceSession.get('labId'), 'lab-mk-a');
+assert.equal(targetSession.get('startsAt'), scheduled.startsAt);
+const refreshedSource = await adminDb.runTransaction((tx) =>
+  labAdmin.refreshScheduledRoster(
+    tx,
+    {
+      ...scheduled,
+      labId: 'lab-mk-a',
+      participantIds: ['budi'],
+    },
+    { courseId: 'MK-A' },
+  ),
+);
+assert.deepEqual(refreshedSource.participantIds, []);
+const untouchedHistory = await adminDb.runTransaction((tx) =>
+  labAdmin.refreshScheduledRoster(
+    tx,
+    {
+      ...scheduled,
+      labId: 'lab-mk-a',
+      status: 'closed',
+      participantIds: ['budi'],
+    },
+    { courseId: 'MK-A' },
+  ),
+);
+assert.deepEqual(untouchedHistory, {});
+assert.deepEqual(
+  (await adminDb.doc('sessions/lab-source-history').get()).get(
+    'participantIds',
+  ),
+  ['budi'],
+);
+assert.equal(
+  (
+    await adminDb
+      .collection('labAssignments')
+      .where('userId', '==', 'budi')
+      .get()
+  ).size,
+  1,
+);
+await assert.rejects(labAdmin.deleteLabSafely(asAslab({ labId: 'lab-mk-a' })), {
+  code: 'failed-precondition',
+  details: { reason: 'lab_in_use' },
+});
+const unusedLab = await labAdmin.importLab(
+  asAslab({
+    courseId: 'MK-A',
+    input: { ...testLabInput, name: 'Lab tidak dipakai' },
+  }),
+);
+await labAdmin.deleteLabSafely(asAslab({ labId: unusedLab.labId }));
+assert.equal(
+  (await adminDb.doc(`labs/${unusedLab.labId}`).get()).exists,
+  false,
+);
+
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+const newSessionRef = doc(db, 'sessions', 'tolerance-snapshot-session');
+const newSession = {
+  ...scheduled,
+  labId: 'lab-mk-a',
+  endsAt: '2026-01-01T09:00:00.000Z',
+  startsAtMs: Date.parse(scheduled.startsAt),
+  endsAtMs: Date.parse('2026-01-01T09:00:00.000Z'),
+  openedAt: null,
+  closedAt: null,
+  createdBy: 'asisten',
+};
+check(
+  'tolak snapshot toleransi yang berbeda dari lab saat membuat sesi',
+  await attempt(() =>
+    setDoc(newSessionRef, { ...newSession, toleranceMinutes: 15 }),
+  ),
+  'denied',
+);
+check(
+  'membuat sesi dengan toleransi nol dari lab',
+  await attempt(() =>
+    setDoc(newSessionRef, { ...newSession, toleranceMinutes: 0 }),
+  ),
+  'allowed',
+);
+check(
+  'tolak edit toleransi sesi untuk lab yang sama',
+  await attempt(() => updateDoc(newSessionRef, { toleranceMinutes: 15 })),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'aslabA@rules.test', PASSWORD);
+check(
+  'tolak hapus lab langsung dari klien',
+  await attempt(() => deleteDoc(doc(db, 'labs', 'lab-mk-a'))),
+  'denied',
+);
+check(
+  'tolak penempatan langsung dari klien',
+  await attempt(() =>
+    setDoc(doc(db, 'labAssignments', 'forged'), {
+      labId: 'lab-mk-a',
+      userId: 'budi',
+    }),
+  ),
+  'denied',
+);
+await signOut(auth);
+console.log(
+  '✅ Backend lab: impor idempoten, akses, penempatan, pemindahan, toleransi, dan hapus aman.',
+);
 
 console.log(
   failures ? `\n❌ ${failures} kasus gagal.` : '\n✅ Semua kasus lolos.',

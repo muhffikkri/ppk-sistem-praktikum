@@ -54,7 +54,15 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
         l.name.trim().toLowerCase() === existing.lab.trim().toLowerCase(),
     )?.id ??
     null;
-  const selectedLab = activeLabs.find((l) => l.id === labId);
+
+  const selectableLabs = useMemo(() => {
+    if (!isEditing || !labId) return activeLabs;
+    const existingLab = labs.find((l) => l.id === labId);
+    if (!existingLab || existingLab.isActive) return activeLabs;
+    return [existingLab, ...activeLabs];
+  }, [activeLabs, isEditing, labId, labs]);
+
+  const selectedLab = selectableLabs.find((l) => l.id === labId);
   const [labError, setLabError] = useState<string>();
   const [day, setDay] = useState(
     () => new Date(existing?.startsAt ?? Date.now()),
@@ -169,7 +177,7 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
         />
         {labsError ? (
           <Banner tone="danger" title="Gagal memuat lab" message={labsError} />
-        ) : !labsLoading && activeLabs.length === 0 ? (
+        ) : !labsLoading && selectableLabs.length === 0 ? (
           <>
             <Banner
               tone="warning"
@@ -187,9 +195,9 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
             label="Lokasi lab"
             placeholder={labsLoading ? 'Memuat lab…' : 'Pilih lab'}
             value={labId}
-            options={activeLabs.map((l) => ({
+            options={selectableLabs.map((l) => ({
               value: l.id,
-              label: l.name,
+              label: l.isActive ? l.name : `${l.name} (Nonaktif)`,
               description: `${l.building} · radius ${l.radiusMeters} m`,
             }))}
             onChange={(id) => {
