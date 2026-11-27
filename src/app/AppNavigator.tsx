@@ -27,7 +27,7 @@ import { StudentScheduleScreen } from '../features/student/StudentScheduleScreen
 import { StudentSessionDetailScreen } from '../features/student/StudentSessionDetailScreen';
 import { LeaveProvider } from '../features/leave/LeaveProvider';
 
-import { isAssistantRole } from '../domain/asprakScope';
+import { canManageLabMaster, isAssistantRole } from '../domain/asprakScope';
 import { db } from '../services/firebase';
 import { DockTabActiveProvider } from '../shared/navigation/useTransientFeedback';
 import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
@@ -516,26 +516,29 @@ export function AppNavigator() {
                       component={AssistantLeaveReviewListScreen}
                       options={{ headerShown: false }}
                     />
-                    <Stack.Screen
-                      name="AssistantLabList"
-                      component={AssistantLabListScreen}
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="AssistantLabForm"
-                      component={AssistantLabFormScreen}
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="AslabLabDistribution"
-                      component={AslabLabDistributionScreen}
-                    />
-                    <Stack.Screen
-                      name="AslabLabImport"
-                      component={AslabLabImportScreen}
-                      options={{ headerShown: false }}
-                    />
                   </Stack.Group>
+
+                  {/* Master lab & distribusi: route hanya ada untuk Aslab (#54). */}
+                  {canManageLabMaster(user?.role) ? (
+                    <Stack.Group screenOptions={{ headerShown: false }}>
+                      <Stack.Screen
+                        name="AssistantLabList"
+                        component={AssistantLabListScreen}
+                      />
+                      <Stack.Screen
+                        name="AssistantLabForm"
+                        component={AssistantLabFormScreen}
+                      />
+                      <Stack.Screen
+                        name="AslabLabDistribution"
+                        component={AslabLabDistributionScreen}
+                      />
+                      <Stack.Screen
+                        name="AslabLabImport"
+                        component={AslabLabImportScreen}
+                      />
+                    </Stack.Group>
+                  ) : null}
 
                   <Stack.Screen
                     name="Calendar"
