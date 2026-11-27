@@ -17,6 +17,7 @@ import {
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { canManageLabMaster } from '../../domain/asprakScope';
+import { LabAccessDenied } from './LabAccessDenied';
 import { useLabManagement } from './useLabManagement';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantLabList'>;
@@ -38,9 +39,9 @@ export function AssistantLabListScreen({ navigation }: Props) {
   const goBack = () => navigation.goBack();
   const isLabManager = canManageLabMaster(user?.role);
   const managedCourseIds = user?.managedCourseIds ?? [];
-  const labs = isLabManager
-    ? allLabs.filter((lab) => managedCourseIds.includes(lab.courseId ?? ''))
-    : allLabs;
+  const labs = allLabs.filter((lab) =>
+    managedCourseIds.includes(lab.courseId ?? ''),
+  );
 
   const handleToggleActive = async (labId: string, nextActive: boolean) => {
     setActionError(null);
@@ -49,6 +50,8 @@ export function AssistantLabListScreen({ navigation }: Props) {
       setActionError(res.message || 'Gagal memperbarui status laboratorium.');
     }
   };
+
+  if (!isLabManager) return <LabAccessDenied onBack={goBack} />;
 
   if (loading && labs.length === 0) {
     return (
@@ -76,19 +79,11 @@ export function AssistantLabListScreen({ navigation }: Props) {
     <Screen withDock={false}>
       <BackButton onPress={goBack} />
 
-      {!isLabManager && (
-        <Banner
-          tone="warning"
-          title="Kewenangan Aslab"
-          message="Konfigurasi dan penambahan master laboratorium dikelola oleh Aslab."
-        />
-      )}
-
       {actionError ? (
         <Banner tone="danger" title="Gagal" message={actionError} />
       ) : null}
 
-      {isLabManager && managedCourseIds.length === 0 ? (
+      {managedCourseIds.length === 0 ? (
         <EmptyState
           icon="location-outline"
           title="Belum ada mata kuliah"
@@ -115,37 +110,28 @@ export function AssistantLabListScreen({ navigation }: Props) {
                       tone={lab.isActive ? 'success' : 'neutral'}
                     />
                   }
-                  accessibilityHint={
-                    isLabManager ? 'Buka form edit laboratorium' : undefined
-                  }
-                  onPress={
-                    isLabManager
-                      ? () =>
-                          navigation.navigate('AssistantLabForm', {
-                            labId: lab.id,
-                          })
-                      : undefined
+                  accessibilityHint="Buka form edit laboratorium"
+                  onPress={() =>
+                    navigation.navigate('AssistantLabForm', { labId: lab.id })
                   }
                 />
 
-                {isLabManager && (
-                  <View style={styles.rowActions}>
-                    <Button
-                      label={lab.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                      variant="outline"
-                      loading={isToggling}
-                      disabled={isToggling}
-                      onPress={() => handleToggleActive(lab.id, !lab.isActive)}
-                    />
-                  </View>
-                )}
+                <View style={styles.rowActions}>
+                  <Button
+                    label={lab.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                    variant="outline"
+                    loading={isToggling}
+                    disabled={isToggling}
+                    onPress={() => handleToggleActive(lab.id, !lab.isActive)}
+                  />
+                </View>
               </View>
             );
           })}
         </View>
       )}
 
-      {isLabManager && managedCourseIds.length > 0 && (
+      {managedCourseIds.length > 0 && (
         <View style={styles.card}>
           <Button
             label="Tambah lab"

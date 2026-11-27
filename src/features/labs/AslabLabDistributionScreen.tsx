@@ -16,6 +16,7 @@ import {
   TextField,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
+import { LabAccessDenied } from './LabAccessDenied';
 import { useLabManagement } from './useLabManagement';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AslabLabDistribution'>;
@@ -71,17 +72,15 @@ export function AslabLabDistributionScreen({ navigation, route }: Props) {
     }
   }
 
+  if (!canManageLabMaster(user?.role)) {
+    return <LabAccessDenied onBack={() => navigation.goBack()} />;
+  }
+
   return (
     <Screen withDock={false}>
       <BackButton onPress={() => navigation.goBack()} />
       <SectionHeader title="Distribusi Lab" />
-      {!canManageLabMaster(user?.role) ? (
-        <Banner
-          tone="warning"
-          title="Akses dibatasi"
-          message="Distribusi lab dikelola oleh Aslab."
-        />
-      ) : loading ? (
+      {loading ? (
         <LoadingState label="Memuat laboratorium…" />
       ) : error ? (
         <Banner tone="danger" title="Gagal memuat lab" message={error} />

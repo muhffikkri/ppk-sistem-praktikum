@@ -32,6 +32,7 @@ import {
 import { colors, radius as tokenRadius } from '../../theme/tokens';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
 import { useAuth } from '../../state';
+import { LabAccessDenied } from './LabAccessDenied';
 import { LabLocationPickerModal } from './LabLocationPickerModal';
 import {
   useLabManagement,
@@ -71,13 +72,10 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
     courseForbidden
   ) {
     return (
-      <Screen withDock={false}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <ErrorState
-          title="Akses lab dibatasi"
-          message="Hanya Aslab yang ditugaskan pada mata kuliah lab ini yang dapat mengelolanya."
-        />
-      </Screen>
+      <LabAccessDenied
+        onBack={() => navigation.goBack()}
+        message="Hanya Aslab yang ditugaskan pada mata kuliah lab ini yang dapat mengelolanya."
+      />
     );
   }
 
