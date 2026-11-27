@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import type { Session } from '../../domain/types';
@@ -15,6 +15,7 @@ import {
   EmptyState,
   ErrorState,
   Header,
+  QuickActionGrid,
   Screen,
   SectionHeader,
   SkeletonList,
@@ -24,6 +25,7 @@ import {
   Text,
   type BadgeTone,
   type IconName,
+  type QuickAction,
 } from '../../shared/ui';
 import { formatWeekdayDayMonth } from '../../shared/format/date';
 import { useTransientFeedback } from '../../shared/navigation/useTransientFeedback';
@@ -39,19 +41,10 @@ import {
 } from './components/AssistantSessionCard';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
-type QuickTone = 'violet' | 'blue' | 'lime' | 'pink' | 'neutral';
 
 // Beranda hanya cuplikan; daftar lengkapnya ada di halaman Jadwal/Presensi.
 const SCHEDULE_PREVIEW_LIMIT = 2;
 const ATTENDANCE_PREVIEW_LIMIT = 2;
-
-const QUICK_TONE: Record<QuickTone, { bg: string; fg: string }> = {
-  violet: { bg: colors.lavenderSubtle, fg: colors.violet },
-  blue: { bg: colors.blueSoft, fg: colors.blue },
-  lime: { bg: colors.lime, fg: colors.ink },
-  pink: { bg: colors.pink, fg: colors.pinkInk },
-  neutral: { bg: colors.surface, fg: colors.inkMuted },
-};
 
 /** "A" -> "Kelas A", tanpa menggandakan "Kelas" pada data yang sudah lengkap. */
 function classLabel(groupName: string): string {
@@ -85,38 +78,6 @@ function HeroHighlight({
         </Text>
       </View>
     </View>
-  );
-}
-
-function QuickAction({
-  icon,
-  label,
-  tone,
-  onPress,
-}: {
-  icon: IconName;
-  label: string;
-  tone: QuickTone;
-  onPress: () => void;
-}) {
-  const t = QUICK_TONE[tone];
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.quickItem,
-        pressed && styles.quickItemPressed,
-      ]}
-    >
-      <View style={[styles.quickIcon, { backgroundColor: t.bg }]}>
-        <Ionicons name={icon} size={20} color={t.fg} />
-      </View>
-      <Text variant="captionStrong" numberOfLines={1} style={styles.quickLabel}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -263,40 +224,40 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
     );
   };
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     {
       key: 'map',
-      icon: 'map-outline' as const,
+      icon: 'map-outline',
       label: 'Peta Lab',
-      tone: 'violet' as const,
+      tone: 'violet',
       onPress: () => navigation.navigate('LabMaps'),
     },
     {
       key: 'class',
-      icon: 'people-outline' as const,
+      icon: 'people-outline',
       label: 'Kelola Kelas',
-      tone: 'blue' as const,
+      tone: 'blue',
       onPress: () => navigation.navigate('AssistantClassList'),
     },
     {
       key: 'new',
-      icon: 'add-circle-outline' as const,
+      icon: 'add-circle-outline',
       label: 'Buat Sesi',
-      tone: 'lime' as const,
+      tone: 'lime',
       onPress: () => navigation.navigate('AssistantSessionForm', {}),
     },
     {
       key: 'leave',
-      icon: 'clipboard-outline' as const,
+      icon: 'clipboard-outline',
       label: 'Periksa Izin',
-      tone: 'pink' as const,
+      tone: 'pink',
       onPress: () => navigation.navigate('AssistantLeaveReviewList'),
     },
     {
       key: 'all',
-      icon: 'time-outline' as const,
+      icon: 'time-outline',
       label: 'Semua Sesi',
-      tone: 'neutral' as const,
+      tone: 'neutral',
       onPress: () => navigation.navigate('AssistantAllSessions'),
     },
   ];
@@ -415,11 +376,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
           <View style={styles.headerRow}>
             <Text variant="bodyStrong">Pintasan Cepat</Text>
           </View>
-          <Card variant="panel" interactive={false} style={styles.quickGrid}>
-            {quickActions.map(({ key, ...action }) => (
-              <QuickAction key={key} {...action} />
-            ))}
-          </Card>
+          <QuickActionGrid actions={quickActions} />
         </View>
 
         {schedulePreview.length > 0 ? (
@@ -511,28 +468,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   heroHighlightText: { flex: 1, gap: 2, minWidth: 0 },
-  quickGrid: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  quickItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderRadius: radius.md,
-    paddingVertical: spacing.xs,
-  },
-  quickItemPressed: { opacity: 0.6 },
-  quickIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickLabel: { textAlign: 'center' },
 
   scheduleCard: {
     flexDirection: 'row',
