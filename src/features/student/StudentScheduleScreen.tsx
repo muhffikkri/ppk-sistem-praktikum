@@ -208,9 +208,6 @@ export function StudentScheduleScreen({ navigation }: Props) {
       <Header
         title="Jadwal"
         description={`${sorted.length} sesi praktikum terdaftar`}
-        trailing={
-          openCount > 0 ? <StatusBadge label="Aktif" tone="violet" /> : null
-        }
       />
 
       <Button

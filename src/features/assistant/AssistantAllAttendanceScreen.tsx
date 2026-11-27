@@ -114,7 +114,6 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
         <>
           <RootTopBar />
           <Header
-            eyebrow="LabPresensi · Asprak"
             title="Rekap"
             accent="presensi"
             description="Semua catatan hadir dari sesi Anda"
@@ -133,7 +132,6 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
                 key: 'sessions',
                 label: 'Total sesi',
                 value: sessions.length,
-                badge: `${total} catatan`,
                 caption: 'Sesi praktikum yang diampu',
               },
               {
@@ -142,7 +140,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
                 value:
                   sessions.length > 0
                     ? `${Math.round((attendedSessions / sessions.length) * 100)}%`
-                    : '–',
+                    : '-',
                 caption: 'Sesi dengan catatan presensi',
                 captionTone: 'violet',
               },

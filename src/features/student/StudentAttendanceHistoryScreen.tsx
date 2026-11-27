@@ -108,10 +108,8 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
         <>
           <RootTopBar />
           <Header
-            eyebrow="LabPresensi · Informatika"
             title="Riwayat"
             accent="kehadiran"
-            description={`${total} presensi tercatat`}
             trailing={
               <IconButton
                 icon="calendar-outline"
@@ -126,8 +124,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
               {
                 key: 'total',
                 label: 'Total sesi',
-                value: total,
-                badge: `${total} / ${sessions.length} sesi`,
+                value: `${total} / ${sessions.length} sesi`,
                 caption: 'Catatan presensi valid',
               },
               {

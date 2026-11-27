@@ -12,6 +12,7 @@ import {
   spacing,
   TextField,
   BackButton,
+  Header,
 } from '../../shared/ui';
 import { ListFeedback, RequestCard, aiCategoryLabels } from './components';
 import { useAssistantLeaveViewModel } from './useAssistantLeaveViewModel';
@@ -75,6 +76,8 @@ export function AssistantLeaveReviewListScreen({ navigation }: Props) {
   return (
     <Screen withDock={false}>
       <BackButton onPress={() => navigation.goBack()} />
+
+      <Header title="Daftar Perizinan" description="Semua Perizinan" />
 
       <ListFeedback {...vm} empty={vm.leaveRequests.length === 0} />
       {feedback ? (

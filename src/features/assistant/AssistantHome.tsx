@@ -352,9 +352,6 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
         <View style={styles.section}>
           <View style={styles.headerRow}>
             <Text variant="bodyStrong">Pintasan Cepat</Text>
-            <Text variant="caption" tone="violet">
-              {`${quickActions.length} menu aktif`}
-            </Text>
           </View>
           <Card variant="panel" interactive={false} style={styles.quickGrid}>
             {quickActions.map(({ key, ...action }) => (

@@ -12,6 +12,7 @@ import {
   spacing,
   TextField,
   BackButton,
+  Header,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import { useLabManagement } from '../labs';
@@ -118,6 +119,8 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
   return (
     <Screen withDock={false}>
       <BackButton onPress={() => navigation.goBack()} />
+
+      <Header title="Buka Sesi Baru" description="Informasi Sesi" />
 
       <View style={styles.form}>
         {isEditing && !editable ? (

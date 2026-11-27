@@ -19,6 +19,7 @@ import {
   BackButton,
   BadgeTone,
   SegmentedOption,
+  Header,
 } from '../../shared/ui';
 import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
@@ -120,6 +121,11 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
       header={
         <>
           <BackButton onPress={() => navigation.goBack()} />
+
+          <Header
+            title="Rekapitulasi Kehadiran"
+            description="Daftar Kehadiran"
+          />
 
           {error ? (
             <Banner

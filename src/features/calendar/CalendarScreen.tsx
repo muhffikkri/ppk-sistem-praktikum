@@ -19,6 +19,7 @@ import {
   SegmentedControl,
   StatusBadge,
   Text,
+  BackButton,
   type BadgeTone,
   type SegmentedOption,
 } from '../../shared/ui';
@@ -229,13 +230,11 @@ export function CalendarScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <RootTopBar />
-      <Header
-        eyebrow={
-          isAssistant ? 'LabPresensi · Asprak' : 'LabPresensi · Informatika'
-        }
-        title={cal.monthYear}
-      />
+      {/* <RootTopBar /> */}
+
+      <BackButton onPress={() => navigation.goBack()} />
+
+      <Header title={cal.monthYear} />
 
       <SegmentedControl
         options={VIEWS}

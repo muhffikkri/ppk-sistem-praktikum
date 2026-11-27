@@ -11,6 +11,7 @@ import {
   Screen,
   spacing,
   BackButton,
+  Header,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 
@@ -47,6 +48,8 @@ export function AssistantClassListScreen({ navigation }: Props) {
   return (
     <Screen withDock={false}>
       <BackButton onPress={goBack} />
+
+      <Header title="Daftar Kelas" description="Informasi Semua Kelas" />
 
       {classes.length === 0 ? (
         <EmptyState

@@ -196,7 +196,6 @@ export function AssistantScheduleScreen({ navigation }: Props) {
   const sorted = [...sessions].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
   );
-  const openCount = sessions.filter((s) => s.status === 'open').length;
 
   const statuses: Session['status'][] =
     filter === 'all' ? ['open', 'scheduled', 'closed', 'cancelled'] : [filter];
@@ -231,9 +230,6 @@ export function AssistantScheduleScreen({ navigation }: Props) {
       <Header
         title="Jadwal"
         description={`${sorted.length} sesi praktikum diampu`}
-        trailing={
-          openCount > 0 ? <StatusBadge label="Aktif" tone="violet" /> : null
-        }
       />
 
       <Button

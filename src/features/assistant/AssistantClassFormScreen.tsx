@@ -16,6 +16,7 @@ import {
   Text,
   TextField,
   BackButton,
+  Header,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 
@@ -107,6 +108,8 @@ export function AssistantClassFormScreen({ route, navigation }: Props) {
   return (
     <Screen withDock={false}>
       <BackButton onPress={() => navigation.goBack()} />
+
+      <Header title="Detail Kelas" description="Informasi Kelas" />
 
       <View style={styles.form}>
         <TextField
