@@ -137,6 +137,14 @@ export const shadow = {
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
+  // Tekan: bayangan mengikuti borderRadius elemen, bukan kotak pembungkus.
+  pressed: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
 } as const;
 
 // Registered family names — one per weight. Keys in src/theme/fonts.ts must

@@ -96,7 +96,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadow.card,
   },
-  circlePressed: { backgroundColor: colors.surface },
+  // Sama seperti `circle`: radius full tetap menentukan kontur shadow saat ditekan.
+  circlePressed: { backgroundColor: colors.surface, ...shadow.pressed },
   disabled: { opacity: 0.5 },
   badge: {
     position: 'absolute',

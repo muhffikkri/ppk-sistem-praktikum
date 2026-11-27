@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
+  type SharedValue,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -66,4 +67,26 @@ export function usePressFeedback({
       },
     },
   };
+}
+
+/**
+ * Perkuat bayangan saat ditekan tanpa mengubah bentuknya: radius elemen
+ * tetap menentukan kontur shadow, baik di iOS maupun elevation Android.
+ */
+export function usePressShadow(
+  progress: SharedValue<number>,
+  base: { shadowOpacity: number; elevation: number },
+) {
+  return useAnimatedStyle(() => ({
+    shadowOpacity: interpolate(
+      progress.get(),
+      [0, 1],
+      [base.shadowOpacity, Math.min(1, base.shadowOpacity + 0.04)],
+    ),
+    elevation: interpolate(
+      progress.get(),
+      [0, 1],
+      [base.elevation, base.elevation + 1],
+    ),
+  }));
 }

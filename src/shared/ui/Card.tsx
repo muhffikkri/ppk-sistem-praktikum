@@ -18,7 +18,11 @@ import {
 import { interpolate, useAnimatedStyle } from 'react-native-reanimated';
 
 import { androidClip, rippleOnDark, rippleOnLight } from './ripple';
-import { AnimatedPressable, usePressFeedback } from './usePressFeedback';
+import {
+  AnimatedPressable,
+  usePressFeedback,
+  usePressShadow,
+} from './usePressFeedback';
 
 const PRESSED_OPACITY = 0.92;
 
@@ -79,6 +83,11 @@ function PressableCard({
   const dimStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.get(), [0, 1], [1, PRESSED_OPACITY]),
   }));
+  const isHero = variant === 'heroViolet' || variant === 'heroInk';
+  const pressShadowStyle = usePressShadow(
+    progress,
+    isHero ? shadow.elevated : shadow.card,
+  );
 
   return (
     <AnimatedPressable
@@ -88,7 +97,14 @@ function PressableCard({
           ? rippleOnDark
           : rippleOnLight
       }
-      style={[styles.base, styles[variant], style, dimStyle, scaleStyle]}
+      style={[
+        styles.base,
+        styles[variant],
+        style,
+        dimStyle,
+        pressShadowStyle,
+        scaleStyle,
+      ]}
       {...pressableProps}
       {...handlers}
     >

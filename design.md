@@ -174,7 +174,12 @@ sebagai ikon.
 | ---------- | ------------------------------------------------------ |
 | `subtle`   | `0 4px 20px -2px rgba(23,20,31,.05)`                  |
 | `elevated` | `0 12px 32px -4px rgba(22,21,34,.08)`  (soft, tanpa glow) |
+| `pressed`  | `0 2px 10px rgba(0,0,0,.04), elevation 2` (saat ditekan) |
 | `card`     | `0 2px 10px rgba(0,0,0,.02), 0 0 1px rgba(0,0,0,.06)` |
+
+Bayangan saat ditekan hanya memperkuat `card`/`elevated` lewat
+`usePressShadow`; kontur tetap mengikuti `borderRadius` elemen
+(`Card` 3xl, `Button` 2xl, `IconButton` circle full), bukan kotak pembungkus.
 
 ### Type scale (px)
 
