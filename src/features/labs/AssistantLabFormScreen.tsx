@@ -19,8 +19,8 @@ import {
   Button,
   ConfirmSheet,
   ErrorState,
-  LoadingState,
   Screen,
+  SkeletonList,
   SelectField,
   SectionHeader,
   SegmentedControl,
@@ -57,6 +57,7 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
     togglingId,
     loading,
     error,
+    retry,
   } = useLabManagement();
 
   const labId = route.params?.labId ?? null;
@@ -86,11 +87,16 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
       <Screen withDock={false}>
         <BackButton onPress={() => navigation.goBack()} />
         {loading ? (
-          <LoadingState label="Memuat laboratorium…" />
+          <SkeletonList variant="card" count={2} label="Memuat laboratorium…" />
         ) : (
           <ErrorState
-            title="Laboratorium tidak ditemukan"
+            title={
+              error
+                ? 'Gagal memuat laboratorium'
+                : 'Laboratorium tidak ditemukan'
+            }
             message={error ?? 'Lab mungkin sudah dihapus oleh asisten lain.'}
+            onRetry={error ? retry : undefined}
           />
         )}
       </Screen>
