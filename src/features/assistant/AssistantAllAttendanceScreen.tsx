@@ -16,7 +16,11 @@ import {
 } from '../../shared/ui';
 import { SessionAttendancePreviewCard } from '../attendance/SessionAttendancePreviewCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
-import { isCurrentMonth, isCurrentWeek } from '../attendance/punctuality';
+import {
+  isCurrentMonth,
+  isCurrentWeek,
+  isToday,
+} from '../attendance/punctuality';
 import {
   buildSessionAttendanceGroup,
   type SessionAttendanceGroup,
@@ -28,10 +32,11 @@ type Props = NativeStackScreenProps<
   RootStackParamList,
   'AssistantAllAttendance'
 >;
-type Filter = 'all' | 'week' | 'month';
+type Filter = 'all' | 'today' | 'week' | 'month';
 
 const FILTERS: SegmentedOption<Filter>[] = [
   { value: 'all', label: 'Semua' },
+  { value: 'today', label: 'Hari ini' },
   { value: 'week', label: 'Minggu ini' },
   { value: 'month', label: 'Bulan ini' },
 ];
@@ -41,6 +46,7 @@ const matchesFilter = (
   filter: Filter,
 ): boolean => {
   if (filter === 'all') return true;
+  if (filter === 'today') return isToday(group.session.startsAt);
   if (filter === 'week') return isCurrentWeek(group.session.startsAt);
   return isCurrentMonth(group.session.startsAt);
 };

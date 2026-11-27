@@ -38,6 +38,15 @@ export function isCurrentMonth(iso: string, now = new Date()): boolean {
   );
 }
 
+export function isToday(iso: string, now = new Date()): boolean {
+  const date = new Date(iso);
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
 /** Minggu dimulai Senin, mengikuti konvensi kalender di aplikasi. */
 export function isCurrentWeek(iso: string, now = new Date()): boolean {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
