@@ -396,6 +396,12 @@ auth. `contentStyle` hanya untuk layout kolom, mis.
 di bawah pada HP tinggi tetapi tetap bisa discroll di HP pendek
 (contoh: `LandingScreen`).
 
+`ScreenList` memakai layout yang sama untuk daftar panjang. Baris diungkap
+bertahap per `pageSize` (default 10) saat pengguna mendekati akhir list;
+`SkeletonItem` muncul sebagai footer selama batch berikutnya disiapkan.
+Virtualisasi FlatList (`initialNumToRender`, `maxToRenderPerBatch`,
+`windowSize`) tetap berlaku, jadi hanya baris dekat viewport yang mount.
+
 ### Guard otomatis
 
 `npm run check:ui [-- <path|glob> …]` (`scripts/check-ui-tokens.ts`)
