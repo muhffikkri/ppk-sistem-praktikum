@@ -4,12 +4,22 @@ import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import {
+  SESSION_FIRST_HOUR,
+  blockHourOf,
+  defaultEndHour,
+  endHourOptions,
+  formatHourLabel,
+  startHourOptions,
+  validateSessionTimeBlock,
+} from '../../domain/sessionTimeRules';
+import {
   Banner,
   Button,
   DateTimeField,
   Screen,
   SelectField,
   spacing,
+  Text,
   TextField,
   BackButton,
   Header,
@@ -19,13 +29,23 @@ import { useLabManagement } from '../labs/useLabManagement';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSessionForm'>;
 
-const TWO_HOURS = 2 * 60 * 60 * 1000;
+const START_HOURS = startHourOptions();
+const START_OPTIONS = START_HOURS.map((hour) => ({
+  value: String(hour),
+  label: formatHourLabel(hour),
+}));
 
-/** Date part from `day`, hours and minutes from `clock`. */
-function combine(day: Date, clock: Date): Date {
+/** Tanggal dari `day` pada jam bulat `hour`. */
+function atHour(day: Date, hour: number): Date {
   const result = new Date(day);
-  result.setHours(clock.getHours(), clock.getMinutes(), 0, 0);
+  result.setHours(hour, 0, 0, 0);
   return result;
+}
+
+/** Jam mulai bawaan sesi baru: jam bulat berikutnya dalam blok. */
+function nextStartHour(now: Date): number {
+  const hour = now.getHours() + 1;
+  return START_HOURS.includes(hour) ? hour : SESSION_FIRST_HOUR;
 }
 
 export function AssistantSessionFormScreen({ route, navigation }: Props) {
@@ -67,36 +87,62 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
   const [day, setDay] = useState(
     () => new Date(existing?.startsAt ?? Date.now()),
   );
-  const [start, setStart] = useState(
-    () => new Date(existing?.startsAt ?? Date.now()),
+  // Sesi lama di luar blok jam (mis. 09.31) wajib dipilih ulang.
+  const [startHour, setStartHour] = useState<number | null>(() =>
+    existing
+      ? blockHourOf(new Date(existing.startsAt), START_HOURS)
+      : nextStartHour(new Date()),
   );
-  const [end, setEnd] = useState(
-    () =>
-      new Date(existing?.endsAt ?? new Date(Date.now() + TWO_HOURS).getTime()),
-  );
+  const [endHour, setEndHour] = useState<number | null>(() => {
+    if (!existing) return startHour === null ? null : defaultEndHour(startHour);
+    if (startHour === null) return null;
+    return blockHourOf(new Date(existing.endsAt), endHourOptions(startHour));
+  });
   const [endTouched, setEndTouched] = useState(isEditing);
+  const [startError, setStartError] = useState<string>();
   const [classError, setClassError] = useState<string>();
   const [endError, setEndError] = useState<string>();
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const editable = isEditing ? existing?.status === 'scheduled' : true;
 
-  const onStartChange = (value: Date) => {
-    setStart(value);
+  const endOptions = useMemo(
+    () =>
+      startHour === null
+        ? []
+        : endHourOptions(startHour).map((hour) => ({
+            value: String(hour),
+            label: formatHourLabel(hour),
+            description: `${hour - startHour} jam`,
+          })),
+    [startHour],
+  );
+
+  const onStartChange = (value: string) => {
+    const hour = Number(value);
+    setStartHour(hour);
+    setStartError(undefined);
     setEndError(undefined);
-    if (!endTouched) setEnd(new Date(value.getTime() + TWO_HOURS));
+    const stillValid =
+      endHour !== null && endHourOptions(hour).includes(endHour);
+    if (!endTouched || !stillValid) setEndHour(defaultEndHour(hour));
   };
 
   const handleSubmit = async () => {
     if (!editable) return;
-    const startsAt = combine(day, start);
-    const endsAt = combine(day, end);
     setFormError(null);
     setClassError(classId ? undefined : 'Pilih kelas terlebih dahulu');
     setLabError(selectedLab ? undefined : 'Pilih lab tempat praktikum');
-    const endInvalid = endsAt.getTime() <= startsAt.getTime();
-    setEndError(endInvalid ? 'Jam selesai harus setelah jam mulai' : undefined);
-    if (!classId || !selectedLab || endInvalid) return;
+    setStartError(startHour === null ? 'Pilih jam mulai' : undefined);
+    if (startHour === null || endHour === null) {
+      setEndError('Pilih jam selesai');
+      return;
+    }
+    const startsAt = atHour(day, startHour);
+    const endsAt = atHour(day, endHour);
+    const timeBlock = validateSessionTimeBlock(startsAt, endsAt);
+    setEndError(timeBlock.ok ? undefined : timeBlock.message);
+    if (!classId || !selectedLab || !timeBlock.ok) return;
 
     const input = {
       classId,
@@ -214,23 +260,32 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
           value={day}
           onChange={setDay}
         />
-        <DateTimeField
+        <SelectField
           label="Jam mulai"
-          mode="time"
-          value={start}
+          placeholder="Pilih jam mulai"
+          value={startHour === null ? null : String(startHour)}
+          options={START_OPTIONS}
           onChange={onStartChange}
+          error={startError}
         />
-        <DateTimeField
+        <SelectField
           label="Jam selesai"
-          mode="time"
-          value={end}
+          placeholder={
+            startHour === null ? 'Pilih jam mulai dulu' : 'Pilih jam selesai'
+          }
+          value={endHour === null ? null : String(endHour)}
+          options={endOptions}
           onChange={(value) => {
-            setEnd(value);
+            setEndHour(Number(value));
             setEndTouched(true);
             setEndError(undefined);
           }}
           error={endError}
         />
+        <Text variant="caption" tone="muted">
+          Sesi berlangsung pada jam bulat antara 07.00 dan 20.00, durasi 1–4
+          jam.
+        </Text>
 
         {formError ? (
           <Banner tone="danger" title="Gagal menyimpan" message={formError} />
