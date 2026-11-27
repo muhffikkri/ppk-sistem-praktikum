@@ -145,23 +145,6 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
                 captionTone: 'violet',
               },
             ]}
-            breakdown={[
-              {
-                key: 'onTime',
-                label: 'Tepat waktu',
-                value: counts.onTime,
-              },
-              {
-                key: 'late',
-                label: 'Terlambat',
-                value: counts.late,
-              },
-              {
-                key: 'unknown',
-                label: 'Tanpa jadwal',
-                value: counts.unknown,
-              },
-            ]}
           />
           <SegmentedControl
             options={options}

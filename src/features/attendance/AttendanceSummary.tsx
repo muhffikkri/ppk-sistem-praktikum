@@ -32,7 +32,7 @@ export function AttendanceSummary({
   breakdown,
 }: {
   metrics: AttendanceMetric[];
-  breakdown: AttendanceBreakdownItem[];
+  breakdown?: AttendanceBreakdownItem[];
 }) {
   return (
     <View style={styles.block}>
@@ -77,7 +77,7 @@ export function AttendanceSummary({
         ))}
       </View>
 
-      {breakdown.length > 0 ? (
+      {breakdown && breakdown.length > 0 ? (
         <Card variant="surface" interactive={false} style={styles.breakdown}>
           <View style={styles.breakdownRow}>
             {breakdown.map((item, index) => (
