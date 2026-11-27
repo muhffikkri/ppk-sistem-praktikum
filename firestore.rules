@@ -269,6 +269,46 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // 3a. Kunci pemakaian lab per jam (#68). ID deterministik
+    // `{labId}_{hourMs}`; slot ditulis satu batch dengan sesinya. Membuat
+    // slot yang sudah ada dihitung update dan ditolak, sehingga dua sesi
+    // tidak bisa memakai lab yang sama pada jam yang sama.
+    function slotSessionAfter(data) {
+      return getAfter(/databases/$(database)/documents/sessions/$(data.sessionId)).data;
+    }
+
+    match /lab_slots/{slotId} {
+      // Asisten boleh membaca satu slot untuk menjelaskan bentrok.
+      allow get: if isAssistant();
+      allow list: if false;
+
+      allow create: if isAssistant()
+        && request.resource.data.keys().hasOnly([
+          'labId', 'hourMs', 'sessionId', 'courseName', 'groupName', 'createdBy'
+        ])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.labId is string
+        && request.resource.data.hourMs is int
+        && request.resource.data.hourMs % 3600000 == 0
+        && slotId == request.resource.data.labId + '_' + string(request.resource.data.hourMs)
+        && request.resource.data.sessionId is string
+        && slotSessionAfter(request.resource.data).get('labId', null) == request.resource.data.labId
+        && slotSessionAfter(request.resource.data).status == 'scheduled'
+        && request.auth.uid in slotSessionAfter(request.resource.data).assistantIds
+        && slotSessionAfter(request.resource.data).startsAtMs < request.resource.data.hourMs + 3600000
+        && request.resource.data.hourMs < slotSessionAfter(request.resource.data).endsAtMs;
+
+      allow update: if false;
+
+      // Dilepas oleh asisten sesi pemiliknya saat sesi diubah, dibatalkan,
+      // atau ditutup lebih awal. Slot yang tidak ada (sesi lama sebelum
+      // kunci slot) boleh "dihapus" agar batch pelepasan tidak gagal.
+      allow delete: if isAssistant()
+        && (resource == null
+          || request.auth.uid
+            in get(/databases/$(database)/documents/sessions/$(resource.data.sessionId)).data.assistantIds);
+    }
+
     // 3b. Master Laboratorium (Sprint 3 & SRS-4.01) — acuan geofence presensi & peta
     function validLab(data) {
       return data.name is string && data.name.size() > 0
