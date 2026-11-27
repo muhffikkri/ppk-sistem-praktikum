@@ -157,9 +157,9 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
       }
       sectionHeader={
         <SectionHeader
-          title="Terbaru"
-          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
-          onAction={() => setNewestFirst((value) => !value)}
+          title="Riwayat sesi"
+          sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onSort={() => setNewestFirst((value) => !value)}
         />
       }
       empty={

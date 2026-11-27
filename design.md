@@ -284,9 +284,11 @@ muted). `dark` mengganti semua baris ke `onPrimary` / `onInkMuted`.
 
 ### SectionHeader
 
-`overline` muted di kiri + aksi teks kecil opsional di kanan
-(`captionStrong` violet, mis. "Lihat semua"). Dipakai antar section,
-bukan di setiap kartu.
+`label` muted di kiri + aksi teks kecil opsional di kanan
+(`captionStrong` violet, mis. "Lihat semua"). Untuk pengurutan, pakai
+`sortLabel`/`onSort`: tombol ikon `swap-vertical-outline` (`IconButton`
+ghost) tanpa teks, dengan `accessibilityLabel` yang menyebut urutan
+saat ini. Dipakai antar section, bukan di setiap kartu.
 
 ### Form controls — Section 03
 

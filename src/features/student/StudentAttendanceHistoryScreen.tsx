@@ -168,8 +168,8 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
       sectionHeader={
         <SectionHeader
           title="Semua presensi"
-          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
-          onAction={() => setNewestFirst((value) => !value)}
+          sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onSort={() => setNewestFirst((value) => !value)}
         />
       }
       empty={

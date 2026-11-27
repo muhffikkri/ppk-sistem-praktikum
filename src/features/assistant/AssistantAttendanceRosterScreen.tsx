@@ -192,8 +192,8 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
       sectionHeader={
         <SectionHeader
           title="Daftar kehadiran"
-          actionLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
-          onAction={() => setNewestFirst((value) => !value)}
+          sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          onSort={() => setNewestFirst((value) => !value)}
         />
       }
       empty={
