@@ -124,7 +124,7 @@ Update hanya diterima build yang `runtimeVersion` dan channel-nya cocok. Perubah
 
 ## Firebase: rules, functions, dan Maps (Sprint 3)
 
-Presensi wajib memindai QR berputar (token HMAC `{sessionId}.{slot 30 detik}.{signature}`) yang dibuat asisten lewat callable `issueAttendanceQr`. `submitQrCheckIn` memverifikasi token, jendela sesi, kepesertaan, izin, dan geofence di server; klien tidak bisa menulis dokumen `attendance` langsung. Rules dan Cloud Functions (callable, webhook, dan scheduler) baru berlaku setelah di-deploy:
+Presensi wajib memindai QR berputar (token HMAC `{sessionId}.{slot 30 detik}.{signature}`) yang dibuat asisten lewat callable `issueAttendanceQr`. `submitQrCheckIn` memverifikasi token, jendela sesi, kepesertaan, izin, dan geofence di server; klien tidak bisa menulis dokumen `attendance` langsung. Rules dan Cloud Functions (callable, webhook, dan scheduler penutup sesi) baru berlaku setelah di-deploy:
 
 ```bash
 firebase deploy --only firestore:rules --project project-praktikum-sprint
@@ -133,7 +133,7 @@ firebase deploy --only functions --project project-praktikum-sprint
 
 Sebelum deploy rules, jalankan `npm run test:rules` (butuh Java). Tes ini menyalakan Firestore + Auth emulator lalu mencoba presensi dari dalam radius, di luar radius, dan dengan jarak dipalsukan.
 
-Push notification **tidak lagi memakai FCM SDK atau trigger Cloud Functions**. Worker Node.js (Node.js 22) yang berjalan di luar Firebase membaca perubahan Firestore, menulis inbox, lalu mengirim lewat Expo Push Service; token akses Expo dibaca dari environment worker (`EXPO_PUSH_ACCESS_TOKEN`), bukan dari Secret Manager Functions. Kode pembentuk pesan dan inbox tetap ada di `functions/pushEvents.cjs` supaya isi notifikasi identik. QR presensi membutuhkan secret `ATTENDANCE_QR_SECRET`; generate nilai acak dan simpan dengan `firebase functions:secrets:set ATTENDANCE_QR_SECRET` sebelum deploy functions. Nilai secret tidak boleh disimpan di repo.
+Push notification **tidak lagi memakai FCM SDK atau Cloud Functions**. Seluruh trigger (`session_scheduled`, `session_opened`, `schedule_changed`, `leave_decided`, `fine_issued`, `payment_success`, `payment_failed`), penulisan inbox, antrean `push_delivery`, retry, dan pengecekan receipt dijalankan worker Node.js [`ppk-notification-server`](https://github.com/muhffikkri/ppk-notification-server). Token akses Expo dibaca dari environment worker (`EXPO_PUSH_ACCESS_TOKEN`); Functions tidak lagi memakai secret push. QR presensi membutuhkan secret `ATTENDANCE_QR_SECRET`; generate nilai acak dan simpan dengan `firebase functions:secrets:set ATTENDANCE_QR_SECRET` sebelum deploy functions. Nilai secret tidak boleh disimpan di repo.
 
 ### Inbox notifikasi
 
@@ -145,24 +145,10 @@ Setiap push juga disimpan ke `users/{uid}/notifications/{id}` dan tampil di laya
 | Sesi dibuka (`session_opened`) | Peserta sesi | Halaman presensi |
 | Jam/lab sesi berubah (`schedule_changed`) | Peserta sesi | Detail sesi |
 | Izin disetujui/ditolak (`leave_decided`) | Praktikan pengaju | Daftar izin |
+| Denda diterbitkan (`fine_issued`) | Pemilik denda | Detail denda |
+| Pembayaran berhasil/gagal (`payment_success`, `payment_failed`) | Pemilik denda | Detail denda |
 
-Worker Node.js (runtime Node.js 22, pengganti trigger push Cloud Functions tanpa Blaze) cukup memakai ulang `functions/pushEvents.cjs`. Cloud Functions sekarang hanya menyediakan callable yang dipanggil klien, webhook Midtrans, dan scheduler penutup sesi; antrean `push_delivery`, retry, serta pengecekan receipt ditangani worker:
-
-```js
-const { sessionEvents, inboxEntries, pushMessage } = require('./functions/pushEvents.cjs');
-
-// before/after = data dokumen sesi, eventId = ID unik perubahan (mis. `${sessionId}:${updateTime}`)
-const notices = sessionEvents(before, after, sessionId);
-for (const entry of inboxEntries(eventId, notices, after)) {
-  // create() + abaikan ALREADY_EXISTS agar event yang diulang tidak dobel
-  await db.doc(`users/${entry.uid}/notifications/${entry.id}`).create(entry.data).catch(() => {});
-  // untuk setiap token push milik entry.uid:
-  // pushMessage({ ...notice, uid: entry.uid, title: entry.data.title, body: entry.data.body,
-  //               notificationId: entry.id, sendUntil }, token)
-}
-```
-
-`sessionCreatedEvents` (dokumen sesi baru) dan `leaveEvents` (dokumen izin) dipakai dengan cara yang sama.
+Worker memakai `src/pushEvents.js` di reponya sendiri sebagai satu-satunya sumber pembentuk event, inbox, dan pesan. Cloud Functions hanya menyediakan callable yang dipanggil klien, webhook Midtrans, dan scheduler penutup sesi. Antrean `push_delivery` memakai ID deterministik, diproses ulang untuk retry dan receipt; TTL `expireAt` diset 7 hari setelah kejadian. Detail penyiapan ada di README repo worker.
 
 Sesi yang dibuat sebelum ada pilihan lab belum punya `labId`, sehingga praktikan tidak bisa presensi. Buka sesi tersebut di aplikasi asisten, pilih lab, lalu simpan. Seeder sudah membuat data `labs` dan mengisi `labId` di setiap sesi; ubah koordinat lab lewat aplikasi asisten bila ingin mencoba presensi dari lokasi lain.
 
