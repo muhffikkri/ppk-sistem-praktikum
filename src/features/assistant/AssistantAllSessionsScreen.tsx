@@ -6,8 +6,10 @@ import type { Session } from '../../domain/types';
 import {
   BackButton,
   EmptyState,
+  Screen,
   ScreenList,
   SegmentedControl,
+  SkeletonList,
 } from '../../shared/ui';
 import { useAssistantSessionsViewModel } from '../../state';
 import { AssistantSessionCard } from './components/AssistantSessionCard';
@@ -24,8 +26,18 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 export function AssistantAllSessionsScreen({ navigation }: Props) {
-  const { sessions, getAttendanceForSession } = useAssistantSessionsViewModel();
+  const { sessions, getAttendanceForSession, loading } =
+    useAssistantSessionsViewModel();
   const [filter, setFilter] = useState<Filter>('all');
+
+  if (loading) {
+    return (
+      <Screen>
+        <BackButton onPress={() => navigation.goBack()} />
+        <SkeletonList variant="card" count={5} label="Memuat sesi…" />
+      </Screen>
+    );
+  }
 
   const visible = [...sessions]
     .filter((s) => filter === 'all' || s.status === filter)

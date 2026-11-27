@@ -14,9 +14,9 @@ import {
   EmptyState,
   ErrorState,
   Header,
-  LoadingState,
   Screen,
   SegmentedControl,
+  SkeletonList,
   StatusBadge,
   Text,
   BackButton,
@@ -148,7 +148,7 @@ export function CalendarScreen({ navigation }: Props) {
     return (
       <Screen>
         <RootTopBar />
-        <LoadingState label="Memuat kalender…" />
+        <SkeletonList variant="card" count={3} label="Memuat kalender…" />
       </Screen>
     );
   }

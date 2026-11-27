@@ -7,7 +7,7 @@ import {
   Card,
   CardContent,
   EmptyState,
-  LoadingState,
+  SkeletonList,
   spacing,
   StatusBadge,
   Text,
@@ -121,7 +121,7 @@ export function ListFeedback({
   return (
     <>
       {loading && empty ? (
-        <LoadingState label="Memuat pengajuan izin…" />
+        <SkeletonList variant="card" count={3} label="Memuat pengajuan izin…" />
       ) : null}
       {error ? (
         <>
