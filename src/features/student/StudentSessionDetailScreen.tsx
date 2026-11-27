@@ -13,8 +13,8 @@ import {
   CardContent,
   EmptyState,
   LoadingState,
+  Header,
   Screen,
-  SectionHeader,
   spacing,
   Text,
   BackButton,
@@ -72,7 +72,8 @@ export function StudentSessionDetailScreen({ route, navigation }: Props) {
       <BackButton onPress={() => navigation.goBack()} />
 
       <View style={styles.section}>
-        <SectionHeader title="Informasi Sesi" />
+        <Header title="Detail Sesi" description="Informasi Sesi" />
+        {/* <SectionHeader title="Informasi Sesi" /> */}
         <Card interactive={false}>
           <CardContent>
             <View style={styles.detailGrid}>

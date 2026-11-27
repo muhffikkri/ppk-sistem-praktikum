@@ -10,6 +10,7 @@ import {
   EmptyState,
   InfoRow,
   Screen,
+  Header,
   spacing,
   StatCard,
   StatRow,
@@ -76,6 +77,8 @@ export function AssistantSessionDetailScreen({ route, navigation }: Props) {
   return (
     <Screen withDock={false}>
       <BackButton onPress={() => navigation.goBack()} />
+
+      <Header title="Detail Sesi" description="Informasi Sesi" />
 
       {feedback ? (
         <Banner
