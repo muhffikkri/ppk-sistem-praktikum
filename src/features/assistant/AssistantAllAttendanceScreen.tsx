@@ -7,9 +7,9 @@ import {
   ErrorState,
   Header,
   IconButton,
-  LoadingState,
   Screen,
   ScreenList,
+  SkeletonList,
   SectionHeader,
   SegmentedControl,
   type SegmentedOption,
@@ -56,7 +56,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
     return (
       <Screen>
         <RootTopBar />
-        <LoadingState label="Memuat rekap presensi…" />
+        <SkeletonList variant="card" count={4} label="Memuat rekap presensi…" />
       </Screen>
     );
   }

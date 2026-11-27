@@ -8,9 +8,9 @@ import {
   ErrorState,
   Header,
   IconButton,
-  LoadingState,
   Screen,
   ScreenList,
+  SkeletonList,
   SectionHeader,
   SegmentedControl,
   type SegmentedOption,
@@ -49,7 +49,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
     return (
       <Screen>
         <RootTopBar />
-        <LoadingState label="Memuat riwayat…" />
+        <SkeletonList variant="row" count={5} label="Memuat riwayat…" />
       </Screen>
     );
   }

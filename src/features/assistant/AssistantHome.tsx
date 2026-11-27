@@ -15,9 +15,9 @@ import {
   EmptyState,
   ErrorState,
   Header,
-  LoadingState,
   Screen,
   SectionHeader,
+  SkeletonList,
   StatCard,
   StatRow,
   StatusBadge,
@@ -145,7 +145,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
     return (
       <Screen>
         {topBar}
-        <LoadingState label="Memuat sesi…" />
+        <SkeletonList variant="hero" count={2} label="Memuat sesi…" />
       </Screen>
     );
   }

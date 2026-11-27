@@ -15,9 +15,9 @@ import {
   ErrorState,
   IconButton,
   ListRow,
-  LoadingState,
   Screen,
   SectionHeader,
+  SkeletonList,
   StatRow,
   StatusBadge,
   Text,
@@ -188,7 +188,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
     return (
       <Screen>
         {topBar}
-        <LoadingState label="Memuat jadwal…" />
+        <SkeletonList variant="hero" count={2} label="Memuat jadwal…" />
       </Screen>
     );
   }

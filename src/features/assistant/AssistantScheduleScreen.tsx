@@ -12,9 +12,9 @@ import {
   EmptyState,
   ErrorState,
   Header,
-  LoadingState,
   Screen,
   SegmentedControl,
+  SkeletonList,
   StatusBadge,
   Text,
   type BadgeTone,
@@ -175,7 +175,7 @@ export function AssistantScheduleScreen({ navigation }: Props) {
     return (
       <Screen>
         <RootTopBar />
-        <LoadingState label="Memuat jadwal…" />
+        <SkeletonList variant="card" count={4} label="Memuat jadwal…" />
       </Screen>
     );
   }
