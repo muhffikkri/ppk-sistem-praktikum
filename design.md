@@ -364,8 +364,17 @@ kecil outline.
 Empty state: blok `surface` **dashed border**, ikon panel 48 di tengah,
 judul `bodyStrong`, deskripsi `body` (max 240px).
 
-`LoadingState`: satu-satunya blok loading — spinner violet + label
-body muted (default "Memuat…"), di tengah.
+`LoadingState`: blok loading untuk aksi/izin dan keadaan tanpa layout
+(list kosong, izin kamera) — spinner violet + label body muted
+(default "Memuat…"), di tengah.
+
+**Skeleton** dipakai untuk pemuatan data yang sudah punya layout tetap:
+`Skeleton` (blok/item dengan shimmer `borderSubtle` ↔ `lavender`,
+900ms, reverse, hormati `useReducedMotion`), `SkeletonItem`
+(`row`/`card`/`hero`, mengikuti bentuk primitif aslinya), `SkeletonList`
+(kumpulan dengan `count`), dan `SkeletonGroup` (pengumuman `progressbar`
+untuk pembaca layar). Skeleton tidak interaktif dan tidak memakai teks
+karangan. Shimmer berhenti saat data tiba (komponen di-unmount).
 `ErrorState`: blok `surface` dashed-border dengan aksen danger (ikon 48,
 judul `bodyStrong`, pesan dari service, `hint` singkat, `Button` primer
 "Coba lagi", serta `secondaryAction` opsional). Bedakan jelas:
@@ -518,8 +527,8 @@ Sebelum menambah/mengubah UI:
       bukan literal baru.
 - [ ] Gunakan primitif `shared/ui` (Text, Button, IconButton, BackButton,
       AppTopBar/RootTopBar, Header, SectionHeader, TextField, ListRow,
-      Avatar, Card, StatusBadge, Banner, LoadingState, ErrorState,
-      Screen, EmptyState) — buat primitif baru hanya jika belum ada.
+      Avatar, Card, StatusBadge, Banner, LoadingState, SkeletonList,
+      ErrorState, Screen, EmptyState) — buat primitif baru hanya jika belum ada.
 - [ ] Chrome: root/navbar → `RootTopBar`; pushed/back → `BackButton` only.
       Jangan memakai `TopBar` lama atau native header.
 - [ ] Form login memakai hint autofill kredensial (`username` +
