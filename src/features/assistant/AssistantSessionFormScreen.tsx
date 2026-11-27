@@ -159,6 +159,10 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
           ? await updateSession(sessionId, input)
           : await createSession(input);
       if (!result.ok) {
+        if (result.reason === 'lab_conflict') {
+          setLabError(result.message);
+          return;
+        }
         setFormError(result.message || 'Gagal menyimpan sesi');
         return;
       }
