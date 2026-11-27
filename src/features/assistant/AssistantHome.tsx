@@ -53,6 +53,30 @@ const QUICK_TONE: Record<QuickTone, { bg: string; fg: string }> = {
   neutral: { bg: colors.surface, fg: colors.inkMuted },
 };
 
+function HeroHighlight({
+  icon,
+  label,
+  value,
+}: {
+  icon: IconName;
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.heroHighlightRow}>
+      <Ionicons name={icon} size={18} color={colors.lime} />
+      <View style={styles.heroHighlightText}>
+        <Text variant="overline" tone="onDarkMuted" numberOfLines={1}>
+          {label}
+        </Text>
+        <Text variant="bodyStrong" tone="onDark" numberOfLines={2}>
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function QuickAction({
   icon,
   label,
@@ -310,20 +334,26 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
               <Text variant="title" tone="onDark" numberOfLines={2}>
                 {active.courseName}
               </Text>
-              <View style={styles.heroKnowledge}>
-                <Ionicons name="book-outline" size={18} color={colors.lime} />
-                <View style={styles.heroKnowledgeText}>
-                  <Text variant="overline" tone="onDarkMuted" numberOfLines={1}>
-                    Topik praktikum
-                  </Text>
-                  <Text variant="bodyStrong" tone="onDark" numberOfLines={2}>
-                    {active.title ?? active.groupName}
-                  </Text>
-                </View>
-              </View>
               <Text variant="caption" tone="onDarkMuted" numberOfLines={1}>
-                {`${active.groupName} · ${formatTimeRange(active.startsAt, active.endsAt)}${active.lab ? ` · ${active.lab}` : ''}`}
+                {active.groupName}
               </Text>
+              <View style={styles.heroHighlights}>
+                <HeroHighlight
+                  icon="book-outline"
+                  label="Pertemuan"
+                  value={active.title ?? active.groupName}
+                />
+                <HeroHighlight
+                  icon="time-outline"
+                  label="Jam"
+                  value={formatTimeRange(active.startsAt, active.endsAt)}
+                />
+                <HeroHighlight
+                  icon="location-outline"
+                  label="Tempat praktikum"
+                  value={active.lab ?? 'Belum ditentukan'}
+                />
+              </View>
               <StatCard
                 variant="ink"
                 value={records.length}
@@ -456,15 +486,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  heroKnowledge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  heroHighlights: {
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius['2xl'],
     backgroundColor: colors.onInkSubtle,
   },
-  heroKnowledgeText: { flex: 1, gap: 2, minWidth: 0 },
+  heroHighlightRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  heroHighlightText: { flex: 1, gap: 2, minWidth: 0 },
   quickGrid: {
     flexDirection: 'row',
     alignItems: 'flex-start',
