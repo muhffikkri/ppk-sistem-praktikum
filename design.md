@@ -462,8 +462,10 @@ src/
 - **Detail sesi:** `BackButton` saja di atas, lalu `Banner` (feedback) +
   `Card` berisi info row + aksi (`Button`). Praktikan: status presensi +
   waktu. Asisten: jumlah hadir + buka/tutup. Tanpa `Header`/top bar.
-- **Rekap asisten:** summary row (badge + hitung) + `Card` berisi
-  daftar kehadiran (attendance rows).
+- **Rekap asisten:** summary metrik + filter, lalu riwayat per sesi —
+  satu `SessionAttendancePreviewCard` per sesi berisi ringkasan tepat
+  waktu/terlambat dan cuplikan 2–3 praktikan hadir. Kartu dibuka untuk
+  rekap lengkap (`AssistantAttendanceRoster`) yang berisi attendance rows.
 - **Riwayat praktikan:** daftar catatan presensi, status + waktu.
 
 ## Status & feedback
