@@ -18,9 +18,13 @@ import {
   RoleSelectionScreen,
 } from '../features/auth';
 import { AssistantAllAttendanceScreen } from '../features/assistant/AssistantAllAttendanceScreen';
+import { AssistantAttendanceRosterScreen } from '../features/assistant/AssistantAttendanceRosterScreen';
 import { AssistantScheduleScreen } from '../features/assistant/AssistantScheduleScreen';
+import { AssistantSessionDetailScreen } from '../features/assistant/AssistantSessionDetailScreen';
+import { AssistantSessionQrScreen } from '../features/assistant/AssistantSessionQrScreen';
 import { StudentAttendanceHistoryScreen } from '../features/student/StudentAttendanceHistoryScreen';
 import { StudentScheduleScreen } from '../features/student/StudentScheduleScreen';
+import { StudentSessionDetailScreen } from '../features/student/StudentSessionDetailScreen';
 import { LeaveProvider } from '../features/leave/LeaveProvider';
 
 import { isAssistantRole } from '../domain/asprakScope';
@@ -191,13 +195,9 @@ function ProfileHeaderButton() {
 
 const renderProfileHeaderButton = () => <ProfileHeaderButton />;
 
-// Layar push dimuat saat dibuka. Dock (Home, Schedule, Attendance, Profile)
-// sengaja tetap eager karena langsung tampil saat tab aktif.
-const StudentSessionDetailScreen = lazyScreen<'StudentSessionDetail'>(
-  () => import('../features/student/StudentSessionDetailScreen'),
-  'StudentSessionDetailScreen',
-  'Memuat detail sesi…',
-);
+// Dock (Home, Schedule, Attendance, Profile) dan empat layar alur harian
+// (detail sesi, QR, rekap kehadiran) sengaja eager agar tidak ada jeda chunk
+// saat navigasi. Layar lain tetap dimuat saat pertama dibuka.
 const StudentCheckInScreen = lazyScreen<'StudentCheckIn'>(
   () => import('../features/checkin/StudentCheckInScreen'),
   'StudentCheckInScreen',
@@ -237,21 +237,6 @@ const StudentPaymentHistoryScreen = lazyScreen<'StudentPaymentHistory'>(
   () => import('../features/fines/StudentPaymentHistoryScreen'),
   'StudentPaymentHistoryScreen',
   'Memuat riwayat pembayaran…',
-);
-const AssistantSessionDetailScreen = lazyScreen<'AssistantSessionDetail'>(
-  () => import('../features/assistant/AssistantSessionDetailScreen'),
-  'AssistantSessionDetailScreen',
-  'Memuat detail sesi…',
-);
-const AssistantSessionQrScreen = lazyScreen<'AssistantSessionQr'>(
-  () => import('../features/assistant/AssistantSessionQrScreen'),
-  'AssistantSessionQrScreen',
-  'Menyiapkan kode berputar…',
-);
-const AssistantAttendanceRosterScreen = lazyScreen<'AssistantAttendanceRoster'>(
-  () => import('../features/assistant/AssistantAttendanceRosterScreen'),
-  'AssistantAttendanceRosterScreen',
-  'Memuat rekap presensi…',
 );
 const AssistantAllSessionsScreen = lazyScreen<'AssistantAllSessions'>(
   () => import('../features/assistant/AssistantAllSessionsScreen'),
