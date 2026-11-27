@@ -70,7 +70,7 @@ export type LabInputErrors = Partial<Record<LabInputField, string>>;
 - - `unavailable`: lokasi perangkat atau koordinat lab tidak tersedia.
  */
 export type GeofenceStatus =
-  | 'inside' | 'outside' | 'inaccurate' | 'unavailable';
+  'inside' | 'outside' | 'inaccurate' | 'unavailable';
 
 export type GeofenceCheckResult = {
   status: GeofenceStatus;

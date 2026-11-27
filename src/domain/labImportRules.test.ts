@@ -56,10 +56,11 @@ describe('labImportRules', () => {
     ].join('\n');
 
     const rows = buildImportPreviewRows(csv, 'praktikan');
+    assert.equal(rows[0].rowNumber, 2);
     const summary = summarizeImportExecution(
       'praktikan',
       rows,
-      new Map([[1, { ok: true, message: 'Berhasil diimpor.' }]]),
+      new Map([[2, { ok: true, message: 'Berhasil diimpor.' }]]),
     );
 
     assert.equal(summary.totalRows, 2);

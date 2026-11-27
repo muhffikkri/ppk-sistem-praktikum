@@ -5,11 +5,9 @@
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
-  limit,
   onSnapshot,
   orderBy,
   query,
@@ -17,6 +15,7 @@ import {
   where,
   type Unsubscribe,
 } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
 import {
   hasLabInputErrors,
@@ -24,12 +23,12 @@ import {
 } from '../../domain/geofenceRules';
 import type { Lab, LabInput } from '../../domain/geoTypes';
 import type { AsyncActionResult } from '../../domain/types';
-import { db } from '../firebase';
+import { DEFAULT_TOLERANCE_MINUTES } from '../../domain/lateToleranceRules';
+import { db, functions } from '../firebase';
+import { callableFailureReason } from './callableFailure';
 
 const LABS = 'labs';
-const SESSIONS = 'sessions';
 const labsCol = collection(db, LABS);
-const sessionsCol = collection(db, SESSIONS);
 
 type AsyncFailure = { ok: false; reason: string; message: string };
 
@@ -41,7 +40,7 @@ function toFailure(e: unknown): AsyncFailure {
     typeof e === 'object' && e !== null && 'code' in e
       ? String((e as { code?: unknown }).code)
       : '';
-  if (code === 'permission-denied') {
+  if (code === 'permission-denied' || code === 'functions/permission-denied') {
     return {
       ok: false,
       reason: 'forbidden',
@@ -85,6 +84,8 @@ function toPayload(input: LabInput) {
     courseCode,
     location: { latitude: input.latitude, longitude: input.longitude },
     radiusMeters: input.radiusMeters,
+    lateToleranceMinutes:
+      input.lateToleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES,
     isActive: input.isActive,
   };
 }
@@ -112,42 +113,15 @@ export function normalizeLab(id: string, data: Record<string, unknown>): Lab {
       longitude: asNumber(location.longitude),
     },
     radiusMeters: asNumber(data.radiusMeters),
+    lateToleranceMinutes:
+      typeof data.lateToleranceMinutes === 'number'
+        ? data.lateToleranceMinutes
+        : DEFAULT_TOLERANCE_MINUTES,
     isActive: data.isActive !== false,
     createdBy: String(data.createdBy ?? ''),
     createdAt: String(data.createdAt ?? ''),
     updatedAt: String(data.updatedAt ?? ''),
   };
-}
-
-/**
- * Mengecek apakah sebuah lab masih dirujuk oleh dokumen sesi (`labId` atau fallback nama lab).
- * Dipakai oleh `deleteLab` dan dapat diuji/dipanggil secara terpisah.
- */
-export async function isLabReferencedBySession(
-  labId: string,
-  labName?: string,
-): Promise<boolean> {
-  const trimmedId = labId.trim();
-  if (!trimmedId) return false;
-
-  const byLabIdSnap = await getDocs(
-    query(sessionsCol, where('labId', '==', trimmedId), limit(1)),
-  );
-  if (!byLabIdSnap.empty) {
-    return true;
-  }
-
-  const trimmedName = labName?.trim();
-  if (trimmedName) {
-    const byLabNameSnap = await getDocs(
-      query(sessionsCol, where('lab', '==', trimmedName), limit(1)),
-    );
-    if (!byLabNameSnap.empty) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 /** Langganan real-time seluruh lab, urut nama. Kembalikan fungsi unsubscribe. */
@@ -256,23 +230,14 @@ export async function setLabActive(
   }
 }
 
-export async function deleteLab(
-  labId: string,
-  labName?: string,
-): Promise<AsyncActionResult> {
+export async function deleteLab(labId: string): Promise<AsyncActionResult> {
   try {
-    const inUse = await isLabReferencedBySession(labId, labName);
-    if (inUse) {
-      return {
-        ok: false,
-        reason: 'lab_in_use',
-        message: LAB_IN_USE_MESSAGE,
-      };
-    }
-
-    await deleteDoc(doc(db, LABS, labId));
+    await httpsCallable(functions, 'deleteLabSafely')({ labId });
     return { ok: true };
   } catch (e) {
+    if (callableFailureReason(e) === 'lab_in_use') {
+      return { ok: false, reason: 'lab_in_use', message: LAB_IN_USE_MESSAGE };
+    }
     return toFailure(e);
   }
 }

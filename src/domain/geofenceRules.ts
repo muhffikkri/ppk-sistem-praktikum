@@ -98,6 +98,14 @@ export function validateLabInput(input: LabInput): LabInputErrors {
   const errors: LabInputErrors = {};
   if (!input.name.trim()) errors.name = 'Nama lab wajib diisi';
   if (!input.building.trim()) errors.building = 'Gedung wajib diisi';
+  const tolerance = input.lateToleranceMinutes;
+  if (
+    tolerance !== undefined &&
+    (!Number.isInteger(tolerance) || tolerance < 0 || tolerance > 120)
+  ) {
+    errors.lateToleranceMinutes =
+      'Toleransi harus berupa bilangan bulat 0–120 menit';
+  }
   if (!isValidLatitude(input.latitude)) {
     errors.latitude = 'Latitude harus antara -90 dan 90';
   }

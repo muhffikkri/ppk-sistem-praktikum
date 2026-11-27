@@ -19,11 +19,14 @@ import {
   Screen,
   SectionHeader,
   SegmentedControl,
+  SelectField,
   spacing,
   Text,
   TextField,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
+import { chooseCsv, saveCsv } from './labCsvFiles';
+import { useLabManagement } from './useLabManagement';
 
 type Props = {
   navigation: { goBack: () => void };
@@ -32,16 +35,25 @@ type Props = {
 export function AslabLabImportScreen({ navigation }: Props) {
   const { user } = useAuth();
   const isAuthorized = canManageLabMaster(user?.role);
+  const { labs } = useLabManagement();
+  const managedCourseIds = user?.managedCourseIds ?? [];
 
   const [entityType, setEntityType] = useState<ImportEntityType>('lab');
-  const [csvText, setCsvText] = useState(() => getImportTemplateCsv('lab'));
-  const [rows, setRows] = useState<ImportPreviewRow[]>(() =>
-    buildImportPreviewRows(getImportTemplateCsv('lab'), 'lab'),
-  );
+  const [csvText, setCsvText] = useState('');
+  const [rows, setRows] = useState<ImportPreviewRow[]>([]);
+  const [courseId, setCourseId] = useState<string | null>(null);
+  const [labId, setLabId] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [editingRowNumber, setEditingRowNumber] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [summary, setSummary] = useState<ImportExecutionSummary | null>(null);
+  const eligibleLabs = labs.filter(
+    (lab) => lab.isActive && managedCourseIds.includes(lab.courseId ?? ''),
+  );
+  const selectedLab = eligibleLabs.find((lab) => lab.id === labId);
+  const targetCourse = entityType === 'lab' ? courseId : selectedLab?.courseId;
+  const canExecute = !!targetCourse && managedCourseIds.includes(targetCourse);
 
   const readyCount = useMemo(
     () =>
@@ -65,17 +77,49 @@ export function AslabLabImportScreen({ navigation }: Props) {
 
   const handleEntityChange = (nextType: ImportEntityType) => {
     setEntityType(nextType);
-    const template = getImportTemplateCsv(nextType);
-    setCsvText(template);
-    setRows(buildImportPreviewRows(template, nextType));
+    setCsvText('');
+    setRows([]);
     setEditingRowNumber(null);
     setSummary(null);
+    setFileError(null);
   };
 
   const handleBuildPreview = () => {
     setSummary(null);
-    setRows(buildImportPreviewRows(csvText, entityType));
+    setFileError(null);
+    const parsed = buildImportPreviewRows(csvText, entityType);
+    if (parsed.length > 200) {
+      setFileError('Maksimal 200 baris per impor.');
+      setRows([]);
+      return;
+    }
+    setRows(parsed);
   };
+
+  async function handleFile(action: 'template' | 'choose') {
+    setFileError(null);
+    try {
+      if (action === 'template') {
+        await saveCsv(
+          `template-${entityType}.csv`,
+          getImportTemplateCsv(entityType),
+        );
+      } else {
+        const contents = await chooseCsv();
+        if (contents === null) return;
+        if (contents.length > 512 * 1024)
+          throw new Error('Ukuran berkas CSV maksimal 512 KB.');
+        setCsvText(contents);
+        setRows([]);
+        setEditingRowNumber(null);
+        setSummary(null);
+      }
+    } catch (error) {
+      setFileError(
+        error instanceof Error ? error.message : 'Berkas tidak dapat diproses.',
+      );
+    }
+  }
 
   const handleDecision = (
     rowNumber: number,
@@ -122,10 +166,14 @@ export function AslabLabImportScreen({ navigation }: Props) {
   };
 
   const handleExecute = async () => {
-    if (!user?.uid) return;
+    if (!canExecute || !targetCourse || submitting) return;
     setSubmitting(true);
     try {
-      const result = await executeLabImport(user.uid, entityType, rows);
+      const result = await executeLabImport(entityType, rows, {
+        courseId: targetCourse,
+        labId: selectedLab?.id,
+        labName: selectedLab?.name,
+      });
       setSummary(result);
     } finally {
       setSubmitting(false);
@@ -149,20 +197,65 @@ export function AslabLabImportScreen({ navigation }: Props) {
       />
 
       <View style={styles.section}>
-        <SectionHeader title={`Template & Data CSV (${entityType})`} />
+        <SectionHeader title="Berkas CSV" />
+        {entityType === 'lab' ? (
+          <SelectField
+            label="Mata kuliah"
+            value={courseId}
+            onChange={setCourseId}
+            options={managedCourseIds.map((id) => ({ value: id, label: id }))}
+            placeholder="Pilih mata kuliah"
+          />
+        ) : (
+          <SelectField
+            label="Lab tujuan"
+            value={labId}
+            onChange={setLabId}
+            options={eligibleLabs.map((lab) => ({
+              value: lab.id,
+              label: lab.name,
+              description: lab.courseCode ?? undefined,
+            }))}
+            placeholder="Pilih lab tujuan"
+          />
+        )}
         <Button
-          label={`Reset Template ${entityType}`}
+          label="Unduh template"
           variant="outline"
-          onPress={() => handleEntityChange(entityType)}
+          onPress={() => void handleFile('template')}
+          disabled={submitting}
+        />
+        <Button
+          label="Pilih berkas CSV"
+          variant="outline"
+          onPress={() => void handleFile('choose')}
+          disabled={submitting}
         />
         <TextField
           label="Konten CSV"
           value={csvText}
-          onChangeText={setCsvText}
+          onChangeText={(value) => {
+            setCsvText(value);
+            setRows([]);
+            setEditingRowNumber(null);
+            setSummary(null);
+          }}
           multiline
+          editable={!submitting}
           placeholder="Tempel atau ubah baris CSV…"
         />
-        <Button label="Pratinjau Data" onPress={handleBuildPreview} />
+        <Button
+          label="Pratinjau data"
+          onPress={handleBuildPreview}
+          disabled={submitting || !csvText.trim()}
+        />
+        {fileError ? (
+          <Banner
+            tone="danger"
+            title="Gagal memproses CSV"
+            message={fileError}
+          />
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -233,7 +326,7 @@ export function AslabLabImportScreen({ navigation }: Props) {
       <Button
         label={submitting ? 'Memproses Impor…' : 'Eksekusi Baris Diterima'}
         loading={submitting}
-        disabled={submitting || readyCount === 0}
+        disabled={submitting || !canExecute || readyCount === 0}
         onPress={handleExecute}
       />
 

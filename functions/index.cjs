@@ -1,6 +1,7 @@
 const { Buffer } = require('node:buffer');
 const { createHash } = require('node:crypto');
 const { initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const {
   onDocumentCreated,
@@ -25,6 +26,10 @@ const {
 } = require('./pushEvents.cjs');
 const { LATE_CHECK_IN_MS, closeExpiredSession } = require('./sessionClose.cjs');
 const { openSessionPatch } = require('./sessionOpen.cjs');
+const {
+  createLabAdministration,
+  toleranceForLab,
+} = require('./labAdministration.cjs');
 const {
   isLeaveBlockingCheckIn,
   issueQrToken,
@@ -538,6 +543,26 @@ function openFailure(reason) {
   );
 }
 
+const labAdministration = createLabAdministration({
+  db,
+  auth: getAuth(),
+  FieldValue,
+  HttpsError,
+});
+exports.importLab = onCall({ cors: true }, labAdministration.importLab);
+exports.changeLabAssignment = onCall(
+  { cors: true },
+  labAdministration.changeLabAssignment,
+);
+exports.deleteLabSafely = onCall(
+  { cors: true },
+  labAdministration.deleteLabSafely,
+);
+exports.getLabSessionRoster = onCall(
+  { cors: true },
+  labAdministration.getLabSessionRoster,
+);
+
 exports.openSession = onCall({ cors: true }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Harus login.');
@@ -566,6 +591,15 @@ exports.openSession = onCall({ cors: true }, async (request) => {
     const snap = await transaction.get(sessionRef);
     if (!snap.exists) return { error: 'session_not_found' };
     const session = { id: snap.id, ...snap.data() };
+    const lab = session.labId
+      ? await transaction.get(db.collection('labs').doc(session.labId))
+      : null;
+    const roster = await labAdministration.refreshScheduledRoster(
+      transaction,
+      session,
+      lab?.data(),
+    );
+    Object.assign(session, roster);
     if (
       !Array.isArray(session.assistantIds) ||
       !session.assistantIds.includes(uid)
@@ -583,7 +617,14 @@ exports.openSession = onCall({ cors: true }, async (request) => {
 
     const outcome = openSessionPatch(session, nowMs, openSessions, uid);
     if (outcome.error) return outcome;
-    transaction.update(sessionRef, outcome.patch);
+    if (
+      !Number.isInteger(session.toleranceMinutes) ||
+      session.toleranceMinutes < 0 ||
+      session.toleranceMinutes > 120
+    ) {
+      outcome.patch.toleranceMinutes = toleranceForLab(lab?.data());
+    }
+    transaction.update(sessionRef, { ...outcome.patch, ...roster });
     return outcome;
   });
 
@@ -695,7 +736,15 @@ exports.submitQrCheckIn = onCall(
 
     const attendanceId = `${signedSessionId}_${uid}`;
     const profile = profileSnap.data();
-    const checkedInAt = new Date().toISOString();
+    const checkInMs = Date.now();
+    const checkedInAt = new Date(checkInMs).toISOString();
+    const toleranceMinutes = toleranceForLab({
+      lateToleranceMinutes: session.toleranceMinutes,
+    });
+    const deadline =
+      (session.startsAtMs ?? Date.parse(session.startsAt)) +
+      toleranceMinutes * 60_000;
+    const isLate = Number.isFinite(deadline) && checkInMs > deadline;
     const payload = {
       id: attendanceId,
       sessionId: signedSessionId,
@@ -704,6 +753,8 @@ exports.submitQrCheckIn = onCall(
       studentName: profile.displayName || '',
       ...(profile.nim ? { studentNim: profile.nim } : {}),
       checkedInAt,
+      punctuality: isLate ? 'late' : 'ontime',
+      minutesLate: isLate ? Math.ceil((checkInMs - deadline) / 60_000) : 0,
       deviceLocation: {
         latitude: location.latitude,
         longitude: location.longitude,

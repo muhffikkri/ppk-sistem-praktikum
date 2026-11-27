@@ -146,11 +146,23 @@ export function AssistantLabListScreen({ navigation }: Props) {
       )}
 
       {isLabManager && managedCourseIds.length > 0 && (
-        <Button
-          label="Tambah lab"
-          icon="add"
-          onPress={() => navigation.navigate('AssistantLabForm', {})}
-        />
+        <View style={styles.card}>
+          <Button
+            label="Tambah lab"
+            icon="add"
+            onPress={() => navigation.navigate('AssistantLabForm', {})}
+          />
+          <Button
+            label="Impor CSV"
+            variant="outline"
+            onPress={() => navigation.navigate('AslabLabImport')}
+          />
+          <Button
+            label="Distribusi praktikan dan Asprak"
+            variant="outline"
+            onPress={() => navigation.navigate('AslabLabDistribution')}
+          />
+        </View>
       )}
     </Screen>
   );

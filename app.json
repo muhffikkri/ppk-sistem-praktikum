@@ -53,6 +53,7 @@
       "url": "https://u.expo.dev/9723b307-1ce7-46f3-8519-7a183468dd98"
     },
     "plugins": [
+      "expo-sharing",
       "expo-status-bar",
       "expo-font",
       "expo-notifications",

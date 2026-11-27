@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { isAssistantRole } from '../../domain/asprakScope';
+import { canManageLabMaster } from '../../domain/asprakScope';
 import type { Lab, LabInput } from '../../domain/geoTypes';
 import type { AsyncActionResult } from '../../domain/types';
 import {
@@ -44,7 +44,7 @@ export function useLabManagement(): LabManagementViewModel {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  const canManage = isAssistantRole(user?.role);
+  const canManage = canManageLabMaster(user?.role);
 
   const uid = user?.uid;
 
@@ -105,13 +105,12 @@ export function useLabManagement(): LabManagementViewModel {
       }
       setDeletingId(labId);
       try {
-        const targetLab = labs.find((item) => item.id === labId);
-        return await deleteLab(labId, targetLab?.name);
+        return await deleteLab(labId);
       } finally {
         setDeletingId(null);
       }
     },
-    [canManage, labs],
+    [canManage],
   );
 
   const setLabActiveStatus = useCallback(

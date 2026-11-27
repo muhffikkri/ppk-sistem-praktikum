@@ -5,3 +5,5 @@ export {
   useLabManagement,
   type LabManagementViewModel,
 } from './useLabManagement';
+export { AslabLabDistributionScreen } from './AslabLabDistributionScreen';
+export { AslabLabImportScreen } from './AslabLabImportScreen';

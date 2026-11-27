@@ -1,4 +1,4 @@
-﻿import {
+import {
   DEFAULT_RADIUS_METERS,
   MAX_RADIUS_METERS,
   MIN_RADIUS_METERS,
@@ -93,9 +93,7 @@ function isHeaderRow(cells: string[], entityType: ImportEntityType): boolean {
     );
   }
   return (
-    lower.includes('nim') ||
-    lower.includes('email') ||
-    lower.includes('role')
+    lower.includes('nim') || lower.includes('email') || lower.includes('role')
   );
 }
 
@@ -183,7 +181,9 @@ export function buildImportPreviewRows(
         if (seenBatchKeys.has(key)) {
           errors.push('Duplikat lab pada file impor.');
         } else if (existingKeys.has(key)) {
-          warnings.push('Lab sudah terdaftar; impor ulang akan memperbarui data.');
+          warnings.push(
+            'Lab sudah terdaftar; impor ulang akan memperbarui data.',
+          );
         }
         seenBatchKeys.add(key);
       }
@@ -226,8 +226,8 @@ export function buildImportPreviewRows(
 
       if (!cleanId) errors.push('NIM atau email asprak wajib diisi.');
       if (!name.trim()) errors.push('Nama asprak wajib diisi.');
-      if (normalizedRole !== 'asprak' && normalizedRole !== 'aslab') {
-        errors.push('Role harus "asprak" atau "aslab".');
+      if (normalizedRole !== 'asprak') {
+        errors.push('Role harus "asprak".');
       }
 
       if (key) {
@@ -241,16 +241,12 @@ export function buildImportPreviewRows(
     }
 
     const status: ImportRowStatus =
-      errors.length > 0
-        ? 'invalid'
-        : warnings.length > 0
-          ? 'warning'
-          : 'valid';
+      errors.length > 0 ? 'invalid' : warnings.length > 0 ? 'warning' : 'valid';
 
     previewRows.push({
       id: `row-${rowNumber}`,
       rowNumber,
-      rawText: cells.join(delimiter),
+      rawText: lines[i],
       fields,
       status,
       decision: errors.length === 0 ? 'accepted' : 'rejected',

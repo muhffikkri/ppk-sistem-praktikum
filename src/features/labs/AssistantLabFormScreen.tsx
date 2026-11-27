@@ -13,6 +13,7 @@ import {
   validateLabInput,
 } from '../../domain/geofenceRules';
 import type { Lab, LabInput, LabInputErrors } from '../../domain/geoTypes';
+import { DEFAULT_TOLERANCE_MINUTES } from '../../domain/lateToleranceRules';
 import {
   Banner,
   Button,
@@ -155,6 +156,9 @@ function LabForm({
   const [radius, setRadius] = useState(
     String(existing?.radiusMeters ?? DEFAULT_RADIUS_METERS),
   );
+  const [tolerance, setTolerance] = useState(
+    String(existing?.lateToleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES),
+  );
   const [active, setActive] = useState<ActiveValue>(
     existing?.isActive === false ? 'inactive' : 'active',
   );
@@ -189,6 +193,7 @@ function LabForm({
     latitude: parseCoordinate(latitude),
     longitude: parseCoordinate(longitude),
     radiusMeters: Number(radius.trim()),
+    lateToleranceMinutes: tolerance.trim() ? Number(tolerance) : Number.NaN,
     isActive: active === 'active',
   });
 
@@ -347,6 +352,14 @@ function LabForm({
           keyboardType="number-pad"
           hint={`Praktikan harus berada dalam radius ini. ${MIN_RADIUS_METERS}–${MAX_RADIUS_METERS} m.`}
           error={errors.radiusMeters}
+        />
+        <TextField
+          label="Toleransi keterlambatan (menit)"
+          value={tolerance}
+          onChangeText={setTolerance}
+          keyboardType="number-pad"
+          hint="0–120 menit sejak jadwal mulai."
+          error={errors.lateToleranceMinutes}
         />
       </View>
 
