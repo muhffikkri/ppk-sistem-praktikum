@@ -15,12 +15,27 @@ service cloud.firestore {
         && userDoc().data.role == role;
     }
 
+    function isAslab() {
+      return hasRole('lab_assistant');
+    }
+
     function isAssistant() {
       return hasRole('assistant') || hasRole('lab_assistant');
     }
 
     function isStudent() {
       return hasRole('student');
+    }
+
+    function managedCourses() {
+      return userDoc().data.get('managedCourseIds', []);
+    }
+
+    function isLabManagerForCourse(courseId) {
+      return isAslab()
+        && courseId is string
+        && courseId.size() > 0
+        && courseId in managedCourses();
     }
 
     function validNim(data) {
@@ -95,12 +110,19 @@ service cloud.firestore {
           || (isAssistant() && resource.data.role == 'student'));
       allow list: if false;
 
+      // Role lab_assistant tidak bisa dipilih sendiri saat registrasi publik;
+      // managedCourseIds hanya boleh ditetapkan oleh admin (Admin SDK).
       allow create: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.uid == uid
         && (
           request.resource.data.role == 'student'
           || (request.resource.data.role == 'assistant' && hasAssistantInvite())
+        )
+        && (
+          !('managedCourseIds' in request.resource.data)
+          || (request.resource.data.managedCourseIds is list
+            && request.resource.data.managedCourseIds.size() == 0)
         )
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0
@@ -111,6 +133,7 @@ service cloud.firestore {
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && validNim(request.resource.data)
+        && request.resource.data.get('managedCourseIds', null) == resource.data.get('managedCourseIds', null)
         && (
           request.resource.data.role == resource.data.role
           || (resource.data.role == 'student'
@@ -204,10 +227,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 3b. Master Laboratorium (Sprint 3) — acuan geofence presensi & peta
+    // 3b. Master Laboratorium (Sprint 3 & SRS-4.01) — acuan geofence presensi & peta
     function validLab(data) {
       return data.name is string && data.name.size() > 0
         && data.building is string && data.building.size() > 0
+        && data.courseId is string && data.courseId.size() > 0
         && data.location.latitude is number
         && data.location.latitude >= -90 && data.location.latitude <= 90
         && data.location.longitude is number
@@ -220,15 +244,16 @@ service cloud.firestore {
     match /labs/{labId} {
       allow read: if isSignedIn();
 
-      allow create: if isAssistant()
+      allow create: if isLabManagerForCourse(request.resource.data.courseId)
         && request.resource.data.createdBy == request.auth.uid
         && validLab(request.resource.data);
 
-      allow update: if isAssistant()
+      allow update: if isLabManagerForCourse(resource.data.courseId)
+        && isLabManagerForCourse(request.resource.data.courseId)
         && request.resource.data.createdBy == resource.data.createdBy
         && validLab(request.resource.data);
 
-      allow delete: if isAssistant();
+      allow delete: if isLabManagerForCourse(resource.data.courseId);
     }
 
     // 4. Presensi Terintegrasi (ID deterministik: {sessionId}_{studentId})

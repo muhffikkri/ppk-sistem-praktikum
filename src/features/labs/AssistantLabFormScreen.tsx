@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { canManageLabMaster } from '../../domain/asprakScope';
 import {
   DEFAULT_RADIUS_METERS,
   hasLabInputErrors,
@@ -19,6 +20,7 @@ import {
   ErrorState,
   LoadingState,
   Screen,
+  SelectField,
   SectionHeader,
   SegmentedControl,
   spacing,
@@ -28,6 +30,7 @@ import {
 } from '../../shared/ui';
 import { colors, radius as tokenRadius } from '../../theme/tokens';
 import { getCurrentDeviceLocation } from '../../services/location/deviceLocationService';
+import { useAuth } from '../../state';
 import { LabLocationPickerModal } from './LabLocationPickerModal';
 import {
   useLabManagement,
@@ -42,11 +45,31 @@ const coordText = (value: number | undefined) =>
   value !== undefined && Number.isFinite(value) ? String(value) : '';
 
 export function AssistantLabFormScreen({ route, navigation }: Props) {
+  const { user } = useAuth();
   const { getLabById, saveLab, removeLab, saving, deletingId, loading, error } =
     useLabManagement();
 
   const labId = route.params?.labId ?? null;
   const existing = labId ? getLabById(labId) : undefined;
+  const managedCourseIds = user?.managedCourseIds ?? [];
+  const courseForbidden =
+    existing && !managedCourseIds.includes(existing.courseId ?? '');
+
+  if (
+    !canManageLabMaster(user?.role) ||
+    !managedCourseIds.length ||
+    courseForbidden
+  ) {
+    return (
+      <Screen withDock={false}>
+        <BackButton onPress={() => navigation.goBack()} />
+        <ErrorState
+          title="Akses lab dibatasi"
+          message="Hanya Aslab yang ditugaskan pada mata kuliah lab ini yang dapat mengelolanya."
+        />
+      </Screen>
+    );
+  }
 
   if (labId && !existing) {
     return (
@@ -70,6 +93,7 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
       key={existing?.id ?? 'new'}
       labId={labId}
       existing={existing}
+      managedCourseIds={managedCourseIds}
       saving={saving}
       deleting={deletingId !== null}
       onSave={saveLab}
@@ -82,6 +106,7 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
 type LabFormProps = {
   labId: string | null;
   existing: Lab | undefined;
+  managedCourseIds: string[];
   saving: boolean;
   deleting: boolean;
   onSave: LabManagementViewModel['saveLab'];
@@ -92,6 +117,7 @@ type LabFormProps = {
 function LabForm({
   labId,
   existing,
+  managedCourseIds,
   saving,
   deleting,
   onSave,
@@ -99,6 +125,10 @@ function LabForm({
   onDone,
 }: LabFormProps) {
   const [name, setName] = useState(existing?.name ?? '');
+  const [courseId, setCourseId] = useState(
+    existing?.courseId ??
+      (managedCourseIds.length === 1 ? managedCourseIds[0] : null),
+  );
   const [building, setBuilding] = useState(existing?.building ?? '');
   const [description, setDescription] = useState(existing?.description ?? '');
   const [latitude, setLatitude] = useState(
@@ -136,6 +166,8 @@ function LabForm({
     name,
     building,
     description,
+    courseId,
+    courseCode: existing?.courseCode,
     latitude: parseCoordinate(latitude),
     longitude: parseCoordinate(longitude),
     radiusMeters: Number(radius.trim()),
@@ -146,6 +178,9 @@ function LabForm({
     setSubmitError(null);
     const input = buildInput();
     const nextErrors = validateLabInput(input);
+    if (!courseId || !managedCourseIds.includes(courseId)) {
+      nextErrors.courseId = 'Pilih mata kuliah yang ditugaskan kepada Anda.';
+    }
     setErrors(nextErrors);
     if (hasLabInputErrors(nextErrors)) return;
 
@@ -173,6 +208,20 @@ function LabForm({
       <BackButton onPress={onDone} />
 
       <View style={styles.form}>
+        {existing ? (
+          <Text variant="label">
+            Mata kuliah {existing.courseCode || courseId}
+          </Text>
+        ) : (
+          <SelectField
+            label="Mata kuliah"
+            options={managedCourseIds.map((id) => ({ value: id, label: id }))}
+            value={courseId}
+            onChange={setCourseId}
+            placeholder="Pilih mata kuliah"
+            error={errors.courseId}
+          />
+        )}
         <TextField
           label="Nama laboratorium"
           value={name}

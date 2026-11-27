@@ -46,6 +46,18 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function normalizeManagedCourseIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return Array.from(
+    new Set(
+      raw
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0),
+    ),
+  );
+}
+
 function mapFirebaseAuthError(err: unknown): {
   reason: ActionFailureReason;
   message: string;
@@ -225,6 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               data.role === 'lab_assistant' || data.role === 'assistant'
                 ? data.role
                 : 'student';
+            const managedCourseIds = normalizeManagedCourseIds(
+              data.managedCourseIds,
+            );
             setUser({
               uid: firebaseUser.uid,
               displayName:
@@ -234,6 +249,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 'Pengguna',
               email: data.email || firebaseUser.email || '',
               role,
+              nim: typeof data.nim === 'string' ? data.nim : undefined,
+              managedCourseIds,
               createdAt:
                 typeof data.createdAt === 'string'
                   ? data.createdAt
@@ -409,6 +426,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: normalizedEmail,
           role: 'student',
           nim,
+          managedCourseIds: [],
           createdAt: new Date().toISOString(),
         };
 
@@ -445,6 +463,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, reason: 'unauthenticated', message };
       }
 
+      // Peran Aslab ('lab_assistant') tidak dapat dipilih secara mandiri saat registrasi/pemilihan peran.
       if (role !== 'student' && role !== 'assistant') {
         const message = 'Peran tidak valid.';
         setError(message);
@@ -462,16 +481,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        // Cek apakah profil sudah ada di Firestore (mis. user sudah pernah login
-        // dengan email/password sebelumnya dan baru saja login dengan Google).
-        // Role yang dipilih di RoleSelectionScreen akan ditulis ke Firestore,
-        // sehingga role konsisten terlepas dari metode login yang digunakan.
         const profile: UserProfile = {
           uid: currentUser.uid,
           displayName:
             currentUser.displayName || currentUser.email || 'Pengguna',
           email: currentUser.email || '',
           role,
+          managedCourseIds: [],
           createdAt: new Date().toISOString(),
         };
 

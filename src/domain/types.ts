@@ -1,6 +1,6 @@
 /**
- * Domain types — Sprint 1 (transisi) & Sprint 2 (Firebase + AI)
- * Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
+- Domain types — Sprint 1 (transisi) & Sprint 2 (Firebase + AI)
+- Sesuai dengan spesifikasi docs/sprint-2-shared-contract.md
  */
 
 export type UserRole = 'student' | 'assistant' | 'lab_assistant';
@@ -11,6 +11,7 @@ export type UserProfile = {
   email: string;
   role: UserRole;
   nim?: string;
+  managedCourseIds?: string[];
   createdAt: string; // ISO 8601 UTC
 };
 
@@ -35,6 +36,7 @@ export type SessionStatus = 'scheduled' | 'open' | 'closed' | 'cancelled';
 export type Session = {
   id: string;
   classId?: string;
+  courseCode?: string;
   courseName: string;
   groupName: string;
   title?: string;
