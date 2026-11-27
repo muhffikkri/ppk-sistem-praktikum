@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { openDockTab } from '../../app/openDockTab';
 import {
   Button,
   EmptyState,
@@ -182,7 +183,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
             <Button
               label="Buka jadwal"
               variant="outline"
-              onPress={() => navigation.navigate('StudentSchedule')}
+              onPress={() => openDockTab(navigation, 'Schedule')}
             />
           }
         />

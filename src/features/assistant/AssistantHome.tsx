@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { openDockTab } from '../../app/openDockTab';
 import type { Session } from '../../domain/types';
 import { colors, radius, spacing } from '../../theme/tokens';
 import {
@@ -448,7 +449,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
             <SectionHeader
               title={`Presensi terbaru (${attendanceGroups.length})`}
               actionLabel="Lihat semua"
-              onAction={() => navigation.navigate('AssistantAllAttendance')}
+              onAction={() => openDockTab(navigation, 'Attendance')}
             />
             {attendancePreview.map((group) => (
               <SessionAttendancePreviewCard

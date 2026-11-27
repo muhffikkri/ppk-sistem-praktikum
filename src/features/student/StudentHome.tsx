@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { openDockTab } from '../../app/openDockTab';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import {
   Avatar,
@@ -312,13 +313,13 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
               icon="calendar-outline"
               label="Jadwal"
               tone="violet"
-              onPress={() => navigation.navigate('StudentSchedule')}
+              onPress={() => openDockTab(navigation, 'Schedule')}
             />
             <QuickAction
               icon="checkmark-done-outline"
               label="Riwayat"
               tone="lime"
-              onPress={() => navigation.navigate('StudentAttendanceHistory')}
+              onPress={() => openDockTab(navigation, 'Attendance')}
             />
             <QuickAction
               icon="document-text-outline"
@@ -430,7 +431,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                 label="Lihat jadwal"
                 variant="outline"
                 icon="calendar-outline"
-                onPress={() => navigation.navigate('StudentSchedule')}
+                onPress={() => openDockTab(navigation, 'Schedule')}
               />
             }
           />
@@ -440,7 +441,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
           <SectionHeader
             title="Progres & Kehadiran"
             actionLabel="Riwayat"
-            onAction={() => navigation.navigate('StudentAttendanceHistory')}
+            onAction={() => openDockTab(navigation, 'Attendance')}
           />
           <StatRow>
             <MetricCard

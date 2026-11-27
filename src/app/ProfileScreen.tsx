@@ -24,6 +24,7 @@ import type { UserRole } from '../domain/types';
 import { useAuth } from '../state';
 import { RootTopBar } from '../features/shell/RootTopBar';
 import type { RootStackParamList } from './navigation';
+import { openDockTab } from './openDockTab';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -59,7 +60,7 @@ export function ProfileScreen({ navigation }: Props) {
           label: 'Jadwal & Sesi Asisten',
           sub: 'Kelola sesi praktikum',
           icon: 'calendar-outline',
-          onPress: () => navigation.navigate('AssistantSchedule'),
+          onPress: () => openDockTab(navigation, 'Schedule'),
         },
         {
           label: 'Kelola Kelas & Peserta',
@@ -87,7 +88,7 @@ export function ProfileScreen({ navigation }: Props) {
           label: 'Rekap Presensi',
           sub: 'Daftar kehadiran sesi praktikum',
           icon: 'finger-print-outline',
-          onPress: () => navigation.navigate('AssistantAllAttendance'),
+          onPress: () => openDockTab(navigation, 'Attendance'),
         },
       ]
     : [
@@ -95,7 +96,7 @@ export function ProfileScreen({ navigation }: Props) {
           label: 'Jadwal Praktikum',
           sub: 'Lihat jadwal dan status sesi',
           icon: 'calendar-outline',
-          onPress: () => navigation.navigate('StudentSchedule'),
+          onPress: () => openDockTab(navigation, 'Schedule'),
         },
         {
           label: 'Pengajuan Izin',
@@ -107,7 +108,7 @@ export function ProfileScreen({ navigation }: Props) {
           label: 'Riwayat Presensi',
           sub: 'Rekap kehadiran praktikan',
           icon: 'finger-print-outline',
-          onPress: () => navigation.navigate('StudentAttendanceHistory'),
+          onPress: () => openDockTab(navigation, 'Attendance'),
         },
       ];
 
