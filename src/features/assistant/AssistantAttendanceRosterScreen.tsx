@@ -112,14 +112,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
     );
   }
 
-  const {
-    total,
-    presentCount,
-    ontimeCount,
-    lateCount,
-    excusedCount,
-    absentCount,
-  } = recap.summary;
+  const { total, presentCount } = recap.summary;
   const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
 
   return (
@@ -149,7 +142,6 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
                 key: 'total',
                 label: 'Total peserta',
                 value: total,
-                badge: `${presentCount} hadir`,
                 badgeTone: 'success',
                 caption: 'Peserta terdaftar pada sesi',
               },
@@ -159,33 +151,6 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
                 value: `${rate}%`,
                 caption: 'Hadir dari seluruh peserta',
                 captionTone: 'violet',
-              },
-            ]}
-            breakdown={[
-              {
-                key: 'ontime',
-                label: 'Tepat waktu',
-                value: ontimeCount,
-              },
-              {
-                key: 'late',
-                label: 'Terlambat',
-                value: lateCount,
-              },
-              {
-                key: 'present',
-                label: 'Hadir',
-                value: presentCount,
-              },
-              {
-                key: 'excused',
-                label: 'Izin',
-                value: excusedCount,
-              },
-              {
-                key: 'absent',
-                label: 'Belum hadir',
-                value: absentCount,
               },
             ]}
           />
