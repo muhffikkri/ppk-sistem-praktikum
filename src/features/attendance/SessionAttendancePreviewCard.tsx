@@ -2,20 +2,9 @@ import { StyleSheet, View } from 'react-native';
 
 import type { Session } from '../../domain/types';
 import { spacing } from '../../theme/tokens';
-import {
-  Avatar,
-  Card,
-  StatusBadge,
-  Text,
-  type AvatarTone,
-} from '../../shared/ui';
+import { Avatar, Card, StatusBadge, Text } from '../../shared/ui';
 import { formatSessionDate, formatTimeRange } from '../assistant/formatters';
-
-export type AttendeePreview = {
-  id: string;
-  name: string;
-  tone: AvatarTone;
-};
+import type { AttendeePreview } from './sessionAttendanceGroups';
 
 export type SessionAttendancePreviewCardProps = {
   session: Session;

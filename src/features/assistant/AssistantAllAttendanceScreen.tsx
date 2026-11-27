@@ -2,7 +2,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
-import type { AttendanceRecord, Session } from '../../domain/types';
 import {
   EmptyState,
   ErrorState,
@@ -13,15 +12,15 @@ import {
   ScreenList,
   SectionHeader,
   SegmentedControl,
-  type AvatarTone,
   type SegmentedOption,
 } from '../../shared/ui';
-import {
-  SessionAttendancePreviewCard,
-  type AttendeePreview,
-} from '../attendance/SessionAttendancePreviewCard';
+import { SessionAttendancePreviewCard } from '../attendance/SessionAttendancePreviewCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
-import { isCurrentMonth, punctualityOf } from '../attendance/punctuality';
+import { isCurrentMonth } from '../attendance/punctuality';
+import {
+  buildSessionAttendanceGroup,
+  type SessionAttendanceGroup,
+} from '../attendance/sessionAttendanceGroups';
 import { useAssistantSessionsViewModel } from '../../state';
 import { RootTopBar } from '../shell/RootTopBar';
 
@@ -38,26 +37,10 @@ const FILTERS: SegmentedOption<Filter>[] = [
   { value: 'month', label: 'Bulan ini' },
 ];
 
-const PREVIEW_LIMIT = 3;
-
-type SessionGroup = {
-  session: Session;
-  records: AttendanceRecord[];
-  onTime: number;
-  late: number;
-  preview: AttendeePreview[];
-};
-
-const toneOf = (record: AttendanceRecord, session: Session): AvatarTone => {
-  const punctual = punctualityOf(record, session);
-  return punctual === 'onTime'
-    ? 'lime'
-    : punctual === 'late'
-      ? 'pink'
-      : 'lavender';
-};
-
-const matchesFilter = (group: SessionGroup, filter: Filter): boolean => {
+const matchesFilter = (
+  group: SessionAttendanceGroup,
+  filter: Filter,
+): boolean => {
   if (filter === 'all') return true;
   if (filter === 'month') return isCurrentMonth(group.session.startsAt);
   return filter === 'onTime' ? group.onTime > 0 : group.late > 0;
@@ -93,25 +76,9 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
 
   // Satu kartu per sesi: rekap lengkap dibuka saat kartu ditekan.
   const groups = sessions
-    .map((session) => {
-      const records = getAttendanceForSession(session.id);
-      let onTime = 0;
-      let late = 0;
-      for (const record of records) {
-        const punctual = punctualityOf(record, session);
-        if (punctual === 'onTime') onTime += 1;
-        if (punctual === 'late') late += 1;
-      }
-      const preview = [...records]
-        .sort((a, b) => Date.parse(b.checkedInAt) - Date.parse(a.checkedInAt))
-        .slice(0, PREVIEW_LIMIT)
-        .map((record) => ({
-          id: record.id,
-          name: record.studentName,
-          tone: toneOf(record, session),
-        }));
-      return { session, records, onTime, late, preview };
-    })
+    .map((session) =>
+      buildSessionAttendanceGroup(session, getAttendanceForSession(session.id)),
+    )
     .filter((group) => group.records.length > 0);
 
   const sorted = [...groups].sort((a, b) => {

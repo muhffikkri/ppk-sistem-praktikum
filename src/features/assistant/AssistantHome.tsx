@@ -5,10 +5,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
 import type { Session } from '../../domain/types';
-import { studentIdentityMeta } from '../../domain/sessionRecapRules';
 import { colors, radius, spacing } from '../../theme/tokens';
 import {
-  Avatar,
   Banner,
   Button,
   Card,
@@ -30,10 +28,11 @@ import {
 import { formatWeekdayDayMonth } from '../../shared/format/date';
 import { useTransientFeedback } from '../../shared/navigation/useTransientFeedback';
 import { useAssistantSessionsViewModel, useAuth } from '../../state';
-import { AttendanceRecordCard } from '../attendance/AttendanceRecordCard';
+import { SessionAttendancePreviewCard } from '../attendance/SessionAttendancePreviewCard';
+import { buildSessionAttendanceGroup } from '../attendance/sessionAttendanceGroups';
 import { useAssistantLeaveViewModel } from '../leave';
 import { RootTopBar } from '../shell/RootTopBar';
-import { formatClock, formatTimeRange } from '../student/formatters';
+import { formatTimeRange } from '../student/formatters';
 import {
   sessionStatusLabel,
   sessionStatusTone,
@@ -42,7 +41,9 @@ import {
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 type QuickTone = 'violet' | 'blue' | 'lime' | 'pink' | 'neutral';
 
-const RECENT_LIMIT = 5;
+// Beranda hanya cuplikan; daftar lengkapnya ada di halaman Jadwal/Presensi.
+const SCHEDULE_PREVIEW_LIMIT = 2;
+const ATTENDANCE_PREVIEW_LIMIT = 2;
 
 const QUICK_TONE: Record<QuickTone, { bg: string; fg: string }> = {
   violet: { bg: colors.lavenderSubtle, fg: colors.violet },
@@ -193,12 +194,19 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
   const pendingHere = active
     ? pending.filter((r) => r.sessionId === active.id).length
     : 0;
-  const recent = [...records]
-    .sort(
-      (a, b) =>
-        new Date(b.checkedInAt).getTime() - new Date(a.checkedInAt).getTime(),
+  const schedulePreview = todaySessions.slice(0, SCHEDULE_PREVIEW_LIMIT);
+  const attendanceGroups = byStart
+    .map((session) =>
+      buildSessionAttendanceGroup(
+        session,
+        vm.getAttendanceForSession(session.id),
+      ),
     )
-    .slice(0, RECENT_LIMIT);
+    .filter((group) => group.records.length > 0)
+    .sort(
+      (a, b) => Date.parse(b.session.startsAt) - Date.parse(a.session.startsAt),
+    );
+  const attendancePreview = attendanceGroups.slice(0, ATTENDANCE_PREVIEW_LIMIT);
 
   const run = async (kind: 'open' | 'close') => {
     if (!active || busy) return;
@@ -360,14 +368,14 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
           </Card>
         </View>
 
-        {todaySessions.length > 0 ? (
+        {schedulePreview.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader
-              title="Jadwal hari ini"
+              title={`Jadwal hari ini (${todaySessions.length})`}
               actionLabel="Lihat semua"
               onAction={() => navigation.navigate('AssistantAllSessions')}
             />
-            {todaySessions.map((session) => (
+            {schedulePreview.map((session) => (
               <TodaySessionCard
                 key={session.id}
                 session={session}
@@ -381,22 +389,26 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
           </View>
         ) : null}
 
-        {recent.length > 0 ? (
+        {attendancePreview.length > 0 ? (
           <View style={styles.section}>
             <SectionHeader
-              title="Kehadiran terbaru"
+              title={`Presensi terbaru (${attendanceGroups.length})`}
               actionLabel="Lihat semua"
               onAction={() => navigation.navigate('AssistantAllAttendance')}
             />
-            {recent.map((record) => (
-              <AttendanceRecordCard
-                key={record.id}
-                leading={<Avatar name={record.studentName} tone="lime" />}
-                title={record.studentName}
-                meta={studentIdentityMeta(record) || 'Praktikan'}
-                status={{ label: 'Hadir', tone: 'success' }}
-                time={formatClock(record.checkedInAt)}
-                timeLabel="Hadir"
+            {attendancePreview.map((group) => (
+              <SessionAttendancePreviewCard
+                key={group.session.id}
+                session={group.session}
+                presentCount={group.records.length}
+                onTimeCount={group.onTime}
+                lateCount={group.late}
+                attendees={group.preview}
+                onPress={() =>
+                  navigation.navigate('AssistantAttendanceRoster', {
+                    sessionId: group.session.id,
+                  })
+                }
               />
             ))}
           </View>
