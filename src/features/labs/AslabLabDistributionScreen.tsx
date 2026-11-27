@@ -8,11 +8,13 @@ import {
   BackButton,
   Banner,
   Button,
-  LoadingState,
+  EmptyState,
+  ErrorState,
   Screen,
   SectionHeader,
   SegmentedControl,
   SelectField,
+  SkeletonList,
   TextField,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
@@ -23,7 +25,7 @@ type Action = 'participant' | 'assistant' | 'move';
 
 export function AslabLabDistributionScreen({ navigation, route }: Props) {
   const { user } = useAuth();
-  const { labs, loading, error } = useLabManagement();
+  const { labs, loading, error, retry } = useLabManagement();
   const [action, setAction] = useState<Action>('participant');
   const [targetId, setTargetId] = useState(route.params?.labId ?? '');
   const [sourceId, setSourceId] = useState('');
@@ -82,14 +84,21 @@ export function AslabLabDistributionScreen({ navigation, route }: Props) {
           message="Distribusi lab dikelola oleh Aslab."
         />
       ) : loading ? (
-        <LoadingState label="Memuat laboratorium…" />
+        <SkeletonList variant="row" count={3} label="Memuat laboratorium…" />
       ) : error ? (
-        <Banner tone="danger" title="Gagal memuat lab" message={error} />
+        <ErrorState title="Gagal memuat lab" message={error} onRetry={retry} />
       ) : scoped.length === 0 ? (
-        <Banner
-          tone="warning"
+        <EmptyState
+          icon="business-outline"
           title="Belum ada lab"
-          message="Tambahkan lab pada mata kuliah yang ditugaskan."
+          description="Tambahkan lab pada mata kuliah yang ditugaskan sebelum menempatkan praktikan atau Asprak."
+          action={
+            <Button
+              label="Tambah lab"
+              variant="primary"
+              onPress={() => navigation.navigate('AssistantLabForm', {})}
+            />
+          }
         />
       ) : (
         <>
