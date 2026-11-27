@@ -14,8 +14,8 @@ import {
   CardContent,
   ErrorState,
   InfoRow,
-  LoadingState,
   Screen,
+  SkeletonList,
   Stack,
   StatusBadge,
   Text,
@@ -80,7 +80,9 @@ export function StudentFineDetailScreen({ navigation, route }: Props) {
     <Screen>
       <BackButton onPress={() => navigation.goBack()} />
 
-      {loading ? <LoadingState label="Memuat detail tagihan…" /> : null}
+      {loading ? (
+        <SkeletonList variant="card" count={2} label="Memuat detail tagihan…" />
+      ) : null}
 
       {!loading && error ? (
         <ErrorState
