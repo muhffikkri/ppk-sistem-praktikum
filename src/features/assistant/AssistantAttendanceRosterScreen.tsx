@@ -143,7 +143,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
                 label: 'Total peserta',
                 value: total,
                 badgeTone: 'success',
-                caption: 'Peserta terdaftar pada sesi',
+                caption: 'Peserta pada sesi',
               },
               {
                 key: 'rate',
