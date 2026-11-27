@@ -77,8 +77,13 @@ export function RequestCard({ item }: { item: LeaveRequest }) {
     <Card>
       <CardContent>
         <View style={styles.requestHead}>
-          <Text variant="bodyStrong" numberOfLines={2} style={styles.flex}>
-            {item.courseName} · {item.groupName}
+          <Text
+            variant="bodyStrong"
+            tone="violet"
+            numberOfLines={2}
+            style={styles.flex}
+          >
+            {item.studentName}
           </Text>
           <StatusBadge
             label={leaveLabels[item.status]}
@@ -86,7 +91,7 @@ export function RequestCard({ item }: { item: LeaveRequest }) {
           />
         </View>
         <Text variant="caption" tone="muted" numberOfLines={1}>
-          {item.studentName} · {formatDateTime(new Date(item.sessionStartsAt))}
+          {`${item.courseName} · ${item.groupName} · ${formatDateTime(new Date(item.sessionStartsAt))}`}
         </Text>
         <Text variant="body" numberOfLines={4}>
           {item.reason}

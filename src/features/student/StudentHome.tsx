@@ -471,7 +471,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
 
         {needsAction.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader title="Perlu Dilakukan" />
+            <SectionHeader title="Jadwal Mendatang" />
             {needsAction.map((s) => (
               <ListRow
                 key={s.id}

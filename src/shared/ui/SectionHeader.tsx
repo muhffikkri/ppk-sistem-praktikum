@@ -4,6 +4,8 @@ import { spacing } from '../../theme/tokens';
 import { IconButton } from './IconButton';
 import { Text } from './Text';
 
+export type SortDirection = 'asc' | 'desc';
+
 export type SectionHeaderProps = {
   title: string;
   /** Optional small text action on the right, e.g. "Lihat semua". */
@@ -11,6 +13,8 @@ export type SectionHeaderProps = {
   onAction?: () => void;
   /** Sort control: icon only, label describes the current order for screen readers. */
   sortLabel?: string;
+  /** Visible arrow for the active order: up = ascending, down = descending. */
+  sortDirection?: SortDirection;
   onSort?: () => void;
 };
 
@@ -20,8 +24,16 @@ export function SectionHeader({
   actionLabel,
   onAction,
   sortLabel,
+  sortDirection,
   onSort,
 }: SectionHeaderProps) {
+  const sortIcon =
+    sortDirection === 'asc'
+      ? 'arrow-up-outline'
+      : sortDirection === 'desc'
+        ? 'arrow-down-outline'
+        : 'swap-vertical-outline';
+
   return (
     <View style={styles.row}>
       <Text
@@ -47,9 +59,12 @@ export function SectionHeader({
       ) : null}
       {sortLabel && onSort ? (
         <IconButton
-          icon="swap-vertical-outline"
+          icon={sortIcon}
           variant="ghost"
-          accessibilityLabel={sortLabel}
+          accessibilityLabel={
+            sortLabel ??
+            `Urutkan ${sortDirection === 'asc' ? 'menaik' : 'menurun'}`
+          }
           onPress={onSort}
         />
       ) : null}

@@ -16,7 +16,11 @@ import {
 } from '../../shared/ui';
 import { SessionAttendancePreviewCard } from '../attendance/SessionAttendancePreviewCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
-import { isCurrentMonth } from '../attendance/punctuality';
+import {
+  isCurrentMonth,
+  isCurrentWeek,
+  isToday,
+} from '../attendance/punctuality';
 import {
   buildSessionAttendanceGroup,
   type SessionAttendanceGroup,
@@ -28,12 +32,12 @@ type Props = NativeStackScreenProps<
   RootStackParamList,
   'AssistantAllAttendance'
 >;
-type Filter = 'all' | 'onTime' | 'late' | 'month';
+type Filter = 'all' | 'today' | 'week' | 'month';
 
 const FILTERS: SegmentedOption<Filter>[] = [
   { value: 'all', label: 'Semua' },
-  { value: 'onTime', label: 'Tepat waktu' },
-  { value: 'late', label: 'Terlambat' },
+  { value: 'today', label: 'Hari ini' },
+  { value: 'week', label: 'Minggu ini' },
   { value: 'month', label: 'Bulan ini' },
 ];
 
@@ -42,8 +46,9 @@ const matchesFilter = (
   filter: Filter,
 ): boolean => {
   if (filter === 'all') return true;
-  if (filter === 'month') return isCurrentMonth(group.session.startsAt);
-  return filter === 'onTime' ? group.onTime > 0 : group.late > 0;
+  if (filter === 'today') return isToday(group.session.startsAt);
+  if (filter === 'week') return isCurrentWeek(group.session.startsAt);
+  return isCurrentMonth(group.session.startsAt);
 };
 
 export function AssistantAllAttendanceScreen({ navigation }: Props) {
@@ -146,6 +151,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
         <SectionHeader
           title="Riwayat sesi"
           sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          sortDirection={newestFirst ? 'desc' : 'asc'}
           onSort={() => setNewestFirst((value) => !value)}
         />
       }
