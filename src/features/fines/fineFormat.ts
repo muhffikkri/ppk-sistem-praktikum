@@ -25,8 +25,26 @@ const PAYMENT_TONE: Record<PaymentTransactionStatus, BadgeTone> = {
   pending: 'pink',
 };
 
+// Satu formatter untuk semua baris; `toLocaleString` membuat formatter baru
+// pada setiap panggilan dan lambat di Hermes.
+let rupiahFormatter: Intl.NumberFormat | null | undefined;
+
+function groupThousands(value: number): string {
+  return value.toString().replace(/B(?=(d{3})+(?!d))/g, '.');
+}
+
 export function formatRupiah(amount: number): string {
-  return 'Rp ' + Math.round(amount).toLocaleString('id-ID');
+  const value = Math.round(amount);
+  if (rupiahFormatter === undefined) {
+    try {
+      rupiahFormatter = new Intl.NumberFormat('id-ID', {
+        maximumFractionDigits: 0,
+      });
+    } catch {
+      rupiahFormatter = null;
+    }
+  }
+  return `Rp ${rupiahFormatter ? rupiahFormatter.format(value) : groupThousands(value)}`;
 }
 
 export function fineStatusLabel(status: FineStatus): string {
