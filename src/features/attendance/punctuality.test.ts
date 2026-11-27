@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { AttendanceRecord, Session } from '../../domain/types';
-import { punctualityCounts, punctualityOf } from './punctuality';
+import { isCurrentWeek, punctualityCounts, punctualityOf } from './punctuality';
 
 const session: Session = {
   id: 'session-301',
@@ -61,4 +61,15 @@ test('punctualityCounts: menjumlahkan klasifikasi backend', () => {
   );
 
   assert.deepEqual(counts, { onTime: 1, late: 2, unknown: 0 });
+});
+
+test('isCurrentWeek: minggu dimulai Senin dan berakhir Minggu', () => {
+  const now = new Date(2026, 10, 27, 10); // Rabu
+  const iso = (day: number, hour = 8) =>
+    new Date(2026, 10, day, hour).toISOString();
+
+  assert.equal(isCurrentWeek(iso(23), now), true); // Senin
+  assert.equal(isCurrentWeek(iso(29, 23), now), true); // Minggu
+  assert.equal(isCurrentWeek(iso(22, 23), now), false); // Minggu lalu
+  assert.equal(isCurrentWeek(iso(30), now), false); // Senin depan
 });

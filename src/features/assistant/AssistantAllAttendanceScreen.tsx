@@ -16,7 +16,7 @@ import {
 } from '../../shared/ui';
 import { SessionAttendancePreviewCard } from '../attendance/SessionAttendancePreviewCard';
 import { AttendanceSummary } from '../attendance/AttendanceSummary';
-import { isCurrentMonth } from '../attendance/punctuality';
+import { isCurrentMonth, isCurrentWeek } from '../attendance/punctuality';
 import {
   buildSessionAttendanceGroup,
   type SessionAttendanceGroup,
@@ -28,12 +28,11 @@ type Props = NativeStackScreenProps<
   RootStackParamList,
   'AssistantAllAttendance'
 >;
-type Filter = 'all' | 'onTime' | 'late' | 'month';
+type Filter = 'all' | 'week' | 'month';
 
 const FILTERS: SegmentedOption<Filter>[] = [
   { value: 'all', label: 'Semua' },
-  { value: 'onTime', label: 'Tepat waktu' },
-  { value: 'late', label: 'Terlambat' },
+  { value: 'week', label: 'Minggu ini' },
   { value: 'month', label: 'Bulan ini' },
 ];
 
@@ -42,8 +41,8 @@ const matchesFilter = (
   filter: Filter,
 ): boolean => {
   if (filter === 'all') return true;
-  if (filter === 'month') return isCurrentMonth(group.session.startsAt);
-  return filter === 'onTime' ? group.onTime > 0 : group.late > 0;
+  if (filter === 'week') return isCurrentWeek(group.session.startsAt);
+  return isCurrentMonth(group.session.startsAt);
 };
 
 export function AssistantAllAttendanceScreen({ navigation }: Props) {

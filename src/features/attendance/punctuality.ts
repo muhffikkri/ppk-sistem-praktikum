@@ -37,3 +37,14 @@ export function isCurrentMonth(iso: string, now = new Date()): boolean {
     date.getFullYear() === now.getFullYear()
   );
 }
+
+/** Minggu dimulai Senin, mengikuti konvensi kalender di aplikasi. */
+export function isCurrentWeek(iso: string, now = new Date()): boolean {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+
+  const time = new Date(iso).getTime();
+  return time >= start.getTime() && time < end.getTime();
+}
