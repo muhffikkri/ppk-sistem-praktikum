@@ -146,6 +146,7 @@ export function AssistantAllAttendanceScreen({ navigation }: Props) {
         <SectionHeader
           title="Riwayat sesi"
           sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          sortDirection={newestFirst ? 'desc' : 'asc'}
           onSort={() => setNewestFirst((value) => !value)}
         />
       }

@@ -169,6 +169,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
         <SectionHeader
           title="Semua presensi"
           sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          sortDirection={newestFirst ? 'desc' : 'asc'}
           onSort={() => setNewestFirst((value) => !value)}
         />
       }

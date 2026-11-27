@@ -202,6 +202,7 @@ export function AssistantAttendanceRosterScreen({ route, navigation }: Props) {
         <SectionHeader
           title="Daftar kehadiran"
           sortLabel={`Urutkan: ${newestFirst ? 'Terbaru' : 'Terlama'}`}
+          sortDirection={newestFirst ? 'desc' : 'asc'}
           onSort={() => setNewestFirst((value) => !value)}
         />
       }
