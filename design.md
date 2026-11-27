@@ -464,7 +464,8 @@ src/
   waktu. Asisten: jumlah hadir + buka/tutup. Tanpa `Header`/top bar.
 - **Beranda asisten:** cuplikan 2 sesi Jadwal dan 2 sesi Presensi; tombol
   "Lihat semua" membuka `AssistantAllSessions` / `AssistantAllAttendance`,
-  kartu sesi membuka detail/rekap yang lengkap.
+  kartu sesi membuka detail/rekap yang lengkap. Hero sesi aktif menyorot
+  topik (`session.title`) seperti highlight knowledge pada praktikan.
 - **Rekap asisten:** summary metrik + filter, lalu riwayat per sesi —
   satu `SessionAttendancePreviewCard` per sesi berisi ringkasan tepat
   waktu/terlambat dan cuplikan 2–3 praktikan hadir. Kartu dibuka untuk

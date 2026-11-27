@@ -307,10 +307,21 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
                   tone={active.status === 'open' ? 'violet' : 'lavender'}
                 />
               </View>
-              <Text variant="subtitle" tone="onDark">
+              <Text variant="title" tone="onDark" numberOfLines={2}>
                 {active.courseName}
               </Text>
-              <Text variant="caption" tone="onDarkMuted">
+              <View style={styles.heroKnowledge}>
+                <Ionicons name="book-outline" size={18} color={colors.lime} />
+                <View style={styles.heroKnowledgeText}>
+                  <Text variant="overline" tone="onDarkMuted" numberOfLines={1}>
+                    Topik praktikum
+                  </Text>
+                  <Text variant="bodyStrong" tone="onDark" numberOfLines={2}>
+                    {active.title ?? active.groupName}
+                  </Text>
+                </View>
+              </View>
+              <Text variant="caption" tone="onDarkMuted" numberOfLines={1}>
                 {`${active.groupName} · ${formatTimeRange(active.startsAt, active.endsAt)}${active.lab ? ` · ${active.lab}` : ''}`}
               </Text>
               <StatCard
@@ -445,6 +456,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
+  heroKnowledge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius['2xl'],
+    backgroundColor: colors.onInkSubtle,
+  },
+  heroKnowledgeText: { flex: 1, gap: 2, minWidth: 0 },
   quickGrid: {
     flexDirection: 'row',
     alignItems: 'flex-start',
