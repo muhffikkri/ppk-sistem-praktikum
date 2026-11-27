@@ -6,7 +6,7 @@ import { StudentHome } from '../features/student/StudentHome';
 import { useAuth } from '../state';
 import type { RootStackParamList } from './navigation';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'DockTabs'>;
 
 export function HomeScreen({ navigation }: Props) {
   const { user } = useAuth();

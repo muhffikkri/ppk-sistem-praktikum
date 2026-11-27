@@ -29,7 +29,7 @@ import { useAuth, useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 import { RootTopBar } from '../shell/RootTopBar';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'DockTabs'>;
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'Terbuka',
@@ -300,7 +300,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                 icon="id-card-outline"
                 accessibilityLabel="Buka kartu profil praktikan"
                 variant="soft"
-                onPress={() => navigation.navigate('Profile')}
+                onPress={() => openDockTab(navigation, 'Profile')}
               />
             </View>
           </CardContent>

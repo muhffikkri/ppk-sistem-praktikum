@@ -25,7 +25,7 @@ import { useAssistantLeaveViewModel } from '../leave/useAssistantLeaveViewModel'
 import { RootTopBar } from '../shell/RootTopBar';
 import { formatSessionDate, formatTimeRange } from '../student/formatters';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'AssistantSchedule'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'DockTabs'>;
 type Filter = 'all' | Exclude<Session['status'], 'cancelled'>;
 
 const FILTERS: SegmentedOption<Filter>[] = [

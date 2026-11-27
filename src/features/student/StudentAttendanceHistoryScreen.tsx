@@ -27,10 +27,7 @@ import { useStudentAttendanceViewModel } from '../../state';
 import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
-type Props = NativeStackScreenProps<
-  RootStackParamList,
-  'StudentAttendanceHistory'
->;
+type Props = NativeStackScreenProps<RootStackParamList, 'DockTabs'>;
 type Filter = 'all' | 'onTime' | 'late' | 'month';
 
 const FILTERS: SegmentedOption<Filter>[] = [

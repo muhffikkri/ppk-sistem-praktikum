@@ -1,4 +1,5 @@
 import type { ActorRole } from '../state/AuthContext';
+import type { DockTabKey } from './dockTabs';
 
 // Keep route names and params aligned with docs/sprint-2-shared-contract.md.
 export type AuthStackParamList = {
@@ -8,22 +9,20 @@ export type AuthStackParamList = {
   RoleSelection: undefined;
 };
 
+/**
+ * Halaman dock (Beranda, Jadwal, Presensi, Akun) bukan route stack: dibuka
+ * lewat `DockTabs` dengan param `tab` (lihat `openDockTab`).
+ */
 export type RootStackParamList = {
-  DockTabs:
-    { tab?: 'Home' | 'Schedule' | 'Attendance' | 'Profile' } | undefined;
-  Home: undefined;
-  StudentSchedule: undefined;
+  DockTabs: { tab?: DockTabKey } | undefined;
   StudentSessionDetail: { sessionId: string };
   StudentCheckIn: { sessionId: string; qrToken?: string };
-  StudentAttendanceHistory: undefined;
   StudentLeaveRequestForm: { sessionId: string };
   StudentLeaveList: undefined;
-  AssistantSchedule: undefined;
   AssistantSessionDetail: { sessionId: string };
   AssistantSessionQr: { sessionId: string };
   AssistantAttendanceRoster: { sessionId: string };
   AssistantAllSessions: undefined;
-  AssistantAllAttendance: undefined;
   AssistantClassList: undefined;
   AssistantClassForm: { classId?: string };
   AssistantSessionForm: { classId?: string; sessionId?: string };
@@ -32,13 +31,10 @@ export type RootStackParamList = {
   AssistantLabForm: { labId?: string };
   AslabLabDistribution: { labId?: string } | undefined;
   AslabLabImport: undefined;
-  StudentAllSessions: undefined;
-  StudentAllAttendance: undefined;
   StudentFineList: undefined;
   StudentFineDetail: { fineId: string };
   StudentPaymentHistory: undefined;
   Calendar: undefined;
-  Profile: undefined;
   ProfileEdit: undefined;
   Notifications: undefined;
   LabMaps: undefined;

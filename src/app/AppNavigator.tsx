@@ -2,11 +2,10 @@ import { StackActions, useNavigation } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
   type NativeStackNavigationOptions,
-  type NativeStackNavigationProp,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
 import { memo, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import PagerView, {
   type PagerViewOnPageSelectedEvent,
 } from 'react-native-pager-view';
@@ -30,7 +29,7 @@ import { LeaveProvider } from '../features/leave/LeaveProvider';
 import { isAssistantRole } from '../domain/asprakScope';
 import { db } from '../services/firebase';
 import { DockTabActiveProvider } from '../shared/navigation/useTransientFeedback';
-import { BottomDock, colors, Text, type DockTab } from '../shared/ui';
+import { BottomDock, colors, type DockTab } from '../shared/ui';
 import {
   type ActorRole,
   NotificationInboxProvider,
@@ -40,7 +39,13 @@ import {
 import { AssistantSessionsProvider } from '../state/AssistantSessionsContext';
 import { StudentAttendanceProvider } from '../state/StudentAttendanceContext';
 
+import {
+  DOCK_TABS as DOCK_TAB_KEYS,
+  isDockTab,
+  type DockTabKey,
+} from './dockTabs';
 import { HomeScreen } from './HomeScreen';
+import { openDockTab } from './openDockTab';
 import { lazyScreen } from './lazyScreen';
 import type { RootStackParamList } from './navigation';
 import { ProfileScreen } from './ProfileScreen';
@@ -54,20 +59,6 @@ const DOCK_TABS: DockTab[] = [
   { key: 'Profile', label: 'Akun', glyph: 'person' },
 ];
 
-const DOCK_ROUTE_FOR_POV: Record<
-  'praktikan' | 'asisten',
-  { Schedule: keyof RootStackParamList; Attendance: keyof RootStackParamList }
-> = {
-  praktikan: {
-    Schedule: 'StudentSchedule',
-    Attendance: 'StudentAttendanceHistory',
-  },
-  asisten: {
-    Schedule: 'AssistantSchedule',
-    Attendance: 'AssistantAllAttendance',
-  },
-};
-
 const AuthStack = createNativeStackNavigator<{
   Landing: undefined;
   Login: undefined;
@@ -75,8 +66,7 @@ const AuthStack = createNativeStackNavigator<{
   RoleSelection: undefined;
 }>();
 
-type DockTabKey = 'Home' | 'Schedule' | 'Attendance' | 'Profile';
-const DOCK_ORDER: DockTabKey[] = ['Home', 'Schedule', 'Attendance', 'Profile'];
+const DOCK_ORDER = DOCK_TAB_KEYS;
 
 function neighbourTabs(index: number): Set<DockTabKey> {
   return new Set(
@@ -176,25 +166,6 @@ function DockTabsScreen({
   );
 }
 
-function ProfileHeaderButton() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Buka profil"
-      onPress={() => navigation.navigate('Profile')}
-      style={({ pressed }) => [styles.changeRole, pressed && styles.pressed]}
-    >
-      <Text variant="label" tone="violet">
-        Profil
-      </Text>
-    </Pressable>
-  );
-}
-
-const renderProfileHeaderButton = () => <ProfileHeaderButton />;
-
 // Dock (Home, Schedule, Attendance, Profile) dan empat layar alur harian
 // (detail sesi, QR, rekap kehadiran) sengaja eager agar tidak ada jeda chunk
 // saat navigasi. Layar lain tetap dimuat saat pertama dibuka.
@@ -202,16 +173,6 @@ const StudentCheckInScreen = lazyScreen<'StudentCheckIn'>(
   () => import('../features/checkin/StudentCheckInScreen'),
   'StudentCheckInScreen',
   'Memuat sesi praktikum…',
-);
-const StudentAllSessionsScreen = lazyScreen<'StudentAllSessions'>(
-  () => import('../features/student/StudentAllSessionsScreen'),
-  'StudentAllSessionsScreen',
-  'Memuat sesi…',
-);
-const StudentAllAttendanceScreen = lazyScreen<'StudentAllAttendance'>(
-  () => import('../features/student/StudentAllAttendanceScreen'),
-  'StudentAllAttendanceScreen',
-  'Memuat presensi…',
 );
 const StudentLeaveRequestFormScreen = lazyScreen<'StudentLeaveRequestForm'>(
   () => import('../features/leave/StudentLeaveRequestFormScreen'),
@@ -309,14 +270,12 @@ const BarcodeScanScreen = lazyScreen<'BarcodeScan'>(
   'Menyiapkan pemindai…',
 );
 
+// Tidak ada native header: halaman root memakai RootTopBar, halaman yang
+// ditumpuk memakai BackButton (lihat design.md).
 const STACK_SCREEN_OPTIONS: NativeStackNavigationOptions = {
-  headerStyle: { backgroundColor: colors.panel },
-  headerTintColor: colors.violet,
-  headerShadowVisible: false,
-  headerBackButtonDisplayMode: 'minimal',
+  headerShown: false,
   contentStyle: { backgroundColor: colors.surface },
   freezeOnBlur: true,
-  headerRight: renderProfileHeaderButton,
 };
 
 export function AppNavigator() {
@@ -336,30 +295,17 @@ export function AppNavigator() {
     const sync = (state: { index?: number; routes: any[] } | undefined) => {
       const route = state?.routes[state.index ?? 0];
       const name = route?.name ?? 'DockTabs';
-      if (name === 'DockTabs') {
-        const tab = route?.params?.tab;
-        if (tab === 'Schedule' || tab === 'Attendance' || tab === 'Profile')
-          return setActiveKey(tab);
-        return setActiveKey('Home');
-      }
-      if (name === 'Home' || name === 'Profile') return setActiveKey(name);
-      if (name === DOCK_ROUTE_FOR_POV[actorRole].Schedule)
-        return setActiveKey('Schedule');
-      if (name === DOCK_ROUTE_FOR_POV[actorRole].Attendance)
-        return setActiveKey('Attendance');
+      // Layar yang ditumpuk mempertahankan tab asalnya.
+      if (name !== 'DockTabs') return;
+      const tab = route?.params?.tab;
+      setActiveKey(isDockTab(tab) ? tab : 'Home');
     };
     sync(navigation.getState?.());
     return navigation.addListener('state', (e) => sync(e.data?.state));
-  }, [actorRole, navigation]);
+  }, [navigation]);
 
   const onTabPress = (key: string) => {
-    navigation.dispatch(
-      StackActions.popTo(
-        'DockTabs',
-        { tab: key as DockTabKey },
-        { merge: true },
-      ),
-    );
+    if (isDockTab(key)) openDockTab(navigation, key);
   };
 
   if (authStatus === 'unauthenticated' || authStatus === 'loading') {
@@ -403,23 +349,8 @@ export function AppNavigator() {
                     component={DockTabsScreen}
                     options={{ headerShown: false }}
                   />
-                  <Stack.Screen
-                    name="Home"
-                    component={HomeScreen}
-                    options={{
-                      title: 'Beranda',
-                      headerRight: () => null,
-                      headerBackTitle: '',
-                      headerShown: false,
-                    }}
-                  />
 
                   <Stack.Group screenOptions={{ title: 'Praktikan' }}>
-                    <Stack.Screen
-                      name="StudentSchedule"
-                      component={StudentScheduleScreen}
-                      options={{ headerShown: false }}
-                    />
                     <Stack.Screen
                       name="StudentSessionDetail"
                       component={StudentSessionDetailScreen}
@@ -428,21 +359,6 @@ export function AppNavigator() {
                     <Stack.Screen
                       name="StudentCheckIn"
                       component={StudentCheckInScreen}
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="StudentAttendanceHistory"
-                      component={StudentAttendanceHistoryScreen}
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="StudentAllSessions"
-                      component={StudentAllSessionsScreen}
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="StudentAllAttendance"
-                      component={StudentAllAttendanceScreen}
                       options={{ headerShown: false }}
                     />
                     <Stack.Screen
@@ -474,11 +390,6 @@ export function AppNavigator() {
 
                   <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen
-                      name="AssistantSchedule"
-                      component={AssistantScheduleScreen}
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
                       name="AssistantSessionDetail"
                       component={AssistantSessionDetailScreen}
                     />
@@ -494,10 +405,6 @@ export function AppNavigator() {
                     <Stack.Screen
                       name="AssistantAllSessions"
                       component={AssistantAllSessionsScreen}
-                    />
-                    <Stack.Screen
-                      name="AssistantAllAttendance"
-                      component={AssistantAllAttendanceScreen}
                     />
                     <Stack.Screen
                       name="AssistantClassList"
@@ -540,11 +447,6 @@ export function AppNavigator() {
                   <Stack.Screen
                     name="Calendar"
                     component={CalendarScreen}
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="Profile"
-                    component={ProfileScreen}
                     options={{ headerShown: false }}
                   />
                   <Stack.Screen
@@ -601,11 +503,4 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   pager: { flex: 1 },
   page: { flex: 1 },
-  changeRole: {
-    minHeight: 44,
-    paddingHorizontal: 8,
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  pressed: { backgroundColor: colors.lavenderSubtle },
 });

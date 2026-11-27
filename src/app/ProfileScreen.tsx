@@ -26,7 +26,7 @@ import { RootTopBar } from '../features/shell/RootTopBar';
 import type { RootStackParamList } from './navigation';
 import { openDockTab } from './openDockTab';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'DockTabs'>;
 
 const ROLE_LABEL: Record<UserRole, string> = {
   student: 'Praktikan',

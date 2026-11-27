@@ -39,7 +39,7 @@ import {
   sessionStatusTone,
 } from './components/AssistantSessionCard';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'DockTabs'>;
 type QuickTone = 'violet' | 'blue' | 'lime' | 'pink' | 'neutral';
 
 // Beranda hanya cuplikan; daftar lengkapnya ada di halaman Jadwal/Presensi.

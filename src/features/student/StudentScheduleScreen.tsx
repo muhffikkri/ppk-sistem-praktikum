@@ -24,7 +24,7 @@ import { useStudentAttendanceViewModel } from '../../state';
 import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'StudentSchedule'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'DockTabs'>;
 type Filter = 'all' | Session['status'];
 
 const FILTERS: SegmentedOption<Filter>[] = [
