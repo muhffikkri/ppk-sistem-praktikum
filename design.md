@@ -46,11 +46,20 @@ App (BottomDock: Beranda · Jadwal · [Izin] · Presensi · Akun)
 │   ├── Jadwal → Detail sesi → Presensi / Ajukan izin
 │   ├── Riwayat kehadiran
 │   └── Izin saya
-└── Asisten
-    ├── Kelas → Form kelas / peserta
-    ├── Jadwal → Detail sesi → Buka/Tutup sesi → Rekap kehadiran
-    └── Pemeriksaan izin
+├── Asisten
+│   ├── Kelas → Form kelas / peserta
+│   ├── Jadwal → Detail sesi → Buka/Tutup sesi → Rekap kehadiran
+│   └── Pemeriksaan izin
+└── Aslab (Beranda = dashboard lab)
+    ├── Ringkasan lab & praktikan · status per lab → Form lab
+    ├── Pintasan: Kelola lab · Distribusi · Impor data · Peta lab
+    └── Rekap periode (Hari/Minggu/Bulan) → riwayat kegiatan & keuangan denda
 ```
+
+Beranda Aslab (`AslabHome`) adalah halaman root dengan `RootTopBar`. Semua
+angka berasal dari `labs`, `classes`, `sessions`, dan `fines` dalam
+`managedCourseIds`; pemasukan hanya dari tagihan `paid` yang diverifikasi
+backend. Pintasan beranda memakai `QuickActionGrid` bersama.
 
 Autentikasi memakai Firebase Auth; peran disimpan di profil Firestore dan
 tidak bisa diganti sendiri oleh pengguna. FAB tengah dock membuka layar izin
