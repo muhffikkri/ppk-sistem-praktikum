@@ -881,6 +881,15 @@ await adminDb.doc('labs/lab-mk-b').set({
 
 await signInWithEmailAndPassword(auth, 'aslabA@rules.test', PASSWORD);
 check(
+  'aslab tidak bisa menambahkan mata kuliah ke profilnya sendiri',
+  await attempt(() =>
+    updateDoc(doc(db, 'users', 'aslabA'), {
+      managedCourseIds: ['MK-A', 'MK-B'],
+    }),
+  ),
+  'denied',
+);
+check(
   'aslab A buat lab pada mata kuliah terkelola (MK-A)',
   await attempt(() =>
     setDoc(doc(db, 'labs', 'lab-mk-a-new'), labPayload('MK-A', 'Lab MK A 2')),
@@ -913,16 +922,20 @@ check(
   await attempt(() => deleteDoc(doc(db, 'labs', 'lab-mk-b'))),
   'denied',
 );
+check(
+  'aslab tidak bisa memindahkan lab ke mata kuliah di luar penugasan',
+  await attempt(() =>
+    updateDoc(doc(db, 'labs', 'lab-mk-a'), { courseId: 'MK-B' }),
+  ),
+  'denied',
+);
 await signOut(auth);
 
 await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
 check(
   'asprak (assistant) ditolak membuat lab',
   await attempt(() =>
-    setDoc(
-      doc(db, 'labs', 'lab-asprak-try'),
-      labPayload('MK-A', 'Lab Asprak'),
-    ),
+    setDoc(doc(db, 'labs', 'lab-asprak-try'), labPayload('MK-A', 'Lab Asprak')),
   ),
   'denied',
 );

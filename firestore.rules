@@ -1,3 +1,4 @@
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() {
@@ -120,7 +121,8 @@ service cloud.firestore {
         )
         && (
           !('managedCourseIds' in request.resource.data)
-          || request.resource.data.managedCourseIds.size() == 0
+          || (request.resource.data.managedCourseIds is list
+            && request.resource.data.managedCourseIds.size() == 0)
         )
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() > 0

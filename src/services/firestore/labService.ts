@@ -1,6 +1,6 @@
 /**
-- CRUD master laboratorium (koleksi Firestore `labs`) — Sprint 3 (SRS-3.1) & SRS-4.01.
-- Baca: semua pengguna login (dipakai presensi & peta). Tulis: Aslab sesuai courseId.
+ * Master laboratorium untuk presensi dan peta.
+ * Semua pengguna terautentikasi dapat membaca. Aslab menulis sesuai courseId.
  */
 import {
   addDoc,

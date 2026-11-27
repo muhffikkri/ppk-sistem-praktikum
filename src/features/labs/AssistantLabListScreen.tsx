@@ -25,9 +25,13 @@ const formatCoord = (value: number) =>
 
 export function AssistantLabListScreen({ navigation }: Props) {
   const { user } = useAuth();
-  const { labs, loading, error, retry } = useLabManagement();
+  const { labs: allLabs, loading, error, retry } = useLabManagement();
   const goBack = () => navigation.goBack();
   const isLabManager = canManageLabMaster(user?.role);
+  const managedCourseIds = user?.managedCourseIds ?? [];
+  const labs = isLabManager
+    ? allLabs.filter((lab) => managedCourseIds.includes(lab.courseId ?? ''))
+    : allLabs;
 
   if (loading && labs.length === 0) {
     return (
@@ -63,7 +67,13 @@ export function AssistantLabListScreen({ navigation }: Props) {
         />
       )}
 
-      {labs.length === 0 ? (
+      {isLabManager && managedCourseIds.length === 0 ? (
+        <EmptyState
+          icon="location-outline"
+          title="Belum ada mata kuliah"
+          description="Hubungi pengelola untuk mendapatkan penugasan mata kuliah."
+        />
+      ) : labs.length === 0 ? (
         <EmptyState
           icon="location-outline"
           title="Belum ada laboratorium"
@@ -96,7 +106,7 @@ export function AssistantLabListScreen({ navigation }: Props) {
         </View>
       )}
 
-      {isLabManager && (
+      {isLabManager && managedCourseIds.length > 0 && (
         <Button
           label="Tambah lab"
           icon="add"

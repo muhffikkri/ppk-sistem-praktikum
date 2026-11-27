@@ -263,5 +263,4 @@ export type SessionActionFailure =
   | 'already_checked_in';
 
 export type SessionActionResult =
-  | { ok: true }
-  | { ok: false; reason: SessionActionFailure };
+  { ok: true } | { ok: false; reason: SessionActionFailure };
