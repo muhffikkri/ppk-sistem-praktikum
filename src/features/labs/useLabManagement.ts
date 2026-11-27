@@ -6,6 +6,7 @@ import type { AsyncActionResult } from '../../domain/types';
 import {
   createLab,
   deleteLab,
+  setLabActive,
   subscribeLabs,
   updateLab,
 } from '../../services/firestore/labService';
@@ -17,6 +18,7 @@ export type LabManagementViewModel = {
   error: string | null;
   saving: boolean;
   deletingId: string | null;
+  togglingId: string | null;
   canManage: boolean;
   getLabById: (labId: string) => Lab | undefined;
   /** Buat lab baru bila `labId` null, selain itu perbarui. */
@@ -25,6 +27,10 @@ export type LabManagementViewModel = {
     input: LabInput,
   ) => Promise<AsyncActionResult>;
   removeLab: (labId: string) => Promise<AsyncActionResult>;
+  setLabActiveStatus: (
+    labId: string,
+    isActive: boolean,
+  ) => Promise<AsyncActionResult>;
   retry: () => void;
 };
 
@@ -35,6 +41,7 @@ export function useLabManagement(): LabManagementViewModel {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   const canManage = isAssistantRole(user?.role);
@@ -98,9 +105,29 @@ export function useLabManagement(): LabManagementViewModel {
       }
       setDeletingId(labId);
       try {
-        return await deleteLab(labId);
+        const targetLab = labs.find((item) => item.id === labId);
+        return await deleteLab(labId, targetLab?.name);
       } finally {
         setDeletingId(null);
+      }
+    },
+    [canManage, labs],
+  );
+
+  const setLabActiveStatus = useCallback(
+    async (labId: string, isActive: boolean): Promise<AsyncActionResult> => {
+      if (!canManage) {
+        return {
+          ok: false,
+          reason: 'forbidden',
+          message: 'Hanya asisten yang dapat mengelola lab.',
+        };
+      }
+      setTogglingId(labId);
+      try {
+        return await setLabActive(labId, isActive);
+      } finally {
+        setTogglingId(null);
       }
     },
     [canManage],
@@ -118,10 +145,12 @@ export function useLabManagement(): LabManagementViewModel {
     error,
     saving,
     deletingId,
+    togglingId,
     canManage,
     getLabById,
     saveLab,
     removeLab,
+    setLabActiveStatus,
     retry,
   };
 }

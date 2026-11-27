@@ -9,6 +9,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -26,9 +27,14 @@ import type { AsyncActionResult } from '../../domain/types';
 import { db } from '../firebase';
 
 const LABS = 'labs';
+const SESSIONS = 'sessions';
 const labsCol = collection(db, LABS);
+const sessionsCol = collection(db, SESSIONS);
 
 type AsyncFailure = { ok: false; reason: string; message: string };
+
+export const LAB_IN_USE_MESSAGE =
+  'Laboratorium masih digunakan oleh sesi praktikum. Nonaktifkan lab agar riwayat dan presensi tetap tersimpan.';
 
 function toFailure(e: unknown): AsyncFailure {
   const code =
@@ -113,6 +119,37 @@ export function normalizeLab(id: string, data: Record<string, unknown>): Lab {
   };
 }
 
+/**
+ * Mengecek apakah sebuah lab masih dirujuk oleh dokumen sesi (`labId` atau fallback nama lab).
+ * Dipakai oleh `deleteLab` dan dapat diuji/dipanggil secara terpisah.
+ */
+export async function isLabReferencedBySession(
+  labId: string,
+  labName?: string,
+): Promise<boolean> {
+  const trimmedId = labId.trim();
+  if (!trimmedId) return false;
+
+  const byLabIdSnap = await getDocs(
+    query(sessionsCol, where('labId', '==', trimmedId), limit(1)),
+  );
+  if (!byLabIdSnap.empty) {
+    return true;
+  }
+
+  const trimmedName = labName?.trim();
+  if (trimmedName) {
+    const byLabNameSnap = await getDocs(
+      query(sessionsCol, where('lab', '==', trimmedName), limit(1)),
+    );
+    if (!byLabNameSnap.empty) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /** Langganan real-time seluruh lab, urut nama. Kembalikan fungsi unsubscribe. */
 export function subscribeLabs(
   onData: (labs: Lab[]) => void,
@@ -125,6 +162,10 @@ export function subscribeLabs(
   );
 }
 
+/**
+ * Mengambil detail lab berdasarkan ID atau nama untuk kebutuhan tampilan/riwayat/geofence.
+ * Tidak memfilter `isActive` agar sesi historis yang merujuk lab nonaktif tetap terbaca.
+ */
 export async function getLabById(
   labIdOrName: string,
 ): Promise<AsyncActionResult<Lab>> {
@@ -200,8 +241,35 @@ export async function updateLab(
   }
 }
 
-export async function deleteLab(labId: string): Promise<AsyncActionResult> {
+export async function setLabActive(
+  labId: string,
+  isActive: boolean,
+): Promise<AsyncActionResult> {
   try {
+    await updateDoc(doc(db, LABS, labId), {
+      isActive,
+      updatedAt: new Date().toISOString(),
+    });
+    return { ok: true };
+  } catch (e) {
+    return toFailure(e);
+  }
+}
+
+export async function deleteLab(
+  labId: string,
+  labName?: string,
+): Promise<AsyncActionResult> {
+  try {
+    const inUse = await isLabReferencedBySession(labId, labName);
+    if (inUse) {
+      return {
+        ok: false,
+        reason: 'lab_in_use',
+        message: LAB_IN_USE_MESSAGE,
+      };
+    }
+
     await deleteDoc(doc(db, LABS, labId));
     return { ok: true };
   } catch (e) {

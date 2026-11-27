@@ -46,8 +46,17 @@ const coordText = (value: number | undefined) =>
 
 export function AssistantLabFormScreen({ route, navigation }: Props) {
   const { user } = useAuth();
-  const { getLabById, saveLab, removeLab, saving, deletingId, loading, error } =
-    useLabManagement();
+  const {
+    getLabById,
+    saveLab,
+    removeLab,
+    setLabActiveStatus,
+    saving,
+    deletingId,
+    togglingId,
+    loading,
+    error,
+  } = useLabManagement();
 
   const labId = route.params?.labId ?? null;
   const existing = labId ? getLabById(labId) : undefined;
@@ -96,8 +105,10 @@ export function AssistantLabFormScreen({ route, navigation }: Props) {
       managedCourseIds={managedCourseIds}
       saving={saving}
       deleting={deletingId !== null}
+      toggling={togglingId !== null}
       onSave={saveLab}
       onDelete={removeLab}
+      onSetActive={setLabActiveStatus}
       onDone={() => navigation.goBack()}
     />
   );
@@ -109,8 +120,10 @@ type LabFormProps = {
   managedCourseIds: string[];
   saving: boolean;
   deleting: boolean;
+  toggling: boolean;
   onSave: LabManagementViewModel['saveLab'];
   onDelete: LabManagementViewModel['removeLab'];
+  onSetActive: LabManagementViewModel['setLabActiveStatus'];
   onDone: () => void;
 };
 
@@ -120,8 +133,10 @@ function LabForm({
   managedCourseIds,
   saving,
   deleting,
+  toggling,
   onSave,
   onDelete,
+  onSetActive,
   onDone,
 }: LabFormProps) {
   const [name, setName] = useState(existing?.name ?? '');
@@ -145,9 +160,12 @@ function LabForm({
   );
   const [errors, setErrors] = useState<LabInputErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [labInUsePrompt, setLabInUsePrompt] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [locating, setLocating] = useState(false);
+
+  const busy = saving || deleting || toggling;
 
   const handleUseGPS = async () => {
     setLocating(true);
@@ -176,6 +194,7 @@ function LabForm({
 
   const handleSubmit = async () => {
     setSubmitError(null);
+    setLabInUsePrompt(null);
     const input = buildInput();
     const nextErrors = validateLabInput(input);
     if (!courseId || !managedCourseIds.includes(courseId)) {
@@ -195,11 +214,34 @@ function LabForm({
   const handleDelete = async () => {
     if (!labId) return;
     setConfirmDelete(false);
+    setSubmitError(null);
+    setLabInUsePrompt(null);
+
     const result = await onDelete(labId);
     if (!result.ok) {
+      if (result.reason === 'lab_in_use') {
+        setLabInUsePrompt(
+          result.message ||
+            'Lab ini masih digunakan oleh sesi. Nonaktifkan lab agar riwayat sesi dan presensi tetap aman.',
+        );
+        return;
+      }
       setSubmitError(result.message || 'Gagal menghapus laboratorium');
       return;
     }
+    onDone();
+  };
+
+  const handleDeactivateInstead = async () => {
+    if (!labId) return;
+    setSubmitError(null);
+    const result = await onSetActive(labId, false);
+    if (!result.ok) {
+      setSubmitError(result.message || 'Gagal menonaktifkan laboratorium');
+      return;
+    }
+    setActive('inactive');
+    setLabInUsePrompt(null);
     onDone();
   };
 
@@ -321,6 +363,25 @@ function LabForm({
         />
       </View>
 
+      {labInUsePrompt ? (
+        <View style={styles.form}>
+          <Banner
+            tone="warning"
+            title="Lab Masih Dipakai Sesi"
+            message={labInUsePrompt}
+          />
+          {existing?.isActive !== false && (
+            <Button
+              label="Nonaktifkan lab"
+              variant="outline"
+              loading={toggling}
+              disabled={busy}
+              onPress={handleDeactivateInstead}
+            />
+          )}
+        </View>
+      ) : null}
+
       {submitError ? (
         <Banner tone="danger" title="Gagal" message={submitError} />
       ) : null}
@@ -328,7 +389,7 @@ function LabForm({
       <Button
         label={labId ? 'Simpan perubahan' : 'Tambah lab'}
         loading={saving}
-        disabled={saving || deleting}
+        disabled={busy}
         onPress={handleSubmit}
       />
       {labId ? (
@@ -337,7 +398,7 @@ function LabForm({
           variant="outline"
           icon="trash-outline"
           loading={deleting}
-          disabled={saving || deleting}
+          disabled={busy}
           onPress={() => setConfirmDelete(true)}
         />
       ) : null}
@@ -345,7 +406,7 @@ function LabForm({
       <ConfirmSheet
         visible={confirmDelete}
         title="Hapus laboratorium?"
-        description={`${existing?.name ?? 'Lab ini'} tidak bisa lagi dipakai sebagai acuan presensi dan peta.`}
+        description={`${existing?.name ?? 'Lab ini'} akan dihapus permanen bila tidak dipakai oleh sesi mana pun.`}
         confirmLabel="Hapus"
         tone="danger"
         onConfirm={handleDelete}
