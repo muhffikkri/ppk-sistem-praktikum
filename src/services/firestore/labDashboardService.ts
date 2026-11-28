@@ -1,9 +1,9 @@
 /**
- * Listener baca dashboard Aslab (SRS-4.12, SRS-4.13).
+ * Listener baca dashboard Aslab (SRS-4.12–4.14).
  *
- * Semua query dibatasi `managedCourseIds` agar data mata kuliah lain tidak
- * pernah diminta. Daftar mata kuliah dipecah per 30 nilai (batas filter `in`)
- * dan hasil tiap potongan digabung sebelum dikirim ke pemanggil.
+ * Semua query dibatasi `managedCourseIds` (atau lab turunannya) agar data
+ * mata kuliah lain tidak pernah diminta. Daftar ID dipecah per 30 nilai
+ * (batas filter `in`) dan hasil tiap potongan digabung sebelum dikirim.
  */
 import {
   collection,
@@ -18,9 +18,10 @@ import {
 } from 'firebase/firestore';
 
 import type { Lab } from '../../domain/geoTypes';
-import type { PracticalClass, Session } from '../../domain/types';
+import type { Fine, PracticalClass, Session } from '../../domain/types';
 import { db } from '../firebase';
 import { chunkIds } from './batching';
+import { normalizeFine } from './fineSubscriptionService';
 import { normalizeLab } from './labService';
 
 type Listener<T> = {
@@ -41,18 +42,18 @@ function errorMessage(e: unknown, fallback: string): string {
 }
 
 /**
- * Satu listener per potongan mata kuliah. Data baru dikirim setelah semua
+ * Satu listener per potongan ID. Data baru dikirim setelah semua
  * potongan menerima snapshot pertama, sehingga layar tidak menampilkan angka
  * parsial.
  */
-function subscribeByCourse<T>(
-  courseIds: readonly string[],
+function subscribeInChunks<T>(
+  ids: readonly string[],
   buildQuery: (chunk: string[]) => Query<DocumentData>,
   toItem: (doc: QueryDocumentSnapshot<DocumentData>) => T,
   { onData, onError }: Listener<T>,
   fallbackError: string,
 ): Unsubscribe {
-  const chunks = chunkIds(courseIds);
+  const chunks = chunkIds(ids);
   if (chunks.length === 0) {
     onData([]);
     return () => {};
@@ -87,7 +88,7 @@ export function subscribeLabsForCourses(
   courseIds: readonly string[],
   listener: Listener<Lab>,
 ): Unsubscribe {
-  return subscribeByCourse(
+  return subscribeInChunks(
     courseIds,
     (chunk) => query(collection(db, 'labs'), where('courseId', 'in', chunk)),
     (d) => normalizeLab(d.id, d.data()),
@@ -100,7 +101,7 @@ export function subscribeClassesForCourses(
   courseIds: readonly string[],
   listener: Listener<PracticalClass>,
 ): Unsubscribe {
-  return subscribeByCourse(
+  return subscribeInChunks(
     courseIds,
     (chunk) =>
       query(collection(db, 'classes'), where('courseCode', 'in', chunk)),
@@ -117,7 +118,7 @@ export function subscribeSessionsForCourses(
   toIso: string,
   listener: Listener<Session>,
 ): Unsubscribe {
-  return subscribeByCourse(
+  return subscribeInChunks(
     courseIds,
     (chunk) =>
       query(
@@ -130,5 +131,19 @@ export function subscribeSessionsForCourses(
     toSession,
     listener,
     'Gagal memuat sesi praktikum.',
+  );
+}
+
+/** Tagihan denda pada lab yang dikelola Aslab (SRS-4.14). */
+export function subscribeFinesForLabs(
+  labIds: readonly string[],
+  listener: Listener<Fine>,
+): Unsubscribe {
+  return subscribeInChunks(
+    labIds,
+    (chunk) => query(collection(db, 'fines'), where('labId', 'in', chunk)),
+    (d) => normalizeFine(d.id, d.data()),
+    listener,
+    'Gagal memuat riwayat keuangan.',
   );
 }

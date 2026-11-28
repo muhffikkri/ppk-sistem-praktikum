@@ -11,7 +11,7 @@ import type { Fine, FineStatus } from '../../domain/types';
 import { db } from '../firebase';
 import { asIso, asNullableString, asOptionalString } from './normalize';
 
-function normalizeFine(id: string, data: Record<string, unknown>): Fine {
+export function normalizeFine(id: string, data: Record<string, unknown>): Fine {
   const status = data.status;
   const fineStatus: FineStatus =
     status === 'paid' || status === 'waived' ? status : 'unpaid';

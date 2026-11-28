@@ -1363,6 +1363,45 @@ check(
 );
 await signOut(auth);
 
+// --- SRS-4.14: Riwayat keuangan Aslab hanya untuk lab yang dikelola ---
+const dashboardFine = (labIdValue: string, sessionId: string) => ({
+  studentId: 'budi',
+  studentName: 'Budi',
+  sessionId,
+  attendanceId: `${sessionId}_budi`,
+  labId: labIdValue,
+  amount: 10000,
+  status: 'paid',
+  createdAt: '2026-11-26T02:20:00.000Z',
+  paidAt: '2026-11-26T05:00:00.000Z',
+});
+await adminDb
+  .doc('fines/fine_dash-a_budi')
+  .set(dashboardFine('lab-mk-a', 'dash-a'));
+await adminDb
+  .doc('fines/fine_dash-b_budi')
+  .set(dashboardFine('lab-mk-b', 'dash-b'));
+const labFines = (labIds: string[]) =>
+  getDocs(query(collection(db, 'fines'), where('labId', 'in', labIds)));
+
+await signInWithEmailAndPassword(auth, 'aslabA@rules.test', PASSWORD);
+check(
+  'aslab membaca tagihan lab yang dikelola',
+  await attempt(() => labFines(['lab-mk-a'])),
+  'allowed',
+);
+check(
+  'aslab ditolak membaca tagihan lab mata kuliah lain',
+  await attempt(() => labFines(['lab-mk-a', 'lab-mk-b'])),
+  'denied',
+);
+check(
+  'aslab ditolak membuka tagihan lab mata kuliah lain langsung',
+  await attempt(() => getDoc(doc(db, 'fines', 'fine_dash-b_budi'))),
+  'denied',
+);
+await signOut(auth);
+
 await signInWithEmailAndPassword(auth, 'asistenB@rules.test', PASSWORD);
 check(
   'asisten lain tidak bisa melepas slot sesi yang bukan miliknya',
@@ -1372,6 +1411,11 @@ check(
 check(
   'asisten lain boleh membaca slot untuk pesan bentrok',
   await attempt(() => getDoc(slotRef(sessionA.hours[0]))),
+  'allowed',
+);
+check(
+  'asprak tetap bisa membaca tagihan untuk pembebasan izin',
+  await attempt(() => getDoc(doc(db, 'fines', 'fine_dash-b_budi'))),
   'allowed',
 );
 await signOut(auth);

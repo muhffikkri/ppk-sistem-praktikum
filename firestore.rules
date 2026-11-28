@@ -445,8 +445,20 @@ service cloud.firestore {
 
     // 6. Tagihan Denda Keterlambatan (Sprint 4 - SRS-4.11)
     // Diterbitkan klien saat presensi terlambat, dibebaskan asisten saat izin approved.
+    function isLabManagerForLab(labId) {
+      return labId is string && labId.size() > 0
+        && exists(/databases/$(database)/documents/labs/$(labId))
+        && isLabManagerForCourse(
+          get(/databases/$(database)/documents/labs/$(labId)).data.get('courseId', null));
+    }
+
     match /fines/{fineId} {
-      allow read: if isAssistant()
+      // Aslab hanya membaca tagihan lab mata kuliahnya (SRS-4.14) atau sesi
+      // yang ia pegang sebagai asisten.
+      allow read: if hasRole('assistant')
+        || (isAslab()
+          && (isLabManagerForLab(resource.data.get('labId', null))
+            || request.auth.uid in sessionData(resource.data.sessionId).assistantIds))
         || (isStudent() && resource.data.studentId == request.auth.uid);
 
       allow create: if isSignedIn()

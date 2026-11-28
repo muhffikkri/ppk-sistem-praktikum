@@ -24,7 +24,10 @@ import { spacing } from '../../theme/tokens';
 import { useAuth } from '../../state';
 import { RootTopBar } from '../shell/RootTopBar';
 import { LabStatusRow, PeriodFilter, SessionActivityRow } from './components';
+import { FinanceSection } from './FinanceSection';
+import { periodLabel } from './periodLabel';
 import { useAslabDashboard } from './useAslabDashboard';
+import { useAslabFinance } from './useAslabFinance';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'DockTabs'>;
 
@@ -39,6 +42,8 @@ export function AslabHome({ navigation }: { navigation: Nav }) {
   const [showAllHistory, setShowAllHistory] = useState(false);
   const vm = useAslabDashboard(period, offset);
   const { summary } = vm;
+  const labIds = useMemo(() => vm.labs.map((lab) => lab.id), [vm.labs]);
+  const finance = useAslabFinance(labIds, vm.range);
 
   const changePeriod = useCallback((next: DashboardPeriod) => {
     setPeriod(next);
@@ -264,6 +269,11 @@ export function AslabHome({ navigation }: { navigation: Nav }) {
             />
           )}
         </View>
+
+        <FinanceSection
+          finance={finance}
+          periodTitle={periodLabel(period, offset, vm.range).title}
+        />
       </View>
     </Screen>
   );
