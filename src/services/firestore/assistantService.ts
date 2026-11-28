@@ -17,6 +17,7 @@ import { auth, db, functions } from '../firebase';
 import { groupBySession } from './batching';
 import { callableFailureReason } from './callableFailure';
 import { normalizeAttendanceRecord } from './normalize';
+import { validateSessionTimeBlock } from '../../domain/sessionTimeRules';
 import { cancelSessionRule, closeSessionRule } from '../../domain/sessionRules';
 import { DEFAULT_TOLERANCE_MINUTES } from '../../domain/lateToleranceRules';
 import {
@@ -301,21 +302,15 @@ export async function createSession(
   input: SessionInput,
 ): Promise<AsyncActionResult<string>> {
   try {
-    // Validasi sisi server: endsAt > startsAt
+    // Guard blok waktu sebelum menulis (#69).
     const starts = new Date(input.startsAt);
     const ends = new Date(input.endsAt);
-    if (isNaN(starts.getTime()) || isNaN(ends.getTime())) {
+    const timeBlock = validateSessionTimeBlock(starts, ends);
+    if (!timeBlock.ok) {
       return {
         ok: false,
         reason: 'validation_error',
-        message: 'Waktu sesi tidak valid',
-      };
-    }
-    if (ends <= starts) {
-      return {
-        ok: false,
-        reason: 'validation_error',
-        message: 'endsAt harus setelah startsAt',
+        message: timeBlock.message,
       };
     }
 
@@ -389,18 +384,12 @@ export async function updateSession(
 
     const starts = new Date(input.startsAt);
     const ends = new Date(input.endsAt);
-    if (isNaN(starts.getTime()) || isNaN(ends.getTime())) {
+    const timeBlock = validateSessionTimeBlock(starts, ends);
+    if (!timeBlock.ok) {
       return {
         ok: false,
         reason: 'validation_error',
-        message: 'Waktu sesi tidak valid',
-      };
-    }
-    if (ends <= starts) {
-      return {
-        ok: false,
-        reason: 'validation_error',
-        message: 'endsAt harus setelah startsAt',
+        message: timeBlock.message,
       };
     }
 
