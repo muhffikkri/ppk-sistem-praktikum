@@ -93,6 +93,14 @@ const demoUsers: UserProfile[] = [
     role: 'assistant',
     createdAt: new Date().toISOString(),
   },
+  {
+    uid: 'user-aslab-01',
+    displayName: 'Aslab Informatika',
+    email: 'aslab@kampus.ac.id',
+    role: 'lab_assistant',
+    managedCourseIds: ['IF3121', 'IF3122'],
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 // ============================================================
@@ -145,11 +153,23 @@ const demoClasses: PracticalClass[] = [
 
 const seededAt = new Date().toISOString();
 
+/** Mata kuliah pengampu tiap lab demo, dipakai cakupan Aslab. */
+const LAB_COURSE: Record<string, string> = {
+  'lab-rpl-32': 'IF3121',
+  'lab-rpl-31': 'IF3121',
+  'lab-database': 'IF3122',
+  'lab-ai': 'IF3122',
+  'lab-jaringan': 'IF3123',
+  'lab-sensor': 'IF3123',
+};
+
 const demoLabs: Lab[] = DEFAULT_CAMPUS_LABS.map((lab) => ({
   id: lab.id,
   name: lab.name,
   building: lab.building,
   description: lab.description ?? null,
+  courseId: LAB_COURSE[lab.id] ?? null,
+  courseCode: LAB_COURSE[lab.id] ?? null,
   location: {
     latitude: lab.coordinates.latitude,
     longitude: lab.coordinates.longitude,
@@ -317,8 +337,14 @@ async function seed() {
     for (const lab of demoLabs) {
       batch.set(db.collection('labs').doc(lab.id), lab);
     }
+    const courseCodeByClass = new Map(
+      demoClasses.map((cls) => [cls.id, cls.courseCode]),
+    );
     for (const session of demoSessions) {
-      batch.set(db.collection('sessions').doc(session.id), session);
+      batch.set(db.collection('sessions').doc(session.id), {
+        ...session,
+        courseCode: courseCodeByClass.get(session.classId ?? '') ?? '',
+      });
     }
 
     await batch.commit();

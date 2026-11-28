@@ -1221,6 +1221,78 @@ console.log(
   '✅ Backend lab: impor idempoten, akses, penempatan, pemindahan, toleransi, dan hapus aman.',
 );
 
+// --- SRS-4.12/4.13: Dashboard Aslab hanya membaca mata kuliah yang dikelola ---
+const dashboardClass = (courseCode: string) => ({
+  ...classDoc(),
+  courseCode,
+  assistantIds: ['asistenB'],
+});
+const dashboardSession = (courseCode: string, classId: string) => ({
+  classId,
+  courseCode,
+  courseName: 'Praktikum',
+  groupName: 'A',
+  labId: courseCode === 'MK-A' ? 'lab-mk-a' : 'lab-mk-b',
+  participantIds: ['budi'],
+  assistantIds: ['asistenB'],
+  startsAt: '2026-11-26T02:00:00.000Z',
+  endsAt: '2026-11-26T04:00:00.000Z',
+  status: 'scheduled',
+  openedAt: null,
+  closedAt: null,
+  createdBy: 'asistenB',
+});
+await adminDb.doc('classes/dash-a').set(dashboardClass('MK-A'));
+await adminDb.doc('classes/dash-b').set(dashboardClass('MK-B'));
+await adminDb.doc('sessions/dash-a').set(dashboardSession('MK-A', 'dash-a'));
+await adminDb.doc('sessions/dash-b').set(dashboardSession('MK-B', 'dash-b'));
+
+const courseSessions = (courseIds: string[]) =>
+  getDocs(
+    query(
+      collection(db, 'sessions'),
+      where('courseCode', 'in', courseIds),
+      where('startsAt', '>=', '2026-11-23T00:00:00.000Z'),
+      where('startsAt', '<', '2026-11-30T00:00:00.000Z'),
+      orderBy('startsAt', 'asc'),
+    ),
+  );
+
+await signInWithEmailAndPassword(auth, 'aslabA@rules.test', PASSWORD);
+check(
+  'aslab membaca sesi periode mata kuliah yang dikelola',
+  await attempt(() => courseSessions(['MK-A'])),
+  'allowed',
+);
+check(
+  'aslab ditolak membaca sesi mata kuliah lain',
+  await attempt(() => courseSessions(['MK-A', 'MK-B'])),
+  'denied',
+);
+check(
+  'aslab membaca kelas mata kuliah yang dikelola',
+  await attempt(() =>
+    getDocs(
+      query(collection(db, 'classes'), where('courseCode', 'in', ['MK-A'])),
+    ),
+  ),
+  'allowed',
+);
+check(
+  'aslab ditolak membuka sesi mata kuliah lain langsung',
+  await attempt(() => getDoc(doc(db, 'sessions', 'dash-b'))),
+  'denied',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+check(
+  'asprak tetap tidak bisa membaca sesi mata kuliah tanpa penugasan',
+  await attempt(() => courseSessions(['MK-A'])),
+  'denied',
+);
+await signOut(auth);
+
 console.log(
   failures ? `\n❌ ${failures} kasus gagal.` : '\n✅ Semua kasus lolos.',
 );

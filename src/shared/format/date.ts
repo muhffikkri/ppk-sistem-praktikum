@@ -101,3 +101,23 @@ export function formatHourMinute(date: Date): string {
 export function formatDateTime(date: Date): string {
   return dateTime(date);
 }
+
+const dayMonth = cachedFormat(
+  { day: 'numeric', month: 'short' },
+  (date) => `${date.getDate()}/${date.getMonth() + 1}`,
+);
+
+const monthYear = cachedFormat(
+  { month: 'long', year: 'numeric' },
+  (date) => `${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
+);
+
+/** Contoh: "26 Nov" */
+export function formatDayMonth(date: Date): string {
+  return dayMonth(date);
+}
+
+/** Contoh: "November 2026" */
+export function formatMonthYear(date: Date): string {
+  return monthYear(date);
+}

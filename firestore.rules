@@ -186,8 +186,10 @@ service cloud.firestore {
 
     // 2. Kelas & Peserta
     match /classes/{classId} {
+      // Aslab membaca kelas mata kuliah yang dikelola untuk dashboard (SRS-4.12).
       allow read: if (isAssistant() && request.auth.uid in resource.data.assistantIds)
-        || (isStudent() && request.auth.uid in resource.data.participantIds);
+        || (isStudent() && request.auth.uid in resource.data.participantIds)
+        || isLabManagerForCourse(resource.data.get('courseCode', null));
 
       allow create: if isAssistant()
         && request.resource.data.createdBy == request.auth.uid
@@ -240,8 +242,10 @@ service cloud.firestore {
 
     // 3. Jadwal & Sesi Praktikum
     match /sessions/{sessionId} {
+      // Aslab membaca sesi mata kuliah yang dikelola untuk dashboard (SRS-4.13).
       allow read: if (isAssistant() && request.auth.uid in resource.data.assistantIds)
-        || (isStudent() && request.auth.uid in resource.data.participantIds);
+        || (isStudent() && request.auth.uid in resource.data.participantIds)
+        || isLabManagerForCourse(resource.data.get('courseCode', null));
 
       allow create: if isAssistant()
         && request.resource.data.createdBy == request.auth.uid
