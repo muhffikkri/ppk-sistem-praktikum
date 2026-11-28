@@ -20,6 +20,10 @@ import {
   BackButton,
 } from '../../shared/ui';
 import { useAuth } from '../../state';
+import {
+  roleSelectionChrome,
+  roleSelectionContext,
+} from './roleSelectionContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'RoleSelection'>;
 
@@ -44,11 +48,15 @@ const ROLE_OPTIONS: {
 ];
 
 export function RoleSelectionScreen({ navigation }: Props) {
-  const { setUserRole, error, clearError } = useAuth();
+  const { setUserRole, logout, needsRoleSelection, error, clearError } =
+    useAuth();
   const [role, setRole] = useState<UserRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
   const [canBeAssistant, setCanBeAssistant] = useState(false);
+  const chrome = roleSelectionChrome(roleSelectionContext(needsRoleSelection));
+  const busy = submitting || signingOut;
 
   useEffect(() => {
     let active = true;
@@ -89,9 +97,25 @@ export function RoleSelectionScreen({ navigation }: Props) {
     }
   };
 
+  const handleSwitchAccount = async () => {
+    clearRoleError();
+    setSigningOut(true);
+    try {
+      await logout();
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   return (
     <Screen withDock={false}>
-      <BackButton onPress={() => navigation.goBack()} />
+      {chrome.showBack ? (
+        <BackButton onPress={() => navigation.goBack()} />
+      ) : null}
+
+      <Text variant="body" tone="muted">
+        {chrome.intro}
+      </Text>
 
       {!isFirebaseConfigured ? (
         <Banner
@@ -142,7 +166,7 @@ export function RoleSelectionScreen({ navigation }: Props) {
                     label={selected ? 'Terpilih' : 'Pilih'}
                     variant={selected ? 'primary' : 'outline'}
                     icon={selected ? 'checkmark-circle-outline' : undefined}
-                    disabled={submitting}
+                    disabled={busy}
                     onPress={() => setRole(option.value)}
                   />
                 </View>
@@ -163,16 +187,27 @@ export function RoleSelectionScreen({ navigation }: Props) {
           variant="primary"
           icon="arrow-forward-outline"
           loading={submitting}
-          disabled={!role || submitting}
+          disabled={!role || busy}
           onPress={handleContinue}
         />
-        <Button
-          label="Daftar dengan email"
-          variant="soft"
-          icon="mail-outline"
-          disabled={submitting}
-          onPress={() => navigation.navigate('Register')}
-        />
+        {chrome.secondaryAction === 'switch_account' ? (
+          <Button
+            label="Gunakan akun lain"
+            variant="soft"
+            icon="log-out-outline"
+            loading={signingOut}
+            disabled={busy}
+            onPress={handleSwitchAccount}
+          />
+        ) : (
+          <Button
+            label="Daftar dengan email"
+            variant="soft"
+            icon="mail-outline"
+            disabled={busy}
+            onPress={() => navigation.navigate('Register')}
+          />
+        )}
       </View>
     </Screen>
   );
