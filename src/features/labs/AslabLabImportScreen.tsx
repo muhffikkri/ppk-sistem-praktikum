@@ -26,6 +26,7 @@ import {
 } from '../../shared/ui';
 import { useAuth } from '../../state';
 import { chooseCsv, saveCsv } from './labCsvFiles';
+import { LabAccessDenied } from './LabAccessDenied';
 import { useLabManagement } from './useLabManagement';
 
 type Props = {
@@ -63,16 +64,7 @@ export function AslabLabImportScreen({ navigation }: Props) {
   );
 
   if (!isAuthorized) {
-    return (
-      <Screen withDock={false}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <Banner
-          tone="warning"
-          title="Kewenangan Aslab"
-          message="Impor massal lab, praktikan, dan asprak hanya dapat diakses oleh Aslab."
-        />
-      </Screen>
-    );
+    return <LabAccessDenied onBack={() => navigation.goBack()} />;
   }
 
   const handleEntityChange = (nextType: ImportEntityType) => {

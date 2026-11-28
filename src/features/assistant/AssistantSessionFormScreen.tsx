@@ -31,7 +31,12 @@ function combine(day: Date, clock: Date): Date {
 export function AssistantSessionFormScreen({ route, navigation }: Props) {
   const { classes, getSessionById, createSession, updateSession } =
     useAssistantSessionsViewModel();
-  const { labs, loading: labsLoading, error: labsError } = useLabManagement();
+  const {
+    labs,
+    loading: labsLoading,
+    error: labsError,
+    canManage: canManageLabs,
+  } = useLabManagement();
   const activeLabs = useMemo(() => labs.filter((l) => l.isActive), [labs]);
 
   const { classId: routeClassId, sessionId } = route.params ?? {};
@@ -182,13 +187,19 @@ export function AssistantSessionFormScreen({ route, navigation }: Props) {
             <Banner
               tone="warning"
               title="Belum ada lab"
-              message="Tambahkan lab beserta koordinat dan radiusnya agar presensi bisa divalidasi."
+              message={
+                canManageLabs
+                  ? 'Tambahkan lab beserta koordinat dan radiusnya agar presensi bisa divalidasi.'
+                  : 'Lab dikelola Aslab. Minta Aslab mata kuliah ini menambahkan lab beserta koordinat dan radiusnya.'
+              }
             />
-            <Button
-              label="Tambah lab"
-              variant="soft"
-              onPress={() => navigation.navigate('AssistantLabForm', {})}
-            />
+            {canManageLabs ? (
+              <Button
+                label="Tambah lab"
+                variant="soft"
+                onPress={() => navigation.navigate('AssistantLabForm', {})}
+              />
+            ) : null}
           </>
         ) : (
           <SelectField
