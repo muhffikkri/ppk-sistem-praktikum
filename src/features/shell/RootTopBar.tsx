@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ReactNode } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { openDockTab } from '../../app/openDockTab';
 import { isAssistantRole } from '../../domain/asprakScope';
 import { AppTopBar, IconButton } from '../../shared/ui';
 import { useAuth } from '../../state';
@@ -48,7 +49,7 @@ export function RootTopBar({ subtitle, trailing }: Props) {
             icon="person-outline"
             variant="circle"
             accessibilityLabel="Profil"
-            onPress={() => navigation.navigate('Profile')}
+            onPress={() => openDockTab(navigation, 'Profile')}
           />
           {trailing}
         </>

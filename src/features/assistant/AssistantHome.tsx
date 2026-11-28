@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { openDockTab } from '../../app/openDockTab';
 import type { Session } from '../../domain/types';
 import { colors, radius, spacing } from '../../theme/tokens';
 import {
@@ -40,7 +41,7 @@ import {
   sessionStatusTone,
 } from './components/AssistantSessionCard';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'DockTabs'>;
 
 // Beranda hanya cuplikan; daftar lengkapnya ada di halaman Jadwal/Presensi.
 const SCHEDULE_PREVIEW_LIMIT = 2;
@@ -405,7 +406,7 @@ export function AssistantHome({ navigation }: { navigation: Nav }) {
             <SectionHeader
               title={`Presensi terbaru (${attendanceGroups.length})`}
               actionLabel="Lihat semua"
-              onAction={() => navigation.navigate('AssistantAllAttendance')}
+              onAction={() => openDockTab(navigation, 'Attendance')}
             />
             {attendancePreview.map((group) => (
               <SessionAttendancePreviewCard

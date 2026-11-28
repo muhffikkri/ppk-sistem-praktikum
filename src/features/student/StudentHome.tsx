@@ -4,6 +4,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { openDockTab } from '../../app/openDockTab';
 import { colors, radius, shadow, spacing } from '../../theme/tokens';
 import {
   Avatar,
@@ -28,7 +29,7 @@ import { useAuth, useStudentAttendanceViewModel } from '../../state';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 import { RootTopBar } from '../shell/RootTopBar';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'DockTabs'>;
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'Terbuka',
@@ -299,7 +300,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                 icon="id-card-outline"
                 accessibilityLabel="Buka kartu profil praktikan"
                 variant="soft"
-                onPress={() => navigation.navigate('Profile')}
+                onPress={() => openDockTab(navigation, 'Profile')}
               />
             </View>
           </CardContent>
@@ -312,13 +313,13 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
               icon="calendar-outline"
               label="Jadwal"
               tone="violet"
-              onPress={() => navigation.navigate('StudentSchedule')}
+              onPress={() => openDockTab(navigation, 'Schedule')}
             />
             <QuickAction
               icon="checkmark-done-outline"
               label="Riwayat"
               tone="lime"
-              onPress={() => navigation.navigate('StudentAttendanceHistory')}
+              onPress={() => openDockTab(navigation, 'Attendance')}
             />
             <QuickAction
               icon="document-text-outline"
@@ -430,7 +431,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
                 label="Lihat jadwal"
                 variant="outline"
                 icon="calendar-outline"
-                onPress={() => navigation.navigate('StudentSchedule')}
+                onPress={() => openDockTab(navigation, 'Schedule')}
               />
             }
           />
@@ -440,7 +441,7 @@ export function StudentHome({ navigation }: { navigation: Nav }) {
           <SectionHeader
             title="Progres & Kehadiran"
             actionLabel="Riwayat"
-            onAction={() => navigation.navigate('StudentAttendanceHistory')}
+            onAction={() => openDockTab(navigation, 'Attendance')}
           />
           <StatRow>
             <MetricCard

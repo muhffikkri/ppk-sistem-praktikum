@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 
 import type { RootStackParamList } from '../../app/navigation';
+import { openDockTab } from '../../app/openDockTab';
 import {
   Button,
   EmptyState,
@@ -26,10 +27,7 @@ import { useStudentAttendanceViewModel } from '../../state';
 import { RootTopBar } from '../shell/RootTopBar';
 import { formatClock, formatSessionDate, formatTimeRange } from './formatters';
 
-type Props = NativeStackScreenProps<
-  RootStackParamList,
-  'StudentAttendanceHistory'
->;
+type Props = NativeStackScreenProps<RootStackParamList, 'DockTabs'>;
 type Filter = 'all' | 'onTime' | 'late' | 'month';
 
 const FILTERS: SegmentedOption<Filter>[] = [
@@ -182,7 +180,7 @@ export function StudentAttendanceHistoryScreen({ navigation }: Props) {
             <Button
               label="Buka jadwal"
               variant="outline"
-              onPress={() => navigation.navigate('StudentSchedule')}
+              onPress={() => openDockTab(navigation, 'Schedule')}
             />
           }
         />

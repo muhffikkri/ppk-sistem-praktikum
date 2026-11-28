@@ -26,7 +26,7 @@ import { RootTopBar } from '../shell/RootTopBar';
 import { LabStatusRow, PeriodFilter, SessionActivityRow } from './components';
 import { useAslabDashboard } from './useAslabDashboard';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+type Nav = NativeStackNavigationProp<RootStackParamList, 'DockTabs'>;
 
 const UPCOMING_LIMIT = 4;
 const HISTORY_PREVIEW = 5;

@@ -28,10 +28,7 @@ import {
 import { useAssistantSessionsViewModel } from '../../state';
 import { RootTopBar } from '../shell/RootTopBar';
 
-type Props = NativeStackScreenProps<
-  RootStackParamList,
-  'AssistantAllAttendance'
->;
+type Props = NativeStackScreenProps<RootStackParamList, 'DockTabs'>;
 type Filter = 'all' | 'today' | 'week' | 'month';
 
 const FILTERS: SegmentedOption<Filter>[] = [
