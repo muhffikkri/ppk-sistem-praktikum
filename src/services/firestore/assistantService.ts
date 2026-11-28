@@ -18,6 +18,16 @@ import { groupBySession } from './batching';
 import { callableFailureReason } from './callableFailure';
 import { normalizeAttendanceRecord } from './normalize';
 import { validateSessionTimeBlock } from '../../domain/sessionTimeRules';
+import {
+  releasableAfterClose,
+  slotIdsFor,
+  type SlotWindow,
+} from '../../domain/labSlotRules';
+import {
+  findSlotConflict,
+  labConflictFailure,
+  queueSlotChanges,
+} from './labSlotService';
 import { cancelSessionRule, closeSessionRule } from '../../domain/sessionRules';
 import { DEFAULT_TOLERANCE_MINUTES } from '../../domain/lateToleranceRules';
 import {
@@ -297,6 +307,45 @@ export async function removeParticipant(
 // CRUD: Jadwal & Sesi
 // ============================================================
 
+/** Rentang lab sesi tersimpan; sesi lama mungkin belum punya `startsAtMs`. */
+function slotWindowOf(data: Record<string, unknown> | undefined): SlotWindow {
+  const startsAtMs =
+    typeof data?.startsAtMs === 'number'
+      ? data.startsAtMs
+      : Date.parse(String(data?.startsAt ?? ''));
+  const endsAtMs =
+    typeof data?.endsAtMs === 'number'
+      ? data.endsAtMs
+      : Date.parse(String(data?.endsAt ?? ''));
+  return {
+    labId: typeof data?.labId === 'string' ? data.labId : null,
+    startsAtMs,
+    endsAtMs,
+    status: typeof data?.status === 'string' ? data.status : undefined,
+  };
+}
+
+/**
+ * Commit batch sesi + slot. Bila rules menolak karena slot sudah terisi
+ * sesi lain (balapan setelah pengecekan awal), kembalikan pesan bentrok.
+ */
+async function commitWithSlots(
+  batch: ReturnType<typeof writeBatch>,
+  slotIds: readonly string[],
+  sessionId: string,
+): Promise<AsyncActionResult | null> {
+  try {
+    await batch.commit();
+    return null;
+  } catch (e) {
+    const conflict = await findSlotConflict(slotIds, sessionId).catch(
+      () => null,
+    );
+    if (conflict) return labConflictFailure(conflict);
+    throw e;
+  }
+}
+
 export async function createSession(
   actorUid: string,
   input: SessionInput,
@@ -354,14 +403,33 @@ export async function createSession(
     if (input.lab) payload.lab = input.lab;
     if (input.labId) payload.labId = input.labId;
 
-    const docRef = await addDoc(sessionsCol, payload);
+    const sessionRef = doc(sessionsCol);
+    const slotIds = slotIdsFor({
+      labId: input.labId,
+      startsAtMs: starts.getTime(),
+      endsAtMs: ends.getTime(),
+    });
+    // Cek awal untuk pesan yang jelas; rules tetap menjadi penjaga atomik.
+    const conflict = await findSlotConflict(slotIds, sessionRef.id);
+    if (conflict) return labConflictFailure(conflict);
+
+    const batch = writeBatch(db);
+    batch.set(sessionRef, payload);
+    queueSlotChanges(batch, [], slotIds, {
+      sessionId: sessionRef.id,
+      courseName: String(payload.courseName),
+      groupName: String(payload.groupName),
+      createdBy: actorUid,
+    });
+    const slotFailure = await commitWithSlots(batch, slotIds, sessionRef.id);
+    if (slotFailure) return slotFailure as AsyncActionResult<string>;
 
     // Update kelas dengan sessionId baru (opsional: bisa ditambahkan ke classes.sessions list)
     await updateDoc(classDoc, {
       updatedAt: new Date().toISOString(),
     });
 
-    return { ok: true, data: docRef.id };
+    return { ok: true, data: sessionRef.id };
   } catch (e) {
     return toFailure(e);
   }
@@ -438,8 +506,25 @@ export async function updateSession(
         roster?.toleranceMinutes ?? DEFAULT_TOLERANCE_MINUTES;
     }
 
-    await updateDoc(sessionDoc, payload);
-    return { ok: true };
+    const previousSlots = slotIdsFor(slotWindowOf(snap.data()));
+    const nextSlots = slotIdsFor({
+      labId: input.labId,
+      startsAtMs: starts.getTime(),
+      endsAtMs: ends.getTime(),
+    });
+    const newSlots = nextSlots.filter((id) => !previousSlots.includes(id));
+    const conflict = await findSlotConflict(newSlots, sessionId);
+    if (conflict) return labConflictFailure(conflict);
+
+    const batch = writeBatch(db);
+    batch.update(sessionDoc, payload);
+    queueSlotChanges(batch, previousSlots, nextSlots, {
+      sessionId,
+      courseName: String(payload.courseName ?? snap.data()?.courseName ?? ''),
+      groupName: String(payload.groupName ?? snap.data()?.groupName ?? ''),
+      createdBy: auth.currentUser?.uid ?? '',
+    });
+    return (await commitWithSlots(batch, newSlots, sessionId)) ?? { ok: true };
   } catch (e) {
     return toFailure(e);
   }
@@ -465,10 +550,19 @@ export async function cancelSession(
             : 'Sesi tidak ditemukan.',
       };
     }
-    await updateDoc(sessionDoc, {
+    // Batal melepas seluruh slot agar lab bisa dipakai sesi lain.
+    const batch = writeBatch(db);
+    batch.update(sessionDoc, {
       status: result.updatedSession.status,
       cancelledAt: result.updatedSession.cancelledAt,
     });
+    queueSlotChanges(batch, slotIdsFor(slotWindowOf(snap.data())), [], {
+      sessionId,
+      courseName: '',
+      groupName: '',
+      createdBy: '',
+    });
+    await batch.commit();
     return { ok: true };
   } catch (e) {
     return toFailure(e);
@@ -533,6 +627,7 @@ export async function closeSession(
       status: result.updatedSession.status,
       closedAt: result.updatedSession.closedAt,
     });
+    await releaseSlotsAfterClose(sessionId, snap.data());
     return { ok: true };
   } catch (e) {
     return toFailure(e);
@@ -639,4 +734,24 @@ export function subscribeAttendanceForSessionChunk(
       onError(err.message || 'Gagal memuat kehadiran');
     },
   );
+}
+
+/**
+ * Tutup lebih awal melepas jam berikutnya. Dijalankan terpisah dan tidak
+ * menggagalkan penutupan sesi bila gagal: kunci jam lama tidak berbahaya.
+ */
+async function releaseSlotsAfterClose(
+  sessionId: string,
+  data: Record<string, unknown> | undefined,
+): Promise<void> {
+  const slots = releasableAfterClose(slotWindowOf(data), Date.now());
+  if (slots.length === 0) return;
+  const batch = writeBatch(db);
+  queueSlotChanges(batch, slots, [], {
+    sessionId,
+    courseName: '',
+    groupName: '',
+    createdBy: '',
+  });
+  await batch.commit().catch(() => undefined);
 }

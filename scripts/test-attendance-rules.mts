@@ -36,6 +36,7 @@ import {
   setLogLevel,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 
 import { evaluateGeofence } from '../src/domain/geofenceRules';
@@ -1285,11 +1286,106 @@ check(
 );
 await signOut(auth);
 
+// --- #68: Kunci slot lab per jam mencegah sesi bentrok ---
+const HOUR = 3_600_000;
+const slotBase = Date.parse('2026-02-02T01:00:00.000Z');
+const slotSession = (id: string, fromHour: number, toHour: number) => ({
+  ref: doc(db, 'sessions', id),
+  data: {
+    ...newSession,
+    toleranceMinutes: 0,
+    startsAt: new Date(slotBase + fromHour * HOUR).toISOString(),
+    endsAt: new Date(slotBase + toHour * HOUR).toISOString(),
+    startsAtMs: slotBase + fromHour * HOUR,
+    endsAtMs: slotBase + toHour * HOUR,
+  },
+  hours: Array.from(
+    { length: toHour - fromHour },
+    (_, i) => slotBase + (fromHour + i) * HOUR,
+  ),
+});
+const slotRef = (hourMs: number) => doc(db, 'lab_slots', `lab-mk-a_${hourMs}`);
+const slotDoc = (sessionId: string, hourMs: number) => ({
+  labId: 'lab-mk-a',
+  hourMs,
+  sessionId,
+  courseName: 'Praktikum',
+  groupName: 'A',
+  createdBy: 'asisten',
+});
+const createWithSlots = (session: ReturnType<typeof slotSession>) => {
+  const batch = writeBatch(db);
+  batch.set(session.ref, session.data);
+  for (const hour of session.hours) {
+    batch.set(slotRef(hour), slotDoc(session.ref.id, hour));
+  }
+  return batch.commit();
+};
+
+await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
+const sessionA = slotSession('slot-a', 0, 2);
+check(
+  'sesi baru mengunci slot lab per jam',
+  await attempt(() => createWithSlots(sessionA)),
+  'allowed',
+);
+check(
+  'sesi lain yang beririsan di lab yang sama ditolak',
+  await attempt(() => createWithSlots(slotSession('slot-b', 1, 3))),
+  'denied',
+);
+check(
+  'sesi yang bersebelahan (mulai saat sesi lain selesai) diizinkan',
+  await attempt(() => createWithSlots(slotSession('slot-c', 2, 4))),
+  'allowed',
+);
+check(
+  'tolak slot di luar rentang sesinya',
+  await attempt(() =>
+    setDoc(
+      slotRef(slotBase + 8 * HOUR),
+      slotDoc('slot-a', slotBase + 8 * HOUR),
+    ),
+  ),
+  'denied',
+);
+check(
+  'tolak menimpa slot yang sudah ada',
+  await attempt(() =>
+    updateDoc(slotRef(sessionA.hours[0]), { sessionId: 'slot-c' }),
+  ),
+  'denied',
+);
+check(
+  'melepas slot yang belum pernah ada tetap diizinkan',
+  await attempt(() => deleteDoc(slotRef(slotBase + 9 * HOUR))),
+  'allowed',
+);
+await signOut(auth);
+
+await signInWithEmailAndPassword(auth, 'asistenB@rules.test', PASSWORD);
+check(
+  'asisten lain tidak bisa melepas slot sesi yang bukan miliknya',
+  await attempt(() => deleteDoc(slotRef(sessionA.hours[0]))),
+  'denied',
+);
+check(
+  'asisten lain boleh membaca slot untuk pesan bentrok',
+  await attempt(() => getDoc(slotRef(sessionA.hours[0]))),
+  'allowed',
+);
+await signOut(auth);
+
 await signInWithEmailAndPassword(auth, 'asisten@rules.test', PASSWORD);
 check(
   'asprak tetap tidak bisa membaca sesi mata kuliah tanpa penugasan',
   await attempt(() => courseSessions(['MK-A'])),
   'denied',
+);
+check(
+  'asisten sesi melepas slotnya sendiri',
+  await attempt(() => deleteDoc(slotRef(sessionA.hours[0]))),
+  'allowed',
 );
 await signOut(auth);
 
